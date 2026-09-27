@@ -205,32 +205,46 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
       signedDy = 0;
     }
 
-    // Relative timestamp from cycle start in milliseconds (Section 5)
-    const t = Math.max(0, Math.round(now - cycleStartTime));
+    // Relative timestamp from cycle start in milliseconds (Section 5 & 10: strictly non-decreasing)
+    const rawT = Math.max(0, Math.round(now - cycleStartTime));
+    const lastSampleT = samples.length > 0 ? samples[samples.length - 1].t : 0;
+    const t = Math.max(lastSampleT, rawT);
 
     const trackingQuality = quality.isValid
       ? (typeof quality.score === 'number' ? Number(quality.score.toFixed(2)) : 0.95)
       : (isFullyValidSample ? 0.85 : 0.50);
 
-    // Compact Schema (Section 4 & 7)
+    const leftValid = Boolean(leftCoordsValid && coverEye !== 'left');
+    const rightValid = Boolean(rightCoordsValid && coverEye !== 'right');
+
+    // Standardized Sample Schema (Section 8: index, t, phase, leftX, leftY, leftValid, rightX, rightY, rightValid, trackingQuality)
     const sample = {
+      index: samples.length,
       t,
       phase,
+      leftX: leftCoordsValid ? Number(leftX.toFixed(4)) : null,
+      leftY: leftCoordsValid ? Number(leftY.toFixed(4)) : null,
+      leftValid,
+      rightX: rightCoordsValid ? Number(rightX.toFixed(4)) : null,
+      rightY: rightCoordsValid ? Number(rightY.toFixed(4)) : null,
+      rightValid,
+      trackingQuality,
+
+      // Supplementary properties for ML kinematics & backward compatibility
       left: {
         x: leftCoordsValid ? Number(leftX.toFixed(4)) : null,
         y: leftCoordsValid ? Number(leftY.toFixed(4)) : null,
-        valid: Boolean(leftCoordsValid && coverEye !== 'left'),
+        valid: leftValid,
       },
       right: {
         x: rightCoordsValid ? Number(rightX.toFixed(4)) : null,
         y: rightCoordsValid ? Number(rightY.toFixed(4)) : null,
-        valid: Boolean(rightCoordsValid && coverEye !== 'right'),
+        valid: rightValid,
       },
       relativeX,
       relativeY,
       signedDx,
       signedDy,
-      trackingQuality,
     };
 
     samples.push(sample);

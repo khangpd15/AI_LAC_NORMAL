@@ -140,13 +140,13 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now()) {
   const rightTop = lm[LANDMARKS.RIGHT_TOP_LID] || (rightIris ? { x: rightIris.x, y: rightIris.y - 0.02 } : null);
   const rightBottom = lm[LANDMARKS.RIGHT_BOTTOM_LID] || (rightIris ? { x: rightIris.x, y: rightIris.y + 0.02 } : null);
 
-  // Calculate eye widths safely
+  // Calculate eye widths safely (null if anatomical corners are missing)
   const leftEyeWidth = (leftInner && leftOuter)
     ? Math.max(0.001, Math.hypot(leftOuter.x - leftInner.x, leftOuter.y - leftInner.y))
-    : 0.05;
+    : null;
   const rightEyeWidth = (rightInner && rightOuter)
     ? Math.max(0.001, Math.hypot(rightOuter.x - rightInner.x, rightOuter.y - rightInner.y))
-    : 0.05;
+    : null;
 
   // Horizontal ratios safely
   let leftHorizontalRatio = 0.5;
@@ -188,12 +188,17 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now()) {
   const clampedLeftV = Math.min(1.5, Math.max(-0.5, leftVerticalRatio));
   const clampedRightV = Math.min(1.5, Math.max(-0.5, rightVerticalRatio));
 
+  const validLeftX = leftIris ? leftIris.x : null;
+  const validLeftY = leftIris ? leftIris.y : null;
+  const validRightX = rightIris ? rightIris.x : null;
+  const validRightY = rightIris ? rightIris.y : null;
+
   return {
     timestamp,
-    leftIrisX: leftIris ? leftIris.x : 0.5,
-    leftIrisY: leftIris ? leftIris.y : 0.5,
-    rightIrisX: rightIris ? rightIris.x : 0.5,
-    rightIrisY: rightIris ? rightIris.y : 0.5,
+    leftIrisX: validLeftX,
+    leftIrisY: validLeftY,
+    rightIrisX: validRightX,
+    rightIrisY: validRightY,
     leftEyeWidth,
     rightEyeWidth,
     leftHorizontalRatio: clampedLeftH,
@@ -205,10 +210,10 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now()) {
     verticalRatioDiff: Math.abs(clampedLeftV - clampedRightV),
     irisDistanceRatio,
     raw: {
-      leftIrisX: leftIris ? leftIris.x : 0.5,
-      leftIrisY: leftIris ? leftIris.y : 0.5,
-      rightIrisX: rightIris ? rightIris.x : 0.5,
-      rightIrisY: rightIris ? rightIris.y : 0.5,
+      leftIrisX: validLeftX,
+      leftIrisY: validLeftY,
+      rightIrisX: validRightX,
+      rightIrisY: validRightY,
     },
   };
 }
@@ -217,22 +222,22 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now()) {
  * Calculates refixation saccade displacement and velocity from recorded uncover frames
  * @param {Array<{t: number, x: number, y: number, normalizedX: number, normalizedY: number}>} frames
  * @param {number} windowMs - analysis window (300 - 500ms)
- * @param {number} referenceEyeWidth - eye width for normalization
+ * @param {number|null} referenceEyeWidth - eye width for normalization
  * @returns {{
- *   displacement: number,
+ *   displacement: number|null,
  *   displaced: boolean,
- *   peakDisplacement: number,
- *   peakVelocity: number,
- *   meanVelocity: number
+ *   peakDisplacement: number|null,
+ *   peakVelocity: number|null,
+ *   meanVelocity: number|null
  * }}
  */
 export function calculateRefixationDisplacement(
   frames,
   windowMs = SCREENING_CONFIG.UNCOVER_WINDOW_MS,
-  referenceEyeWidth = 0.05
+  referenceEyeWidth = null
 ) {
-  if (!frames || frames.length < 2) {
-    return { displacement: 0, displaced: false, peakDisplacement: 0, peakVelocity: 0, meanVelocity: 0 };
+  if (!frames || frames.length < 2 || !referenceEyeWidth || referenceEyeWidth <= 0 || !Number.isFinite(referenceEyeWidth)) {
+    return { displacement: null, displaced: false, peakDisplacement: null, peakVelocity: null, meanVelocity: null };
   }
 
   const windowFrames = frames.filter((f) => f.t <= windowMs);

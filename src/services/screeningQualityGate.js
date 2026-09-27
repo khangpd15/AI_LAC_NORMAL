@@ -66,14 +66,49 @@ export function validateCoverTestData(coverTest) {
     reasons.push(`cover_quality_inconclusive:${quality.status}`);
   }
 
-  // ---- NaN / Infinity / Null Critical Fields Gate (Section 14 & 23) ----
+  // ---- NaN / Infinity / Null Critical Fields Gate (Section 11, 14 & 23) ----
   let hasAnyValidEyeWidth = false;
   let hasAnyValidBaseline = false;
   let hasAnyValidDisplacement = false;
   let hasNanOrInf = false;
+  let hasDisplacementMismatch = false;
+  let hasInvalidEyeWidthNormalized = false;
+  let hasRawIntegrityFailure = false;
   let excessiveJitterCount = 0;
 
   for (const cycle of cycles) {
+    // Raw Time-Series Trajectory Integrity Gate (Section 11: timestamps monotonic & finite, coords finite)
+    const rawSamples = cycle?.samples || cycle?.rawTrajectory;
+    if (Array.isArray(rawSamples) && rawSamples.length > 0) {
+      let lastT = -1;
+      for (let i = 0; i < rawSamples.length; i++) {
+        const s = rawSamples[i];
+        if (!s || !isRealNumber(s.t) || s.t < 0) {
+          hasRawIntegrityFailure = true;
+          break;
+        }
+        if (s.t < lastT) {
+          hasRawIntegrityFailure = true;
+          break;
+        }
+        lastT = s.t;
+
+        const lx = s.leftX ?? s.left?.x;
+        const ly = s.leftY ?? s.left?.y;
+        const rx = s.rightX ?? s.right?.x;
+        const ry = s.rightY ?? s.right?.y;
+        if (
+          (lx != null && !isRealNumber(lx)) ||
+          (ly != null && !isRealNumber(ly)) ||
+          (rx != null && !isRealNumber(rx)) ||
+          (ry != null && !isRealNumber(ry))
+        ) {
+          hasNanOrInf = true;
+          break;
+        }
+      }
+    }
+
     if (!cycle?.quality?.isValid && !cycle?.valid) continue;
 
     for (const eyeKey of ['rightEye', 'leftEye']) {
@@ -101,6 +136,22 @@ export function validateCoverTestData(coverTest) {
         }
       }
 
+      // Single Source of Truth for displacement (Section 5: displacement == hypot(dx, dy))
+      if (isRealNumber(m.displacement) && isRealNumber(m.dx) && isRealNumber(m.dy)) {
+        const expectedDist = Math.hypot(m.dx, m.dy);
+        if (Math.abs(m.displacement - expectedDist) > 0.005) {
+          hasDisplacementMismatch = true;
+        }
+      }
+
+      // Eye width integrity: if normalizedDisplacement exists, eyeWidth must be valid (Section 4)
+      if (isRealNumber(m.normalizedDisplacement)) {
+        hasAnyValidDisplacement = true;
+        if (!isRealNumber(m.eyeWidth) || m.eyeWidth <= 0) {
+          hasInvalidEyeWidthNormalized = true;
+        }
+      }
+
       if (isRealNumber(m.eyeWidth) && m.eyeWidth > 0) {
         hasAnyValidEyeWidth = true;
       }
@@ -111,10 +162,6 @@ export function validateCoverTestData(coverTest) {
         hasAnyValidBaseline = true;
       }
 
-      if (isRealNumber(m.normalizedDisplacement)) {
-        hasAnyValidDisplacement = true;
-      }
-
       if (isRealNumber(m.jitter) && m.jitter > 0.08) {
         excessiveJitterCount++;
       }
@@ -123,6 +170,18 @@ export function validateCoverTestData(coverTest) {
 
   if (hasNanOrInf) {
     reasons.push('nan_or_infinity_in_measurements');
+  }
+
+  if (hasRawIntegrityFailure) {
+    reasons.push('raw_time_series_integrity_failure');
+  }
+
+  if (hasDisplacementMismatch) {
+    reasons.push('displacement_single_source_mismatch');
+  }
+
+  if (hasInvalidEyeWidthNormalized) {
+    reasons.push('invalid_eye_width_with_normalized_displacement');
   }
 
   if (excessiveJitterCount >= 2) {

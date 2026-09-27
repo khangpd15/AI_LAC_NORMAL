@@ -33,19 +33,22 @@ export function validateBaselinePair(baselines) {
 }
 
 export function inconclusiveCycle(cycleIndex, reason, baseline = null, rawTrajectory = [], summary = null, datasetQuality = null) {
+  const cycleCoveredEye = cycleIndex % 2 === 1 ? 'LEFT' : 'RIGHT';
+  const cycleTrackedEye = cycleIndex % 2 === 1 ? 'RIGHT' : 'LEFT';
   return {
+    cycle: cycleIndex,
     cycleNumber: cycleIndex,
     cycleIndex,
     status: 'INCONCLUSIVE',
+    coveredEye: cycleCoveredEye,
+    trackedEye: cycleTrackedEye,
     coveredEyeSequence: ['left', 'right'],
     trackedEyeSequence: ['right', 'left'],
-    coveredEye: null,
-    trackedEye: null,
     baseline,
     rightEye: null,
     leftEye: null,
-    samples: 0,
-    sampleCount: 0,
+    samples: rawTrajectory || [],
+    sampleCount: rawTrajectory?.length || 0,
     rawTrajectory: rawTrajectory || [],
     summary: summary || null,
     datasetQuality: datasetQuality || null,
@@ -111,17 +114,23 @@ export function createCycleRecord(
 
   const isRefixationNotable = valid && Boolean(rightEye?.isNotableMovement || leftEye?.isNotableMovement);
 
+  const cycleCoveredEye = cycleIndex % 2 === 1 ? 'LEFT' : 'RIGHT';
+  const cycleTrackedEye = cycleIndex % 2 === 1 ? 'RIGHT' : 'LEFT';
+
   return {
+    cycle: cycleIndex,
     cycleNumber: cycleIndex,
     cycleIndex,
     status: valid ? 'COMPLETE' : 'INCONCLUSIVE',
+    coveredEye: cycleCoveredEye,
+    trackedEye: cycleTrackedEye,
     coveredEyeSequence: ['left', 'right'],
     trackedEyeSequence: ['right', 'left'],
     baseline: baselines,
     rightEye,
     leftEye,
-    samples: totalSamples,
-    sampleCount: totalSamples,
+    samples: rawTrajectory || [],
+    sampleCount: rawTrajectory?.length || totalSamples,
     rawTrajectory: rawTrajectory || [],
     summary: summary || null,
     datasetQuality: datasetQuality || null,

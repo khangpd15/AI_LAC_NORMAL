@@ -13,9 +13,9 @@ const assert = (condition, message) => {
 
 export async function runCoverTestTimeSeriesTestCases() {
   const results = [];
-  const test = (name, fn) => {
+  const test = async (name, fn) => {
     try {
-      fn();
+      await fn();
       results.push({ name, passed: true });
     } catch (error) {
       results.push({ name, passed: false, error: error.message });
@@ -52,7 +52,7 @@ export async function runCoverTestTimeSeriesTestCases() {
   };
 
   // Test 1: Centralized Configuration
-  test('COVER_TEST_CONFIG specifies 15 Hz and ~66.67ms interval', () => {
+  await test('COVER_TEST_CONFIG specifies 15 Hz and ~66.67ms interval', () => {
     assert(COVER_TEST_CONFIG.datasetSampleRateHz === 15, 'Expected 15 Hz');
     assert(
       Math.abs(COVER_TEST_CONFIG.datasetSampleIntervalMs - 1000 / 15) < 0.001,
@@ -61,7 +61,7 @@ export async function runCoverTestTimeSeriesTestCases() {
   });
 
   // Test 2: 60 FPS input -> ~15 samples per second
-  test('60 FPS input yields ~15 samples per second', () => {
+  await test('60 FPS input yields ~15 samples per second', () => {
     const recorder = createTimeSeriesRecorder(0);
     const totalDurationMs = 1000;
     const fps = 60;
@@ -84,7 +84,7 @@ export async function runCoverTestTimeSeriesTestCases() {
   });
 
   // Test 3: 30 FPS input -> still ~15 samples per second
-  test('30 FPS input yields ~15 samples per second', () => {
+  await test('30 FPS input yields ~15 samples per second', () => {
     const recorder = createTimeSeriesRecorder(0);
     const totalDurationMs = 1000;
     const fps = 30;
@@ -102,7 +102,7 @@ export async function runCoverTestTimeSeriesTestCases() {
   });
 
   // Test 4: Irregular timestamps / dropped frames sampling strictly by elapsed time
-  test('Dropped frames sampled based strictly on elapsed time, not frame counter', () => {
+  await test('Dropped frames sampled based strictly on elapsed time, not frame counter', () => {
     const recorder = createTimeSeriesRecorder(0);
     const timestamps = [0, 16, 32, 49, 83, 100, 151];
 
@@ -123,7 +123,7 @@ export async function runCoverTestTimeSeriesTestCases() {
   });
 
   // Test 5: Compact Sample Schema contains all required fields and no eye-tracker junk
-  test('Sample schema is compact, contains signed movements, relative coords, and no bloat', () => {
+  await test('Sample schema is compact, contains signed movements, relative coords, and no bloat', () => {
     const recorder = createTimeSeriesRecorder(1000);
     recorder.processFrame(
       1267,
@@ -168,7 +168,7 @@ export async function runCoverTestTimeSeriesTestCases() {
   });
 
   // Test 6: Quality gating rejects NaN, Infinity, missing face, and invalid eye width
-  test('Quality gating rejects NaN, Infinity, missing face, and invalid eye width', () => {
+  await test('Quality gating rejects NaN, Infinity, missing face, and invalid eye width', () => {
     const recorder = createTimeSeriesRecorder(0);
 
     // 1. Missing face -> rejected
@@ -202,7 +202,7 @@ export async function runCoverTestTimeSeriesTestCases() {
   });
 
   // Test 7: 16-field cycle summary calculation
-  test('finalizeCycleSummary outputs all 16 required summary fields', () => {
+  await test('finalizeCycleSummary outputs all 16 required summary fields', () => {
     const recorder = createTimeSeriesRecorder(0);
 
     for (let t = 0; t <= 1000; t += 67) {
@@ -263,7 +263,7 @@ export async function runCoverTestTimeSeriesTestCases() {
   });
 
   // Test 8: Memory management & buffer reset
-  test('Recorder reset reinitializes buffer without memory leak', () => {
+  await test('Recorder reset reinitializes buffer without memory leak', () => {
     const recorder = createTimeSeriesRecorder(0);
     recorder.processFrame(0, 'BASELINE', createMockFeatures(), baseQuality, baseBaseline, null);
     recorder.processFrame(70, 'BASELINE', createMockFeatures(), baseQuality, baseBaseline, null);
@@ -279,6 +279,188 @@ export async function runCoverTestTimeSeriesTestCases() {
     recorder.processFrame(1000, 'COVER', createMockFeatures(), baseQuality, baseBaseline, null, 'left');
     assert(recorder.getSamples().length === 1, 'Expected 1 sample in new cycle');
     assert(recorder.getSamples()[0].t === 0, 'First sample t in new cycle should be 0');
+  });
+
+  // Test 9: Section 8 Mandatory Sample Schema Fields
+  await test('Section 8 mandatory sample schema fields are present and valid', () => {
+    const recorder = createTimeSeriesRecorder(0);
+    recorder.processFrame(40, 'BASELINE', createMockFeatures(0.4454, 0.5749, 0.5746, 0.5689), baseQuality, baseBaseline, null);
+    const samples = recorder.getSamples();
+    assert(samples.length === 1, 'Expected 1 sample');
+    const s = samples[0];
+
+    // Mandatory Section 8 fields:
+    // index, t, phase, leftX, leftY, leftValid, rightX, rightY, rightValid, trackingQuality
+    assert(typeof s.index === 'number' && s.index === 0, 'Mandatory field index missing or wrong');
+    assert(typeof s.t === 'number' && s.t === 40, 'Mandatory field t missing or wrong');
+    assert(s.phase === 'BASELINE', 'Mandatory field phase missing or wrong');
+    assert(typeof s.leftX === 'number' && Math.abs(s.leftX - 0.4454) < 1e-4, 'Mandatory field leftX missing or wrong');
+    assert(typeof s.leftY === 'number' && Math.abs(s.leftY - 0.5749) < 1e-4, 'Mandatory field leftY missing or wrong');
+    assert(s.leftValid === true, 'Mandatory field leftValid missing or wrong');
+    assert(typeof s.rightX === 'number' && Math.abs(s.rightX - 0.5746) < 1e-4, 'Mandatory field rightX missing or wrong');
+    assert(typeof s.rightY === 'number' && Math.abs(s.rightY - 0.5689) < 1e-4, 'Mandatory field rightY missing or wrong');
+    assert(s.rightValid === true, 'Mandatory field rightValid missing or wrong');
+    assert(typeof s.trackingQuality === 'number' && s.trackingQuality === 0.95, 'Mandatory field trackingQuality missing or wrong');
+  });
+
+  // Test 10: Monotonically non-decreasing timestamps
+  await test('Timestamps are non-negative and strictly non-decreasing even with input jitter', () => {
+    const recorder = createTimeSeriesRecorder(100);
+    // Feed frames with jitter
+    const inputTimes = [100, 170, 230, 220, 310]; // 220 is backward jitter
+    for (const t of inputTimes) {
+      recorder.processFrame(t, 'TRACKING', createMockFeatures(), baseQuality, baseBaseline, 'right');
+    }
+    const samples = recorder.getSamples();
+    assert(samples.length >= 3, 'Expected at least 3 samples');
+    let prevT = -1;
+    for (const s of samples) {
+      assert(s.t >= 0, `Timestamp must be non-negative: ${s.t}`);
+      assert(s.t >= prevT, `Timestamp must be monotonically non-decreasing: ${s.t} < ${prevT}`);
+      prevT = s.t;
+    }
+  });
+
+  // Test 11: Single Source of Truth for Displacement: displacement = sqrt(dx^2 + dy^2)
+  await test('Single source of truth: displacement equals hypot(dx, dy) and normalized equals displacement / eyeWidth', async () => {
+    const { analyzeUncoverTrajectory } = await import('./coverTestMeasurementService.js');
+    const validBaseline = {
+      baselineX: 0.5,
+      baselineY: 0.5,
+      normalizedBaselineX: 0.5,
+      normalizedBaselineY: 0.5,
+      isStable: true,
+      dataQuality: { isValid: true },
+    };
+    const frames = Array.from({ length: 20 }, (_, i) => ({
+      t: i * 33,
+      x: i === 0 ? 0.50 : 0.515,
+      y: i === 0 ? 0.50 : 0.525,
+      normalizedX: i === 0 ? 0.50 : 0.515,
+      normalizedY: i === 0 ? 0.50 : 0.525,
+    }));
+    const eyeWidth = 0.12;
+    const measurement = analyzeUncoverTrajectory(frames, validBaseline, 'right', 1, eyeWidth);
+
+    assert(measurement.dataQuality.isValid === true, 'Measurement should be valid');
+    assert(Number.isFinite(measurement.dx), 'dx must be finite');
+    assert(Number.isFinite(measurement.dy), 'dy must be finite');
+    assert(Number.isFinite(measurement.displacement), 'displacement must be finite');
+
+    const expectedDisplacement = Math.hypot(measurement.dx, measurement.dy);
+    assert(
+      Math.abs(measurement.displacement - expectedDisplacement) < 0.001,
+      `displacement (${measurement.displacement}) must equal hypot(dx, dy) (${expectedDisplacement})`
+    );
+
+    const expectedNormalized = measurement.displacement / eyeWidth;
+    assert(
+      Math.abs(measurement.normalizedDisplacement - expectedNormalized) < 0.001,
+      `normalizedDisplacement (${measurement.normalizedDisplacement}) must equal displacement / eyeWidth (${expectedNormalized})`
+    );
+  });
+
+  // Test 12: Missing or invalid eyeWidth yields normalizedDisplacement === null without fabricated value
+  await test('Invalid or null eyeWidth yields normalizedDisplacement === null without fake fallbacks', async () => {
+    const { analyzeUncoverTrajectory } = await import('./coverTestMeasurementService.js');
+    const validBaseline = {
+      baselineX: 0.5,
+      baselineY: 0.5,
+      normalizedBaselineX: 0.5,
+      normalizedBaselineY: 0.5,
+      isStable: true,
+      dataQuality: { isValid: true },
+    };
+    const frames = Array.from({ length: 20 }, (_, i) => ({
+      t: i * 33,
+      x: i === 0 ? 0.50 : 0.515,
+      y: i === 0 ? 0.50 : 0.525,
+      normalizedX: i === 0 ? 0.50 : 0.515,
+      normalizedY: i === 0 ? 0.50 : 0.525,
+    }));
+
+    // Case A: null eyeWidth -> invalid eye width check fails gracefully
+    const resNull = analyzeUncoverTrajectory(frames, validBaseline, 'right', 1, null);
+    assert(resNull.normalizedDisplacement === null, 'normalizedDisplacement must be null when eyeWidth is null');
+    assert(resNull.eyeWidth === null, 'eyeWidth must be null');
+    assert(resNull.dataQuality.isValid === false, 'Quality must be marked invalid when eyeWidth is null');
+
+    // Case B: 0 eyeWidth
+    const resZero = analyzeUncoverTrajectory(frames, validBaseline, 'right', 1, 0);
+    assert(resZero.normalizedDisplacement === null, 'normalizedDisplacement must be null when eyeWidth is 0');
+
+    // Case C: negative eyeWidth
+    const resNeg = analyzeUncoverTrajectory(frames, validBaseline, 'right', 1, -0.05);
+    assert(resNeg.normalizedDisplacement === null, 'normalizedDisplacement must be null when eyeWidth is negative');
+  });
+
+  // Test 13: Section 14 Dataset Payload Builder creates standard payload
+  await test('buildCoverTestPayload generates Section 14 compliant export payload', async () => {
+    const { buildCoverTestPayload } = await import('./screeningDatasetService.js');
+    const mockSession = {
+      sampleId: 'test-uuid-1234',
+      coverTest: {
+        cycles: [
+          {
+            cycleIndex: 1,
+            coveredEye: 'LEFT',
+            trackedEye: 'RIGHT',
+            samples: [
+              { index: 0, t: 0, phase: 'BASELINE', leftX: 0.45, leftY: 0.57, leftValid: true, rightX: 0.57, rightY: 0.56, rightValid: true, trackingQuality: 0.95 },
+              { index: 1, t: 67, phase: 'TRACKING', leftX: 0.45, leftY: 0.57, leftValid: true, rightX: 0.58, rightY: 0.56, rightValid: true, trackingQuality: 0.95 },
+            ],
+          },
+        ],
+      },
+    };
+
+    const payload = buildCoverTestPayload(mockSession);
+    assert(payload.sampleId === 'test-uuid-1234', 'sampleId mismatch');
+    assert(payload.schemaVersion === '1.0', 'schemaVersion must be 1.0');
+    assert(payload.test === 'COVER_TEST', 'test must be COVER_TEST');
+    assert(Array.isArray(payload.cycles) && payload.cycles.length === 1, 'cycles must be an array of length 1');
+    const c1 = payload.cycles[0];
+    assert(c1.cycle === 1, 'cycle index mismatch');
+    assert(c1.coveredEye === 'LEFT', 'coveredEye mismatch');
+    assert(c1.trackedEye === 'RIGHT', 'trackedEye mismatch');
+    assert(c1.samples.length === 2, 'samples count mismatch');
+    assert(c1.samples[0].phase === 'BASELINE', 'sample phase mismatch');
+    assert(c1.samples[1].t === 67, 'sample t mismatch');
+  });
+
+  // Test 14: Quality Gate catches raw time-series integrity failures
+  await test('Quality Gate detects time-series integrity errors (non-monotonic timestamps or NaN coordinates)', async () => {
+    const { validateScreeningData } = await import('./screeningQualityGate.js');
+
+    // Case 1: Corrupted backward timestamp in raw time-series
+    const corruptTimestampSession = {
+      sampleId: 'corrupt-time-uuid',
+      summary: {},
+      coverPositionCheck: { headPoseValid: true, irisDetected: true, bothEyesDetected: true },
+      brockPositionCheck: { headPoseValid: true, irisDetected: true, bothEyesDetected: true },
+      coverTest: {
+        validCycles: 3,
+        quality: { status: 'GOOD' },
+        cycles: [
+          {
+            cycleIndex: 1,
+            samples: [
+              { index: 0, t: 100, phase: 'TRACKING', leftX: 0.5, leftY: 0.5, rightX: 0.5, rightY: 0.5, leftValid: true, rightValid: true },
+              { index: 1, t: 50, phase: 'TRACKING', leftX: 0.5, leftY: 0.5, rightX: 0.5, rightY: 0.5, leftValid: true, rightValid: true }, // Decreasing!
+            ],
+            baseline: { isStable: true },
+            rightEye: { displacement: 0.01, dx: 0.01, dy: 0, sampleCount: 15, dataQuality: { isValid: true } },
+            leftEye: null,
+            quality: { isValid: true },
+          },
+        ],
+      },
+      brockString: { quality: { status: 'GOOD' } },
+    };
+
+    const result = validateScreeningData(corruptTimestampSession);
+    assert(result.coverTestValid === false, 'Quality gate must invalidate coverTest when timestamps decrease');
+    assert(result.valid === false, 'Quality gate valid must be false on corrupted time-series');
   });
 
   return {

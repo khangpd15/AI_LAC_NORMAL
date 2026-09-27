@@ -44,8 +44,8 @@ const mapEyeCycle = (cycle, eye, coveredEye, baseline) => {
     cycleNumber: cycle?.cycleIndex ?? null, coveredEye, trackedEye: eye.toUpperCase(),
     baseline: mapBaseline(baseline),
     metrics: {
-      dx: Number.isFinite(initial?.normalizedX) && Number.isFinite(final?.normalizedX) ? final.normalizedX - initial.normalizedX : null,
-      dy: Number.isFinite(initial?.normalizedY) && Number.isFinite(final?.normalizedY) ? final.normalizedY - initial.normalizedY : null,
+      dx: finiteOrNull(measurement?.dx ?? (Number.isFinite(initial?.normalizedX) && Number.isFinite(final?.normalizedX) ? final.normalizedX - initial.normalizedX : null)),
+      dy: finiteOrNull(measurement?.dy ?? (Number.isFinite(initial?.normalizedY) && Number.isFinite(final?.normalizedY) ? final.normalizedY - initial.normalizedY : null)),
       displacement: finiteOrNull(measurement?.displacement),
       normalizedDisplacement: finiteOrNull(measurement?.normalizedDisplacement),
       velocity: finiteOrNull(measurement?.meanVelocity), peakVelocity: finiteOrNull(measurement?.peakVelocity),
@@ -59,17 +59,46 @@ const mapEyeCycle = (cycle, eye, coveredEye, baseline) => {
       reason: measurement?.dataQuality?.reason ?? cycle?.quality?.reason ?? null,
       datasetQuality: cycle?.datasetQuality ?? null,
     },
-    rawTrajectory: cycle?.rawTrajectory ?? [],
+    rawTrajectory: cycle?.rawTrajectory ?? cycle?.samples ?? [],
     summary: cycle?.summary ?? null,
   };
 };
+
+export function buildCoverTestPayload(session) {
+  const cycles = (session.coverTest?.cycles || []).map((cycle, idx) => {
+    const cycleNum = cycle.cycleIndex || cycle.cycleNumber || idx + 1;
+    const coveredEye = cycle.coveredEye || (cycleNum % 2 === 1 ? 'LEFT' : 'RIGHT');
+    const trackedEye = cycle.trackedEye || (cycleNum % 2 === 1 ? 'RIGHT' : 'LEFT');
+    return {
+      cycle: cycleNum,
+      coveredEye: String(coveredEye).toUpperCase(),
+      trackedEye: String(trackedEye).toUpperCase(),
+      samples: cycle.samples || cycle.rawTrajectory || [],
+    };
+  });
+  return {
+    sampleId: session.sampleId,
+    schemaVersion: '1.0',
+    test: 'COVER_TEST',
+    cycles,
+  };
+}
 
 function coverJson(session, image) {
   const cycles = (session.coverTest?.cycles || []).flatMap((cycle) => [
     mapEyeCycle(cycle, 'right', 'LEFT', cycle?.baseline?.rightBaseline),
     mapEyeCycle(cycle, 'left', 'RIGHT', cycle?.baseline?.leftBaseline),
   ]);
-  return { schemaVersion: DATASET_SCHEMA_VERSION, sampleId: session.sampleId, test: 'COVER_TEST', image: image?.metadata ?? null, cycles, result: { status: session.coverTest?.status ?? null, validCycles: session.coverTest?.validCycles ?? 0, quality: session.coverTest?.quality ?? null } };
+  const raw = buildCoverTestPayload(session);
+  return {
+    schemaVersion: DATASET_SCHEMA_VERSION,
+    sampleId: session.sampleId,
+    test: 'COVER_TEST',
+    image: image?.metadata ?? null,
+    raw,
+    cycles,
+    result: { status: session.coverTest?.status ?? null, validCycles: session.coverTest?.validCycles ?? 0, quality: session.coverTest?.quality ?? null }
+  };
 }
 
 function brockJson(session, image) {

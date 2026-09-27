@@ -8,6 +8,20 @@
 import { SCREENING_CONFIG, SCREENING_VERDICT } from '../constants/screeningConfig.js';
 
 /**
+ * Development assertion helper (Section 18).
+ * Logs warnings in DEV mode without crashing production UI.
+ * @param {boolean} condition
+ * @param {string} message
+ */
+export function devAssert(condition, message) {
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') return;
+  if (typeof window !== 'undefined' && typeof import.meta !== 'undefined' && !import.meta.env?.DEV) return;
+  if (!condition) {
+    console.warn(`[CoverTest DevAssertion] ${message}`);
+  }
+}
+
+/**
  * Helper: Computes the median of an array of numbers
  * @param {number[]} values
  * @returns {number}
@@ -317,16 +331,30 @@ export function analyzeUncoverTrajectory(
   const finalRawX = finalSlice.reduce((sum, f) => sum + f.x, 0) / finalSlice.length;
   const finalRawY = finalSlice.reduce((sum, f) => sum + f.y, 0) / finalSlice.length;
 
-  // 7. SEPARATE HORIZONTAL AND VERTICAL DISPLACEMENTS (Section 5)
+  // 7. SEPARATE HORIZONTAL AND VERTICAL DISPLACEMENTS (Section 5: Single Source of Truth)
   const earlyDx = lastEarlyFrame.x - initialRawX;
   const earlyDy = lastEarlyFrame.y - initialRawY;
   const horizontalDisplacement = Math.abs(earlyDx);
   const verticalDisplacement = Math.abs(earlyDy);
   const earlyRawDistance = Math.hypot(earlyDx, earlyDy);
 
-  const normalizedHorizontal = horizontalDisplacement / safeEyeWidth;
-  const normalizedVertical = verticalDisplacement / safeEyeWidth;
-  const normalizedDisplacement = earlyRawDistance / safeEyeWidth;
+  const normalizedHorizontal = safeEyeWidth ? horizontalDisplacement / safeEyeWidth : null;
+  const normalizedVertical = safeEyeWidth ? verticalDisplacement / safeEyeWidth : null;
+  const normalizedDisplacement = safeEyeWidth ? earlyRawDistance / safeEyeWidth : null;
+
+  // Dev Assertions (Section 18)
+  if (normalizedDisplacement !== null) {
+    devAssert(Number.isFinite(normalizedDisplacement), 'normalizedDisplacement must be a finite number');
+  }
+  if (earlyRawDistance !== null) {
+    devAssert(
+      Math.abs(earlyRawDistance - Math.hypot(earlyDx, earlyDy)) < 1e-4,
+      'displacement must equal sqrt(dx² + dy²)'
+    );
+  }
+  if (!safeEyeWidth) {
+    devAssert(normalizedDisplacement === null, 'normalizedDisplacement must be null when eyeWidth is invalid');
+  }
 
   // 8. Displacement relative to robust baseline
   const dxFromBaseline = initialRawX - baseline.baselineX;
@@ -334,7 +362,7 @@ export function analyzeUncoverTrajectory(
   const horizontalDisplacementFromBaseline = Math.abs(dxFromBaseline);
   const verticalDisplacementFromBaseline = Math.abs(dyFromBaseline);
   const rawDistFromBaseline = Math.hypot(dxFromBaseline, dyFromBaseline);
-  const displacementFromBaseline = rawDistFromBaseline / safeEyeWidth;
+  const displacementFromBaseline = safeEyeWidth ? rawDistFromBaseline / safeEyeWidth : null;
 
   // 9. Time-series analysis: instantaneous velocity, peak tracking, step jitter
   let peakVel = 0;
@@ -541,9 +569,9 @@ export function analyzeUncoverTrajectory(
     horizontalDisplacement: Number(horizontalDisplacement.toFixed(4)),
     verticalDisplacement: Number(verticalDisplacement.toFixed(4)),
     displacement: Number(earlyRawDistance.toFixed(4)),
-    normalizedHorizontal: Number(normalizedHorizontal.toFixed(4)),
-    normalizedVertical: Number(normalizedVertical.toFixed(4)),
-    normalizedDisplacement: Number(normalizedDisplacement.toFixed(4)),
+    normalizedHorizontal: normalizedHorizontal != null ? Number(normalizedHorizontal.toFixed(4)) : null,
+    normalizedVertical: normalizedVertical != null ? Number(normalizedVertical.toFixed(4)) : null,
+    normalizedDisplacement: normalizedDisplacement != null ? Number(normalizedDisplacement.toFixed(4)) : null,
     maximumDisplacement: Number(maxDisplacement.toFixed(4)),
     horizontalPeak: Number(horizontalPeak.toFixed(4)),
     verticalPeak: Number(verticalPeak.toFixed(4)),
@@ -553,7 +581,7 @@ export function analyzeUncoverTrajectory(
     dyFromBaseline: Number(dyFromBaseline.toFixed(4)),
     horizontalDisplacementFromBaseline: Number(horizontalDisplacementFromBaseline.toFixed(4)),
     verticalDisplacementFromBaseline: Number(verticalDisplacementFromBaseline.toFixed(4)),
-    displacementFromBaseline: Number(displacementFromBaseline.toFixed(4)),
+    displacementFromBaseline: displacementFromBaseline != null ? Number(displacementFromBaseline.toFixed(4)) : null,
     movementDirection,
     horizontalDirection,
     verticalDirection,
