@@ -12,6 +12,11 @@ export default function CoverTestDebugPanel({
   timerDisplay,
   startTime,
   elapsedMs,
+  realtimeFps = null,
+  datasetSampleRateHz = 15,
+  totalFrames = null,
+  savedSamples = null,
+  validSamples = null,
 }) {
   if (!import.meta.env.DEV) return null;
   const eyeWidthValid = quality?.isValid && quality?.leftEyeDetected && quality?.rightEyeDetected;
@@ -33,6 +38,12 @@ export default function CoverTestDebugPanel({
       <span>Tracked Eye: {trackedEye?.toUpperCase() || '--'}</span>
       <span>Samples: {samples}</span>
       <span>Quality: {quality?.isValid ? 'GOOD' : 'INCONCLUSIVE'}</span>
+      {/* Dev Debug Telemetry (Section 13) */}
+      <span>Realtime: {realtimeFps != null ? `${realtimeFps} FPS` : '-- FPS'}</span>
+      <span>Dataset: {datasetSampleRateHz} Hz</span>
+      <span>Frames: {totalFrames ?? '--'}</span>
+      <span>Saved: {savedSamples ?? '--'}</span>
+      <span>Valid: {validSamples ?? '--'}</span>
       <span>Session: {sessionId}</span>
     </aside>
   );

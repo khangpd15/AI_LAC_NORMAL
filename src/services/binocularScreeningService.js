@@ -317,54 +317,103 @@ export function evaluateFinalScreening(session) {
   // Step 1: Run data quality gate
   const gateResult = validateScreeningData(session);
 
+  let status;
+  let title;
+  let label;
+  let description;
+  let disclaimer;
+  let overallDataQuality;
+
   // Step 2: If Cover Test data is not valid → INCONCLUSIVE regardless of Brock String
   if (!gateResult.coverTestValid) {
-    return {
-      status: OVERALL_SCREENING_STATUS.SCREENING_INCONCLUSIVE,
-      title: 'Chưa đủ dữ liệu để đánh giá',
-      description:
-        'Dữ liệu Cover Test trong lần kiểm tra này chưa đủ ổn định. Bạn có thể thực hiện lại bài sàng lọc.',
-      disclaimer:
-        'Kết quả này chỉ mang tính chất sàng lọc và không thay thế việc khám mắt chuyên khoa.',
-      overallDataQuality: DATA_QUALITY_STATUS.INCONCLUSIVE,
-      quality: gateResult,
-      isDiagnostic: false,
-    };
-  }
+    status = OVERALL_SCREENING_STATUS.SCREENING_INCONCLUSIVE;
+    label = 'Chưa đủ dữ liệu ổn định để đánh giá.';
+    title = 'Chưa đủ dữ liệu ổn định để đánh giá';
+    description =
+      'Dữ liệu Cover Test trong lần kiểm tra này chưa đủ ổn định. Bạn có thể thực hiện lại bài sàng lọc.';
+    disclaimer =
+      'Kết quả này chỉ mang tính chất sàng lọc và không thay thế việc khám mắt chuyên khoa.';
+    overallDataQuality = DATA_QUALITY_STATUS.INCONCLUSIVE;
+  } else {
+    // Step 3: Cover Test signal evaluation (primary signal)
+    const coverVerdict = session.coverTest?.status;
+    const coverValidCycles = session.coverTest?.validCycles ?? 0;
 
-  // Step 3: Cover Test signal evaluation (primary signal)
-  // Requires consistent refixation signal across multiple cycles, not just a single value.
-  // `REFIXATION_DETECTED` verdict is set by aggregateCoverCycles() only when:
-  //   notableCycles >= 2 out of validCycles (majority rule across multi-cycle protocol).
-  const coverVerdict = session.coverTest?.status;
-  const coverValidCycles = session.coverTest?.validCycles ?? 0;
-
-  if (coverVerdict === COVER_TEST_VERDICTS.REFIXATION_DETECTED && coverValidCycles >= 2) {
-    return {
-      status: OVERALL_SCREENING_STATUS.SCREENING_ATTENTION,
-      title: 'Hệ thống ghi nhận một số dấu hiệu cần được đánh giá thêm',
-      description:
+    if (coverVerdict === COVER_TEST_VERDICTS.REFIXATION_DETECTED && coverValidCycles >= 2) {
+      status = OVERALL_SCREENING_STATUS.SCREENING_ATTENTION;
+      label = 'Hệ thống ghi nhận một số dấu hiệu cần được đánh giá thêm.';
+      title = 'Hệ thống ghi nhận một số dấu hiệu cần được đánh giá thêm';
+      description =
         'Trong lần sàng lọc này, hệ thống ghi nhận tín hiệu tái định thị nhất quán ở nhiều chu kỳ. ' +
-        'Kết quả này không phải là chẩn đoán. Bạn nên được đánh giá bởi bác sĩ hoặc chuyên gia mắt.',
-      disclaimer:
-        'Kết quả này là kết quả sàng lọc, không phải là chẩn đoán y khoa.',
-      overallDataQuality: DATA_QUALITY_STATUS.GOOD,
-      quality: gateResult,
-      isDiagnostic: false,
-    };
+        'Kết quả này không phải là chẩn đoán. Bạn nên được đánh giá bởi bác sĩ hoặc chuyên gia mắt.';
+      disclaimer =
+        'Kết quả này là kết quả sàng lọc, không phải là chẩn đoán y khoa.';
+      overallDataQuality = DATA_QUALITY_STATUS.GOOD;
+    } else {
+      // Step 4: No consistent refixation signal found → SCREENING_CLEAR
+      status = OVERALL_SCREENING_STATUS.SCREENING_CLEAR;
+      label = 'Chưa ghi nhận dấu hiệu bất thường đáng chú ý trong lần sàng lọc này.';
+      title = 'Chưa ghi nhận dấu hiệu bất thường đáng chú ý';
+      description =
+        'Trong lần sàng lọc này, hệ thống chưa ghi nhận dấu hiệu bất thường đáng chú ý.';
+      disclaimer =
+        'Kết quả này chỉ phản ánh lần sàng lọc hiện tại và không thay thế việc khám mắt chuyên khoa.';
+      overallDataQuality = DATA_QUALITY_STATUS.GOOD;
+    }
   }
 
-  // Step 4: No consistent refixation signal found → SCREENING_CLEAR
+  // Section 22 Data Model Final
+  const screening = {
+    status,
+    label,
+    isDiagnostic: false,
+  };
+
+  const coverTest = {
+    status: session?.coverTest?.status || COVER_TEST_VERDICTS.INCONCLUSIVE,
+    valid: gateResult.coverTestValid,
+    validCycles: session?.coverTest?.validCycles ?? 0,
+    totalCycles: session?.coverTest?.cycles?.length ?? 3,
+    cycles: session?.coverTest?.cycles || [],
+  };
+
+  const brockTargets = session?.brockString?.targets || {};
+  const validBrockCount = Object.values(brockTargets).filter(
+    (t) => t?.dataQuality?.isValid === true
+  ).length;
+
+  const brockString = {
+    status: session?.brockString?.status || BROCK_STRING_VERDICTS.INCONCLUSIVE,
+    valid: gateResult.brockStringValid,
+    validTargets: validBrockCount,
+    totalTargets: 3,
+  };
+
+  const clinical = {
+    diagnosis: null,
+    prismDiopter: null,
+    clinicalReference: null,
+  };
+
+  const quality = {
+    valid: gateResult.valid,
+    reasons: gateResult.reasons,
+    warnings: gateResult.warnings,
+  };
+
   return {
-    status: OVERALL_SCREENING_STATUS.SCREENING_CLEAR,
-    title: 'Chưa ghi nhận dấu hiệu bất thường đáng chú ý',
-    description:
-      'Trong lần sàng lọc này, hệ thống chưa ghi nhận dấu hiệu bất thường đáng chú ý.',
-    disclaimer:
-      'Kết quả này chỉ phản ánh lần sàng lọc hiện tại và không thay thế việc khám mắt chuyên khoa.',
-    overallDataQuality: DATA_QUALITY_STATUS.GOOD,
+    status,
+    title,
+    description,
+    disclaimer,
+    overallDataQuality,
     quality: gateResult,
     isDiagnostic: false,
+    screening,
+    coverTest,
+    brockString,
+    clinical,
+    qualitySection: quality,
   };
 }
 
@@ -402,6 +451,10 @@ export function generateScreeningSummary(sessionId, aiSignal = null) {
     disclaimer: result.disclaimer,
     isDiagnostic: false,
     quality: result.quality || { valid: true, reasons: [], warnings: [] },
+    screening: result.screening,
+    coverTest: result.coverTest,
+    brockString: result.brockString,
+    clinical: result.clinical,
   };
 
   logScreeningEvent(sessionId, SCREENING_EVENTS.SCREENING_SUMMARY_GENERATED, {

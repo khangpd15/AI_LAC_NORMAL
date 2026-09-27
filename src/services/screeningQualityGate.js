@@ -61,62 +61,74 @@ export function validateCoverTestData(coverTest) {
   }
 
   // ---- Quality status (SECONDARY gate) ----
-  // Only block if explicitly INCONCLUSIVE; accept null/undefined as "unset" (not a failure)
   const blockingStatuses = new Set(['INCONCLUSIVE']);
   if (blockingStatuses.has(quality?.status)) {
     reasons.push(`cover_quality_inconclusive:${quality.status}`);
   }
 
-  // ---- Per-cycle deep checks (WARNINGS only — do not block) ----
-  // These are recorded for transparency; analyzeUncoverTrajectory already guards quality.
+  // ---- NaN / Infinity / Null Critical Fields Gate (Section 14 & 23) ----
   let hasAnyValidEyeWidth = false;
   let hasAnyValidBaseline = false;
   let hasAnyValidDisplacement = false;
-  let allDxZeroWithNonZeroDisplacement = true;
-  let cyclesWithNonZeroDisplacement = 0;
+  let hasNanOrInf = false;
+  let excessiveJitterCount = 0;
 
   for (const cycle of cycles) {
-    if (!cycle?.quality?.isValid) continue;
+    if (!cycle?.quality?.isValid && !cycle?.valid) continue;
 
     for (const eyeKey of ['rightEye', 'leftEye']) {
       const m = cycle[eyeKey];
       if (!m || !m.dataQuality?.isValid) continue;
 
+      // Check numeric integrity
+      const numericFields = [
+        m.dx,
+        m.dy,
+        m.horizontalDisplacement,
+        m.verticalDisplacement,
+        m.displacement,
+        m.normalizedHorizontal,
+        m.normalizedVertical,
+        m.normalizedDisplacement,
+        m.peakVelocity,
+        m.trajectoryStability,
+        m.jitter,
+      ];
+
+      for (const val of numericFields) {
+        if (typeof val === 'number' && (!Number.isFinite(val) || Number.isNaN(val))) {
+          hasNanOrInf = true;
+        }
+      }
+
       if (isRealNumber(m.eyeWidth) && m.eyeWidth > 0) {
         hasAnyValidEyeWidth = true;
       }
 
-      const bx = m.baselinePosition?.normalizedX;
+      const bx = m.baselinePosition?.normalizedX ?? m.baselinePosition?.x;
       const isBaselineStable = m.baselinePosition?.isStable === true;
       if (isBaselineStable && isRealNumber(bx)) {
         hasAnyValidBaseline = true;
-        if (bx < 0 || bx > 1) {
-          warnings.push(`baseline_horizontal_ratio_suspect:${eyeKey}=${bx?.toFixed(3)}`);
-        }
       }
 
       if (isRealNumber(m.normalizedDisplacement)) {
         hasAnyValidDisplacement = true;
-        cyclesWithNonZeroDisplacement++;
+      }
 
-        const initial = m.initialPosition;
-        const final = m.finalPosition;
-        const dx =
-          isRealNumber(initial?.normalizedX) && isRealNumber(final?.normalizedX)
-            ? final.normalizedX - initial.normalizedX
-            : null;
-
-        const displacementNonZero = m.normalizedDisplacement > 0.005;
-        if (displacementNonZero && (dx === null || Math.abs(dx) < 0.001)) {
-          warnings.push(`dx_zero_with_nonzero_displacement:${eyeKey}:cycle${cycle.cycleIndex}`);
-        } else {
-          allDxZeroWithNonZeroDisplacement = false;
-        }
+      if (isRealNumber(m.jitter) && m.jitter > 0.08) {
+        excessiveJitterCount++;
       }
     }
   }
 
-  // Per-cycle issues are warnings only — do not add to reasons
+  if (hasNanOrInf) {
+    reasons.push('nan_or_infinity_in_measurements');
+  }
+
+  if (excessiveJitterCount >= 2) {
+    reasons.push('excessive_tracking_jitter');
+  }
+
   if (validCycles >= 2) {
     if (!hasAnyValidEyeWidth) {
       warnings.push('eye_width_not_found_in_valid_cycles');
@@ -126,9 +138,6 @@ export function validateCoverTestData(coverTest) {
     }
     if (!hasAnyValidDisplacement) {
       warnings.push('displacement_not_measurable_in_valid_cycles');
-    }
-    if (cyclesWithNonZeroDisplacement > 1 && allDxZeroWithNonZeroDisplacement) {
-      warnings.push('all_cycles_dx_zero_with_displacement:possible_vertical_or_pipeline_issue');
     }
   }
 

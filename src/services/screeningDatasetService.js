@@ -57,7 +57,10 @@ const mapEyeCycle = (cycle, eye, coveredEye, baseline) => {
       isValid: measurement?.dataQuality?.isValid ?? false,
       faceDetected: null, irisValid: null, headPoseValid: null,
       reason: measurement?.dataQuality?.reason ?? cycle?.quality?.reason ?? null,
+      datasetQuality: cycle?.datasetQuality ?? null,
     },
+    rawTrajectory: cycle?.rawTrajectory ?? [],
+    summary: cycle?.summary ?? null,
   };
 };
 

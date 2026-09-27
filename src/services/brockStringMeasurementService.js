@@ -321,32 +321,39 @@ export function analyzeTargetFixation(targetFrames, targetConfig) {
   const isStable = stabilityIqr <= 0.06;
 
   // Transition latency: time from first frame until vergence settles within 1 IQR of the median
-  let transitionLatencyMs = 0;
+  let transitionLatencyMs = null;
   const firstT = targetFrames[0].timestamp;
   for (let i = 0; i < targetFrames.length; i++) {
     const val = targetFrames[i].binocularFeature.vergenceRatio;
     if (Math.abs(val - medVergence) <= Math.max(0.02, stabilityIqr)) {
-      transitionLatencyMs = Math.round(targetFrames[i].timestamp - firstT);
+      transitionLatencyMs = Math.max(1, Math.round(targetFrames[i].timestamp - firstT));
       break;
     }
   }
 
+  const dataQuality = {
+    isValid: isStable,
+    status: isStable ? QUALITY_STATUS.VALID : QUALITY_STATUS.DEGRADED,
+    reason: isStable ? null : QUALITY_REASONS.EXCESSIVE_JITTER,
+    message: isStable ? 'Cố định thị giác ổn định.' : 'Giao thoa hoặc rung lắc nhẹ khi cố định thị giác.',
+  };
+
   return {
+    target: targetConfig.id,
     targetId: targetConfig.id,
     targetLabel: targetConfig.label,
     targetDistanceCm: targetConfig.distanceCm,
     sampleCount: targetFrames.length,
-    dataQuality: {
-      isValid: isStable,
-      status: isStable ? QUALITY_STATUS.VALID : QUALITY_STATUS.DEGRADED,
-      reason: isStable ? null : QUALITY_REASONS.EXCESSIVE_JITTER,
-      message: isStable ? 'Cố định thị giác ổn định.' : 'Giao thoa hoặc rung lắc nhẹ khi cố định thị giác.',
-    },
+    ratio: Number(medVergence.toFixed(4)),
     medianVergenceRatio: Number(medVergence.toFixed(4)),
+    iqr: Number(stabilityIqr.toFixed(4)),
+    fixationStabilityIqr: Number(stabilityIqr.toFixed(4)),
+    valid: isStable,
+    quality: dataQuality,
+    dataQuality,
     medianInterIrisDist: Number(medInterIris.toFixed(4)),
     medianLeftRatio: Number(medLeft.toFixed(4)),
     medianRightRatio: Number(medRight.toFixed(4)),
-    fixationStabilityIqr: Number(stabilityIqr.toFixed(4)),
     transitionLatencyMs,
     isStable,
   };

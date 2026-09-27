@@ -6,6 +6,11 @@
  * for signal processing and research, and are NOT clinically validated thresholds.
  */
 
+export const COVER_TEST_CONFIG = Object.freeze({
+  datasetSampleRateHz: 15,
+  datasetSampleIntervalMs: 1000 / 15, // ~66.67 ms
+});
+
 export const SCREENING_CONFIG = {
   // Timing parameters (in milliseconds)
   BASELINE_MS: 4500,               // Multi-frame fixation baseline duration per cycle (~4.5s)
@@ -34,6 +39,10 @@ export const SCREENING_CONFIG = {
   BASELINE_STABILITY_IQR_MAX: 0.06,// Maximum interquartile range for stable baseline (normalized)
   EYE_WIDTH_MIN_RATIO: 0.015,      // Minimum plausible eye width relative to face
   EYE_WIDTH_MAX_RATIO: 0.35,       // Maximum plausible eye width relative to face
+
+  // Dataset sampling configuration (15 Hz)
+  DATASET_SAMPLE_RATE_HZ: 15,
+  DATASET_SAMPLE_INTERVAL_MS: 1000 / 15,
 
   // Static mode parameters
   STATIC_HISTORY_MAX: 60,

@@ -137,8 +137,11 @@ function TechnicalDetails({ coverTest, brockString, quality }) {
               <th>Chu kỳ</th>
               <th>Mắt che</th>
               <th>Mắt theo dõi</th>
-              <th>Displacement</th>
-              <th>Normalized</th>
+              <th>Lệch ngang (px / norm)</th>
+              <th>Lệch dọc (px / norm)</th>
+              <th>Tổng độ lệch</th>
+              <th>Chuẩn hóa</th>
+              <th>Vận tốc đỉnh</th>
               <th>Chất lượng</th>
             </tr>
           </thead>
@@ -150,13 +153,18 @@ function TechnicalDetails({ coverTest, brockString, quality }) {
                 { eye: 'leftEye', coveredLabel: 'Phải' },
               ].map(({ eye, coveredLabel }) => {
                 const m = cycle[eye];
+                const hStr = m ? `${metricOrNull(m?.horizontalDisplacement)} / ${metricOrNull(m?.normalizedHorizontal)}` : '--';
+                const vStr = m ? `${metricOrNull(m?.verticalDisplacement)} / ${metricOrNull(m?.normalizedVertical)}` : '--';
                 return (
                   <tr key={`${cycle.cycleIndex}-${eye}`}>
                     <td>{cycle.cycleIndex}</td>
                     <td>{coveredLabel}</td>
                     <td>{eye === 'rightEye' ? 'Phải' : 'Trái'}</td>
+                    <td>{hStr}</td>
+                    <td>{vStr}</td>
                     <td>{metricOrNull(m?.displacement)}</td>
                     <td>{metricOrNull(m?.normalizedDisplacement)}</td>
+                    <td>{metricOrNull(m?.peakVelocity)}</td>
                     <td>{m?.dataQuality?.isValid ? 'Đạt' : 'Không đạt'}</td>
                   </tr>
                 );

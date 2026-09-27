@@ -11,8 +11,9 @@ import {
   COVER_TEST_VERDICTS,
   FIXATION_TARGET_CONFIG,
 } from '../../constants/binocularScreeningConfig.js';
-import { SCREENING_CONFIG } from '../../constants/screeningConfig.js';
+import { SCREENING_CONFIG, COVER_TEST_CONFIG } from '../../constants/screeningConfig.js';
 import { aggregateCoverCycles, createCoverFrame, createCoverSessionId, createCycleRecord, inconclusiveCycle, isCoverSessionCurrent, validateBaselinePair } from '../../services/coverTestProtocolService.js';
+import { createTimeSeriesRecorder } from '../../services/coverTestTimeSeriesService.js';
 import { captureScreeningFrame } from '../../services/screeningImageCaptureService.js';
 
 /**
@@ -61,6 +62,17 @@ export default function CoverTestStep({
   // Live real-time telemetry (internal tracking)
   const [liveSampleCount, setLiveSampleCount] = useState(0);
   const [_liveDisplacement, setLiveDisplacement] = useState(0);
+
+  // 15 Hz Time-series recording ref (Section 14: no array recreation in realtime loop)
+  const timeSeriesRecorderRef = useRef(createTimeSeriesRecorder());
+  const [telemetry, setTelemetry] = useState({
+    realtimeFps: 0,
+    datasetSampleRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
+    totalFrames: 0,
+    savedSamples: 0,
+    validSamples: 0,
+  });
+  const lastTelemetryUpdateRef = useRef(0);
 
   // Recorded summary data
   const [_completedCyclesList, setCompletedCyclesList] = useState([]);
@@ -269,15 +281,37 @@ export default function CoverTestStep({
               const right = createCoverFrame(feats, currentQuality, 'right', now, elapsed);
               if (left.frame) leftBaselineBuffer.push(left.frame);
               if (right.frame) rightBaselineBuffer.push(right.frame);
-              setLiveSampleCount(leftBaselineBuffer.length);
             } else if (state === 'TRACKING' && trackEye) {
               const tracked = createCoverFrame(feats, currentQuality, trackEye, now, elapsed);
               if (tracked.frame) {
                 buffer.push(tracked.frame);
-                setLiveSampleCount(buffer.length);
-                if (baselineData?.normalizedBaselineX !== undefined) {
-                  const dx = tracked.frame.normalizedX - baselineData.normalizedBaselineX;
-                  const dy = tracked.frame.normalizedY - baselineData.normalizedBaselineY;
+              }
+            }
+
+            // Downsampled 15 Hz time-series recording (Sections 2, 3, 4, 7, 8, 14, 16)
+            timeSeriesRecorderRef.current.processFrame(
+              now,
+              state,
+              feats,
+              currentQuality,
+              currentBaselineRef.current,
+              trackEye,
+              coverEye
+            );
+
+            // Throttle React state telemetry updates to 4 Hz (every 250ms) to avoid 60 FPS re-render churn (Section 14)
+            if (now - lastTelemetryUpdateRef.current >= 250) {
+              lastTelemetryUpdateRef.current = now;
+              const telem = timeSeriesRecorderRef.current.getTelemetry();
+              setTelemetry(telem);
+              setLiveSampleCount(telem.savedSamples);
+
+              if (state === 'TRACKING' && trackEye && baselineData?.normalizedBaselineX !== undefined) {
+                const trackedX = trackEye === 'right' ? feats.raw?.rightIrisX : feats.raw?.leftIrisX;
+                const trackedY = trackEye === 'right' ? feats.raw?.rightIrisY : feats.raw?.leftIrisY;
+                if (trackedX != null && trackedY != null) {
+                  const dx = trackedX - baselineData.normalizedBaselineX;
+                  const dy = trackedY - baselineData.normalizedBaselineY;
                   setLiveDisplacement(Number(Math.hypot(dx, dy).toFixed(3)));
                 }
               }
@@ -292,7 +326,7 @@ export default function CoverTestStep({
                   rightBaseline: calculateRobustBaseline(rightBaselineBuffer),
                 });
               } else if (state === 'TRACKING' && trackEye) {
-                const latestEyeWidth = buffer.length ? buffer.at(-1)?.eyeWidth : 0.05;
+                const latestEyeWidth = buffer.length && buffer.at(-1)?.eyeWidth > 0 ? buffer.at(-1).eyeWidth : null;
                 const analysis = buffer.length
                   ? analyzeUncoverTrajectory(buffer, baselineData, trackEye, cycleNum, latestEyeWidth)
                   : null;
@@ -356,6 +390,8 @@ export default function CoverTestStep({
     for (let c = 1; c <= SCREENING_CONFIG.CYCLES; c++) {
       if (!runIsCurrent()) return;
       setCycleIndex(c);
+      // Reset 15 Hz time-series recorder for new cycle
+      timeSeriesRecorderRef.current.reset(performance.now());
 
       // Phase 1: Robust Baseline Fixation (4.0s)
       const baselines = await executePhase({
@@ -373,7 +409,17 @@ export default function CoverTestStep({
       if (!runIsCurrent()) return;
       const baselineQuality = validateBaselinePair(baselines);
       if (!baselineQuality.isValid) {
-        const failedCycle = inconclusiveCycle(c, baselineQuality.reason, baselines);
+        const rawTrajectory = timeSeriesRecorderRef.current.getSamples();
+        const datasetQuality = timeSeriesRecorderRef.current.getQuality();
+        const failedCycle = inconclusiveCycle(
+          c,
+          baselineQuality.reason,
+          baselines,
+          rawTrajectory,
+          null,
+          datasetQuality
+        );
+        failedCycle.summary = timeSeriesRecorderRef.current.finalizeCycleSummary(failedCycle);
         accumulatedCycles.push(failedCycle);
         setCompletedCyclesList([...accumulatedCycles]);
         transitionToState('CYCLE_COMPLETE', c);
@@ -480,9 +526,19 @@ export default function CoverTestStep({
 
       if (!runIsCurrent()) return;
 
-      // Record Cycle Result
-      // NOTE: analyzeUncoverTrajectory returns `isNotableMovement` (not `isRefixationNotable`)
-      const cycleRecord = createCycleRecord(c, baselines, rightEyeAnalysis, leftEyeAnalysis);
+      // Record Cycle Result with 15 Hz time-series trajectory and summary (Sections 10, 11)
+      const rawTrajectory = timeSeriesRecorderRef.current.getSamples();
+      const datasetQuality = timeSeriesRecorderRef.current.getQuality();
+      const cycleRecord = createCycleRecord(
+        c,
+        baselines,
+        rightEyeAnalysis,
+        leftEyeAnalysis,
+        rawTrajectory,
+        null,
+        datasetQuality
+      );
+      cycleRecord.summary = timeSeriesRecorderRef.current.finalizeCycleSummary(cycleRecord);
 
       accumulatedCycles.push(cycleRecord);
       setCompletedCyclesList([...accumulatedCycles]);
@@ -537,6 +593,11 @@ export default function CoverTestStep({
           timerDisplay={timerDisplay}
           startTime={trackingStartTime}
           elapsedMs={trackingElapsedMs}
+          realtimeFps={telemetry.realtimeFps}
+          datasetSampleRateHz={telemetry.datasetSampleRateHz}
+          totalFrames={telemetry.totalFrames}
+          savedSamples={telemetry.savedSamples}
+          validSamples={telemetry.validSamples}
         />
         {/* Full-viewport camera background (Section 35.1) */}
         <div className="fullscreen-camera-background">
