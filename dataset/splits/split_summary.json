@@ -1,0 +1,14 @@
+{
+  "has_patient_ids": true,
+  "warning": null,
+  "total_samples": 160,
+  "train_samples": 112,
+  "val_samples": 24,
+  "test_samples": 24,
+  "train_ratio": 0.7,
+  "val_ratio": 0.15,
+  "test_ratio": 0.15,
+  "train_path": "dataset/splits/train.csv",
+  "val_path": "dataset/splits/val.csv",
+  "test_path": "dataset/splits/test.csv"
+}

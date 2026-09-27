@@ -1,0 +1,691 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Soi Mat â€” Sang loc lech mat qua webcam</title>
+    <style>
+        :root {
+            --bg: #f2ede4;
+            --ink: #1d2a2e;
+            --panel: #ffffff;
+            --line: #d8cfc0;
+            --accent: #2c6e63;
+            --warn: #c1503a;
+            --muted: #6b6258;
+            box-sizing: border-box;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #161a19; --ink: #eee8dd; --panel: #20211f;
+                --line: #3a3a36; --accent: #7fc9ba; --warn: #e18066; --muted: #a49c8f;
+            }
+        }
+        :root[data-theme="dark"] {
+            --bg: #161a19; --ink: #eee8dd; --panel: #20211f;
+            --line: #3a3a36; --accent: #7fc9ba; --warn: #e18066; --muted: #a49c8f;
+        }
+        html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+        * { box-sizing: border-box; }
+        body { margin:0; background:var(--bg); color:var(--ink); font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif; min-height:100%; }
+        .wrap { max-width:820px; margin:0 auto; padding:28px 20px 60px; }
+        h1 { font-size:1.7rem; font-weight:600; letter-spacing:.01em; margin:0 0 4px; font-family:Georgia,"Times New Roman",serif; }
+        .sub { color:var(--muted); font-size:.95rem; margin:0 0 22px; max-width:60ch; line-height:1.5; }
+        .notice { background:color-mix(in srgb,var(--warn) 12%,var(--panel)); border:1px solid var(--warn); border-radius:6px; padding:14px 16px; font-size:.88rem; line-height:1.55; margin-bottom:24px; color:var(--ink); }
+        .notice b { color:var(--warn); }
+        .tabs { display:flex; gap:4px; border-bottom:2px solid var(--line); margin-bottom:20px; }
+        .tab-btn { font-family:inherit; font-size:.92rem; padding:9px 18px; border:1px solid var(--line); border-bottom:none; border-radius:6px 6px 0 0; background:var(--bg); color:var(--muted); cursor:pointer; margin-top:0; transition:background .15s,color .15s; }
+        .tab-btn.active { background:var(--panel); color:var(--ink); border-color:var(--line); border-bottom:2px solid var(--panel); margin-bottom:-2px; font-weight:600; }
+        .tab-panel { display:none; }
+        .tab-panel.active { display:block; }
+        .stage { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:20px; }
+        .camrow { display:flex; gap:16px; flex-wrap:wrap; }
+        .camwrap { position:relative; flex:1 1 320px; min-width:260px; aspect-ratio:4/3; background:#0d0f0e; border-radius:8px; overflow:hidden; }
+        video,canvas { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+        .readouts { flex:1 1 220px; display:flex; flex-direction:column; gap:14px; justify-content:center; }
+        .eyebar-label { font-size:.82rem; color:var(--muted); margin-bottom:4px; }
+        .eyebar { height:10px; border-radius:5px; background:var(--line); position:relative; overflow:hidden; }
+        .eyebar i { position:absolute; top:0; bottom:0; width:3px; background:var(--accent); border-radius:2px; }
+        .diffline { font-size:.85rem; margin-top:6px; }
+        .status { margin-top:10px; padding:10px 12px; border-radius:6px; font-size:.9rem; line-height:1.5; background:color-mix(in srgb,var(--accent) 10%,var(--panel)); border:1px solid var(--accent); }
+        .status.alert { background:color-mix(in srgb,var(--warn) 14%,var(--panel)); border-color:var(--warn); }
+        button { font-family:inherit; font-size:.95rem; padding:10px 20px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fdfbf7; cursor:pointer; margin-top:14px; }
+        button.secondary { background:transparent; color:var(--accent); }
+        button:disabled { opacity:.5; cursor:default; }
+        .stagegrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-top:14px; }
+        .stagecard { border:1px solid var(--line); border-radius:8px; padding:14px; background:var(--bg); }
+        .stagecard h3 { margin:0 0 6px; font-size:1rem; }
+        .stagecard p { margin:0; font-size:.86rem; color:var(--muted); line-height:1.5; }
+        .footnote { font-size:.78rem; color:var(--muted); margin-top:22px; line-height:1.6; }
+
+        /* Cover Test */
+        #fixationOverlay { display:none; position:fixed; inset:0; z-index:999; background:color-mix(in srgb,var(--bg) 97%,transparent); flex-direction:column; align-items:center; justify-content:center; gap:18px; }
+        #fixationOverlay.visible { display:flex; }
+        #fixationDot { width:24px; height:24px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 5px color-mix(in srgb,var(--warn) 25%,transparent); animation:pulse 1.4s infinite; }
+        @keyframes pulse { 0%,100%{box-shadow:0 0 0 5px color-mix(in srgb,var(--warn) 25%,transparent);} 50%{box-shadow:0 0 0 12px color-mix(in srgb,var(--warn) 8%,transparent);} }
+        #fixationInstruction { font-size:1.05rem; color:var(--ink); text-align:center; max-width:440px; line-height:1.6; }
+        #countdownBadge { font-size:3rem; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums; min-width:3ch; text-align:center; }
+        #coverPhaseLabel { font-size:1.3rem; font-weight:600; color:var(--ink); text-align:center; }
+        #cancelCoverBtn { margin-top:4px; font-size:.85rem; padding:7px 16px; }
+        #ctCamWrapFx { width:min(220px,88vw); aspect-ratio:4/3; background:#0d0f0e; border-radius:8px; overflow:hidden; position:relative; border:2px solid var(--line); }
+        #ctCamWrapFx video,#ctCamWrapFx canvas { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+        .cycle-dot { width:12px; height:12px; border-radius:50%; border:2px solid var(--line); background:transparent; transition:background .3s,border-color .3s; display:inline-block; }
+        .cycle-dot.done { background:var(--accent); border-color:var(--accent); }
+        .cycle-dot.active { border-color:var(--warn); animation:pulseDot .8s infinite; }
+        @keyframes pulseDot { 0%,100%{transform:scale(1);} 50%{transform:scale(1.3);} }
+        #ctResultSection { display:none; }
+        #ctResultSection.visible { display:block; }
+        .result-row { display:flex; gap:16px; flex-wrap:wrap; margin-top:14px; }
+        .result-card { flex:1 1 180px; border:1px solid var(--line); border-radius:8px; padding:14px; background:var(--bg); text-align:center; }
+        .result-card .eye-label { font-size:.82rem; color:var(--muted); margin-bottom:6px; }
+        .result-card .verdict { font-size:1.05rem; font-weight:600; }
+        .verdict.ok { color:var(--accent); }
+        .verdict.flag { color:var(--warn); }
+        .chart-wrap { margin-top:18px; }
+        .chart-wrap h3 { font-size:.95rem; margin:0 0 10px; color:var(--muted); }
+        .ct-charts { display:flex; gap:12px; flex-wrap:wrap; }
+        .ct-chart-box { flex:1 1 260px; }
+        .ct-chart-box canvas { position:static !important; transform:none !important; width:100% !important; height:120px !important; display:block; border:1px solid var(--line); border-radius:6px; background:var(--panel); }
+        .ct-chart-box .chart-title { font-size:.8rem; color:var(--muted); margin-bottom:4px; }
+        #ctStatus { margin-top:10px; padding:10px 12px; border-radius:6px; font-size:.9rem; line-height:1.5; background:color-mix(in srgb,var(--accent) 10%,var(--panel)); border:1px solid var(--accent); }
+        #ctStatus.alert { background:color-mix(in srgb,var(--warn) 14%,var(--panel)); border-color:var(--warn); }
+        .ct-btn-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    </style>
+</head>
+
+<body>
+<div class="wrap">
+    <h1>Soi Mat</h1>
+    <p class="sub">Cong cu thu nghiem dung webcam de uoc luong va sang loc lech mat. Day la ban demo ky thuat, khong phai thiet bi y te.</p>
+
+    <div class="notice">
+        <b>Luu y quan trong:</b> Cong cu nay <b>khong chan doan</b> lac mat (strabismus). Ket qua "co/khong phat hien chuyen dong" <b>khong dong nghia "co/khong bi lac"</b> â€” day chi la goi y nen di kham chuyen khoa mat. Anh sang, goc dau, khoang cach toi camera deu anh huong den ket qua. Neu ban nghi ngo co van de ve mat, hay den kham bac si nhan khoa.
+    </div>
+
+    <div class="tabs" role="tablist">
+        <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="tabStatic" id="tabBtnStatic">Do tinh</button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tabCover"  id="tabBtnCover">Cover Test</button>
+    </div>
+
+    <!-- TAB 1: DO TINH -->
+    <div class="tab-panel active" id="tabStatic" role="tabpanel" aria-labelledby="tabBtnStatic">
+        <div class="stage">
+            <div class="camrow">
+                <div class="camwrap">
+                    <video id="video" autoplay playsinline muted></video>
+                    <canvas id="overlay"></canvas>
+                </div>
+                <div class="readouts">
+                    <div>
+                        <div class="eyebar-label" id="labelL">Mat ben trai man hinh -- vi tri ngang: --</div>
+                        <div class="eyebar"><i id="barL" style="left:50%"></i></div>
+                    </div>
+                    <div>
+                        <div class="eyebar-label" id="labelR">Mat ben phai man hinh -- vi tri ngang: --</div>
+                        <div class="eyebar"><i id="barR" style="left:50%"></i></div>
+                    </div>
+                    <div class="diffline">Chenh lech trung binh (2s): <span id="diffVal">--</span></div>
+                </div>
+            </div>
+            <button id="startBtn">Bat camera &amp; bat dau</button>
+            <button id="stopBtn" class="secondary" disabled>Dung</button>
+            <div class="status" id="statusBox">Chua bat dau.</div>
+        </div>
+
+        <div class="stage">
+            <h1 style="font-size:1.15rem;">Neu tinh trang moi mat / lech thi giac khong duoc xu ly</h1>
+            <p class="sub" style="margin-bottom:0;">Thong tin minh hoa mang tinh giao duc chung.</p>
+            <div class="stagegrid">
+                <div class="stagecard"><h3>Giai doan dau</h3><p>Moi mat, nhuc dau nhe, doi khi nhin mo thoang qua sau khi nhin gan lau.</p></div>
+                <div class="stagecard"><h3>Giai doan giua</h3><p>Neu co yeu to tiem an (tat khuc xa lech, co van nhan yeu...), tinh trang lech mat co the bieu hien ro hon.</p></div>
+                <div class="stagecard"><h3>Giai doan can can thiep</h3><p>Lac mat khong dieu tri lau dai co the anh huong thi giac hai mat (nhuoc thi). Kham mat dinh ky quan trong.</p></div>
+            </div>
+            <p class="footnote">Khoa hoc hien tai khong xac nhan thoi quen sinh hoat la nguon nhan truc tiep gay lac mat that su. Khong dung noi dung nay de tu chan doan.</p>
+        </div>
+        <p class="footnote">Ky thuat: MediaPipe Face Mesh (refineLandmarks) chay hoan toan tren trinh duyet â€” khong co khung hinh nao duoc gui len may chu.</p>
+    </div>
+
+    <!-- TAB 2: COVER TEST -->
+    <div class="tab-panel" id="tabCover" role="tabpanel" aria-labelledby="tabBtnCover">
+        <div class="stage">
+            <p style="margin:0 0 12px;font-size:.92rem;line-height:1.6;">
+                <b>Alternate Cover Test (ACT)</b> â€” mo phong quy trinh lam sang: ban co dinh mat nhin vao diem do o giua man hinh, roi lan luot tu che mot mat bang tay theo huong dan. He thong theo doi mat con lai xem co "giat" tai dinh vi (refixation saccade) khi bo che khong. <b>Ket qua khong phai chan doan y khoa.</b>
+            </p>
+            <p style="margin:0 0 8px;font-size:.85rem;color:var(--muted);">Ngoi cach camera <b>40-60 cm</b>, anh sang du, dau giu thang. Bat camera truoc, roi bam "Bat dau Cover Test".</p>
+            <div class="camrow" style="margin-bottom:14px;">
+                <div class="camwrap" style="flex:1 1 300px;">
+                    <video id="ctVideo" autoplay playsinline muted></video>
+                    <canvas id="ctOverlay"></canvas>
+                </div>
+                <div class="readouts" style="flex:1 1 180px;gap:10px;">
+                    <div style="font-size:.85rem;color:var(--muted);">Chu ky hoan thanh:</div>
+                    <div style="display:flex;gap:8px;" id="cycleProgress">
+                        <span class="cycle-dot" id="dot0"></span>
+                        <span class="cycle-dot" id="dot1"></span>
+                        <span class="cycle-dot" id="dot2"></span>
+                    </div>
+                    <div style="font-size:.82rem;color:var(--muted);" id="ctCycleInfo">--</div>
+                    <div style="font-size:.82rem;" id="ctIrisInfo">Iris trai: -- | Iris phai: --</div>
+                </div>
+            </div>
+            <div class="ct-btn-row">
+                <button id="ctStartCamBtn">Bat camera</button>
+                <button id="ctStartTestBtn" class="secondary" disabled>Bat dau Cover Test</button>
+                <button id="ctStopBtn" class="secondary" disabled>Huy test</button>
+            </div>
+            <div id="ctStatus">Chua bat dau. Bat camera truoc.</div>
+        </div>
+
+        <div id="ctResultSection" class="stage">
+            <h1 style="font-size:1.1rem;margin-bottom:8px;">Ket qua Cover Test</h1>
+            <p style="font-size:.85rem;color:var(--muted);margin:0 0 10px;line-height:1.5;">
+                "Phat hien chuyen dong" <b>khong co nghia</b> ban bi lac mat. Day chi la goi y tham khao voi bac si nhan khoa.
+            </p>
+            <div class="result-row" id="ctResultCards"></div>
+            <div class="chart-wrap">
+                <h3>Quy dao tam mong mat (X chuan hoa theo thoi gian)</h3>
+                <div class="ct-charts" id="ctCharts"></div>
+            </div>
+            <button id="ctRestartBtn" style="margin-top:16px;">Thu lai</button>
+        </div>
+
+        <p class="footnote">Ky thuat: MediaPipe Face Mesh (refineLandmarks) â€” iris landmarks 468 (trai) &amp; 473 (phai). Toan bo xu ly chay trong trinh duyet, khong gui anh/video len may chu.</p>
+    </div>
+</div>
+
+<!-- Fixation overlay -->
+<div id="fixationOverlay" role="dialog" aria-modal="true" aria-label="Cover Test dang chay">
+    <div id="fixationDot" aria-hidden="true"></div>
+    <div id="coverPhaseLabel">Chuan bi...</div>
+    <div id="countdownBadge" aria-live="polite" aria-atomic="true">--</div>
+    <div id="fixationInstruction">Giu mat nhin vao diem do phia tren.</div>
+    <div id="ctCamWrapFx"></div>
+    <button id="cancelCoverBtn" class="secondary">Huy test</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+<script>
+// ============================================================
+//  TUNABLE CONSTANTS
+// ============================================================
+const CT_CYCLES          = 3;
+const CT_BASELINE_MS     = 2000;
+const CT_COVER_MS        = 2000;
+const CT_RECORD_MS       = 1000;
+const CT_ANALYSIS_WIN_MS = 500;
+const CT_SACCADE_THRESH  = 0.09;
+
+// ============================================================
+//  TAB NAVIGATION
+// ============================================================
+const tabBtnStatic = document.getElementById('tabBtnStatic');
+const tabBtnCover  = document.getElementById('tabBtnCover');
+const tabStatic    = document.getElementById('tabStatic');
+const tabCover     = document.getElementById('tabCover');
+
+function switchTab(btnOn, btnOff, panelOn, panelOff) {
+    btnOn.classList.add('active');    btnOn.setAttribute('aria-selected','true');
+    btnOff.classList.remove('active'); btnOff.setAttribute('aria-selected','false');
+    panelOn.classList.add('active');
+    panelOff.classList.remove('active');
+}
+tabBtnStatic.addEventListener('click', () => switchTab(tabBtnStatic, tabBtnCover, tabStatic, tabCover));
+tabBtnCover.addEventListener('click',  () => switchTab(tabBtnCover,  tabBtnStatic, tabCover,  tabStatic));
+
+// ============================================================
+//  SHARED CAMERA / FACEMESH
+// ============================================================
+let sharedStream    = null;
+let sharedFaceMesh  = null;
+let sharedRunning   = false;
+let sharedRafId     = null;
+let activeResultsCb = null;
+
+async function ensureCameraAndMesh(videoEl) {
+    if (sharedStream && sharedStream.active) {
+        if (videoEl.srcObject !== sharedStream) {
+            videoEl.srcObject = sharedStream;
+            await videoEl.play().catch(() => {});
+        }
+        if (sharedFaceMesh) return true;
+    }
+    try {
+        sharedStream = await navigator.mediaDevices.getUserMedia({ video: { width:640, height:480 }, audio:false });
+    } catch(e) { return { error: e.message }; }
+    videoEl.srcObject = sharedStream;
+    await videoEl.play().catch(() => {});
+    sharedFaceMesh = new FaceMesh({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}` });
+    sharedFaceMesh.setOptions({ maxNumFaces:1, refineLandmarks:true, minDetectionConfidence:0.5, minTrackingConfidence:0.5 });
+    sharedFaceMesh.onResults(r => { if (activeResultsCb) activeResultsCb(r); });
+    return true;
+}
+
+function startSharedLoop(videoEl) {
+    if (sharedRunning) return;
+    sharedRunning = true;
+    const loop = async () => {
+        if (!sharedRunning) return;
+        if (videoEl.readyState >= 2) await sharedFaceMesh.send({ image: videoEl }).catch(() => {});
+        sharedRafId = requestAnimationFrame(loop);
+    };
+    loop();
+}
+
+function stopSharedCamera() {
+    sharedRunning = false;
+    if (sharedRafId) cancelAnimationFrame(sharedRafId);
+    if (sharedStream) sharedStream.getTracks().forEach(t => t.stop());
+    sharedStream = null; sharedFaceMesh = null; activeResultsCb = null;
+}
+
+// ============================================================
+//  TAB 1 â€” DO TINH (original feature)
+// ============================================================
+const video     = document.getElementById('video');
+const overlay   = document.getElementById('overlay');
+const ctx       = overlay.getContext('2d');
+const startBtn  = document.getElementById('startBtn');
+const stopBtn   = document.getElementById('stopBtn');
+const statusBox = document.getElementById('statusBox');
+const barL      = document.getElementById('barL');
+const barR      = document.getElementById('barR');
+const labelL    = document.getElementById('labelL');
+const labelR    = document.getElementById('labelR');
+const diffVal   = document.getElementById('diffVal');
+let staticRunning = false;
+let history = [];
+
+function computeEyeRatio(lm, cornerNear, cornerFar, irisIdx) {
+    const a = lm[cornerNear], b = lm[cornerFar], iris = lm[irisIdx];
+    const denom = b.x - a.x;
+    if (Math.abs(denom) < 1e-6) return 0.5;
+    return (iris.x - a.x) / denom;
+}
+
+function onStaticResults(results) {
+    overlay.width  = video.videoWidth  || 640;
+    overlay.height = video.videoHeight || 480;
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    if (!results.multiFaceLandmarks || !results.multiFaceLandmarks.length) {
+        statusBox.textContent = 'Khong phat hien khuon mat. Dua mat vao giua khung hinh, du anh sang.';
+        statusBox.classList.remove('alert'); return;
+    }
+    const lm = results.multiFaceLandmarks[0];
+    const leftRatio  = computeEyeRatio(lm, 362, 263, 468);
+    const rightRatio = computeEyeRatio(lm, 133,  33, 473);
+    barL.style.left = (Math.min(1,Math.max(0,leftRatio))  * 100) + '%';
+    barR.style.left = (Math.min(1,Math.max(0,rightRatio)) * 100) + '%';
+    labelL.textContent = 'Mat ben trai man hinh -- vi tri ngang: ' + leftRatio.toFixed(2);
+    labelR.textContent = 'Mat ben phai man hinh -- vi tri ngang: ' + rightRatio.toFixed(2);
+    const diff = Math.abs(leftRatio - rightRatio);
+    history.push(diff);
+    if (history.length > 60) history.shift();
+    const avg = history.reduce((a,b) => a+b, 0) / history.length;
+    diffVal.textContent = avg.toFixed(3);
+    if (history.length >= 30) {
+        if (avg > 0.18) {
+            statusBox.textContent = 'Chenh lech vi tri hai mat cao hon muc thuong thay. Day KHONG phai chan doan -- neu lap lai nhieu lan, can nhac kham bac si nhan khoa.';
+            statusBox.classList.add('alert');
+        } else {
+            statusBox.textContent = 'Chenh lech trong khoang thuong thay khi do bang webcam thuong. Van khuyen nghi kham dinh ky neu co trieu chung.';
+            statusBox.classList.remove('alert');
+        }
+    } else {
+        statusBox.textContent = 'Dang thu thap du lieu...';
+        statusBox.classList.remove('alert');
+    }
+    ctx.fillStyle = '#2c6e63';
+    [468,473].forEach(i => {
+        ctx.beginPath(); ctx.arc(lm[i].x*overlay.width, lm[i].y*overlay.height, 3, 0, 7); ctx.fill();
+    });
+}
+
+async function staticStart() {
+    if (staticRunning) return;
+    history = [];
+    const res = await ensureCameraAndMesh(video);
+    if (res && res.error) { statusBox.textContent = 'Khong the truy cap camera: ' + res.error; statusBox.classList.add('alert'); return; }
+    staticRunning = true;
+    activeResultsCb = onStaticResults;
+    startBtn.disabled = true; stopBtn.disabled = false;
+    startSharedLoop(video);
+    statusBox.textContent = 'Dang thu thap du lieu...'; statusBox.classList.remove('alert');
+}
+function staticStop() {
+    staticRunning = false; stopSharedCamera();
+    startBtn.disabled = false; stopBtn.disabled = true;
+    statusBox.textContent = 'Da dung.'; statusBox.classList.remove('alert');
+}
+startBtn.addEventListener('click', staticStart);
+stopBtn.addEventListener('click',  staticStop);
+
+// ============================================================
+//  TAB 2 â€” COVER TEST
+// ============================================================
+const ctVideo         = document.getElementById('ctVideo');
+const ctOverlay       = document.getElementById('ctOverlay');
+const ctCtx           = ctOverlay.getContext('2d');
+const ctStartCamBtn   = document.getElementById('ctStartCamBtn');
+const ctStartTestBtn  = document.getElementById('ctStartTestBtn');
+const ctStopBtn       = document.getElementById('ctStopBtn');
+const ctStatus        = document.getElementById('ctStatus');
+const ctCycleInfo     = document.getElementById('ctCycleInfo');
+const ctIrisInfo      = document.getElementById('ctIrisInfo');
+const ctResultSection = document.getElementById('ctResultSection');
+const ctResultCards   = document.getElementById('ctResultCards');
+const ctCharts        = document.getElementById('ctCharts');
+const ctRestartBtn    = document.getElementById('ctRestartBtn');
+const fixationOverlay = document.getElementById('fixationOverlay');
+const coverPhaseLabel = document.getElementById('coverPhaseLabel');
+const countdownBadge  = document.getElementById('countdownBadge');
+const fixInstr        = document.getElementById('fixationInstruction');
+const cancelCoverBtn  = document.getElementById('cancelCoverBtn');
+const cycleDots       = [document.getElementById('dot0'),document.getElementById('dot1'),document.getElementById('dot2')];
+const ctCamWrapFx     = document.getElementById('ctCamWrapFx');
+
+let fxCanvas      = null;
+let ctCamReady    = false;
+let ctTestActive  = false;
+let cycleData     = [];
+let currentCycle  = 0;
+let ctAbort       = false;
+let latestLm      = null;
+
+function buildFxCanvas() {
+    if (fxCanvas) return;
+    fxCanvas = document.createElement('canvas');
+    fxCanvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);';
+    ctCamWrapFx.appendChild(fxCanvas);
+}
+function drawFxFrame() {
+    if (!fxCanvas || !ctVideo.videoWidth) return;
+    fxCanvas.width  = ctVideo.videoWidth;
+    fxCanvas.height = ctVideo.videoHeight;
+    fxCanvas.getContext('2d').drawImage(ctVideo,0,0);
+}
+
+function onCTResults(results) {
+    ctOverlay.width  = ctVideo.videoWidth  || 640;
+    ctOverlay.height = ctVideo.videoHeight || 480;
+    ctCtx.clearRect(0,0,ctOverlay.width,ctOverlay.height);
+    if (!results.multiFaceLandmarks || !results.multiFaceLandmarks.length) {
+        latestLm = null;
+        ctIrisInfo.textContent = 'Khong thay khuon mat';
+        return;
+    }
+    latestLm = results.multiFaceLandmarks[0];
+    const w = ctOverlay.width, h = ctOverlay.height;
+    ctCtx.fillStyle = '#2c6e63';
+    [468,473].forEach(i => {
+        ctCtx.beginPath(); ctCtx.arc(latestLm[i].x*w, latestLm[i].y*h, 4, 0, Math.PI*2); ctCtx.fill();
+    });
+    ctCtx.strokeStyle = '#7fc9ba'; ctCtx.lineWidth = 1.5;
+    [468,473].forEach(i => {
+        const ix = latestLm[i].x*w, iy = latestLm[i].y*h;
+        ctCtx.beginPath(); ctCtx.moveTo(ix-8,iy); ctCtx.lineTo(ix+8,iy); ctCtx.stroke();
+        ctCtx.beginPath(); ctCtx.moveTo(ix,iy-8); ctCtx.lineTo(ix,iy+8); ctCtx.stroke();
+    });
+    drawFxFrame();
+    ctIrisInfo.textContent = `Iris T:(${latestLm[468].x.toFixed(3)},${latestLm[468].y.toFixed(3)}) P:(${latestLm[473].x.toFixed(3)},${latestLm[473].y.toFixed(3)})`;
+}
+
+async function ctStartCamera() {
+    const res = await ensureCameraAndMesh(ctVideo);
+    if (res && res.error) { setCtStatus('Khong the truy cap camera: '+res.error,true); return; }
+    ctCamReady = true;
+    activeResultsCb = onCTResults;
+    startSharedLoop(ctVideo);
+    buildFxCanvas();
+    ctStartCamBtn.disabled = true; ctStartTestBtn.disabled = false;
+    setCtStatus('Camera da bat. Kiem tra cham xanh tren mong mat, roi bam "Bat dau Cover Test".');
+}
+
+function setCtStatus(msg, isAlert=false) {
+    ctStatus.textContent = msg;
+    ctStatus.classList.toggle('alert', isAlert);
+}
+
+function eyeWidth(lm, innerIdx, outerIdx) { return Math.abs(lm[outerIdx].x - lm[innerIdx].x); }
+
+function runPhase(label, instruction, durationMs, collectSide) {
+    return new Promise(resolve => {
+        coverPhaseLabel.textContent = label;
+        fixInstr.textContent        = instruction;
+        const frames = [];
+        const startT = performance.now();
+        let lastSec  = Math.ceil(durationMs / 1000);
+        countdownBadge.textContent = lastSec;
+        function tick() {
+            if (ctAbort) { resolve(frames); return; }
+            const elapsed   = performance.now() - startT;
+            const remaining = Math.max(0, durationMs - elapsed);
+            const sec       = Math.ceil(remaining / 1000);
+            if (sec !== lastSec) { lastSec = sec; countdownBadge.textContent = sec || 'OK'; }
+            if (latestLm && collectSide) {
+                const irisIdx = collectSide === 'L' ? 468 : 473;
+                frames.push({ t:elapsed, x:latestLm[irisIdx].x, y:latestLm[irisIdx].y, lm:latestLm });
+            }
+            if (elapsed >= durationMs) resolve(frames);
+            else requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    });
+}
+
+function analyseFrames(frames, lm_for_width) {
+    const win = frames.filter(f => f.t <= CT_ANALYSIS_WIN_MS);
+    if (win.length < 2) return { displaced:false, displacement:0 };
+    const first = win[0], last = win[win.length-1];
+    const dist  = Math.hypot(last.x - first.x, last.y - first.y);
+    let eyeW = 0.05;
+    if (lm_for_width) {
+        const lW = eyeWidth(lm_for_width,362,263);
+        const rW = eyeWidth(lm_for_width,133,33);
+        eyeW = ((lW+rW)/2) || eyeW;
+    }
+    const normDist = dist / eyeW;
+    return { displaced: normDist > CT_SACCADE_THRESH, displacement: normDist };
+}
+
+async function runCycle(cycleIdx) {
+    const data = { leftUncover:null, rightUncover:null, baselineLm:null };
+    await runPhase(`Chu ky ${cycleIdx+1}/${CT_CYCLES}`, 'Nhin thang vao diem do. Giu yen dau.', CT_BASELINE_MS, null);
+    if (ctAbort) return null;
+    data.baselineLm = latestLm;
+
+    await runPhase('Che mat TRAI bang tay', 'Dung tay che mat trai (mat ben phai man hinh). Nhin thang.', CT_COVER_MS, null);
+    if (ctAbort) return null;
+
+    const rightFrames = await runPhase('Bo che mat trai â€” theo doi mat phai', 'Bo tay ra. Tiep tuc nhin diem do.', CT_RECORD_MS, 'R');
+    if (ctAbort) return null;
+    data.rightUncover = rightFrames;
+
+    await runPhase('Che mat PHAI bang tay', 'Dung tay che mat phai (mat ben trai man hinh). Nhin thang.', CT_COVER_MS, null);
+    if (ctAbort) return null;
+
+    const leftFrames = await runPhase('Bo che mat phai â€” theo doi mat trai', 'Bo tay ra. Tiep tuc nhin diem do.', CT_RECORD_MS, 'L');
+    if (ctAbort) return null;
+    data.leftUncover = leftFrames;
+
+    return data;
+}
+
+async function runCoverTest() {
+    ctTestActive = true; ctAbort = false; cycleData = []; currentCycle = 0;
+    fixationOverlay.classList.add('visible');
+    ctStartTestBtn.disabled = true; ctStopBtn.disabled = false;
+    ctResultSection.classList.remove('visible');
+    updateCycleDots(-1);
+
+    for (let i = 0; i < CT_CYCLES; i++) {
+        if (ctAbort) break;
+        currentCycle = i;
+        cycleDots[i].classList.add('active');
+        setCtStatus(`Dang thuc hien chu ky ${i+1}/${CT_CYCLES}...`);
+        ctCycleInfo.textContent = `Chu ky ${i+1} / ${CT_CYCLES}`;
+        const cData = await runCycle(i);
+        if (ctAbort || !cData) break;
+        cycleData.push(cData);
+        cycleDots[i].classList.remove('active');
+        cycleDots[i].classList.add('done');
+        if (i < CT_CYCLES - 1) await runPhase('Nghi giua chu ky', 'Thu gian mat vai giay...', 1500, null);
+    }
+
+    fixationOverlay.classList.remove('visible');
+    ctTestActive = false; ctStopBtn.disabled = true;
+    if (!ctAbort && cycleData.length === CT_CYCLES) {
+        showResults(); ctStartTestBtn.disabled = false;
+    } else if (ctAbort) {
+        setCtStatus('Da huy test.'); ctStartTestBtn.disabled = false;
+    }
+}
+
+function updateCycleDots(activeIdx) {
+    cycleDots.forEach((d,i) => {
+        d.classList.remove('active','done');
+        if (i < activeIdx) d.classList.add('done');
+    });
+}
+
+function abortCoverTest() {
+    ctAbort = true;
+    fixationOverlay.classList.remove('visible');
+    ctTestActive = false; ctStopBtn.disabled = true; ctStartTestBtn.disabled = false;
+    setCtStatus('Da huy test.'); updateCycleDots(-1);
+    countdownBadge.textContent = '--';
+}
+
+function showResults() {
+    let leftFlags = 0, rightFlags = 0;
+    const leftDisps = [], rightDisps = [];
+    const allLeftFrames = [], allRightFrames = [];
+    cycleData.forEach(cd => {
+        const lRes = analyseFrames(cd.leftUncover  || [], cd.baselineLm);
+        const rRes = analyseFrames(cd.rightUncover || [], cd.baselineLm);
+        if (lRes.displaced) leftFlags++;
+        if (rRes.displaced) rightFlags++;
+        leftDisps.push(lRes.displacement);
+        rightDisps.push(rRes.displacement);
+        allLeftFrames.push(cd.leftUncover  || []);
+        allRightFrames.push(cd.rightUncover || []);
+    });
+    const leftFlagged  = leftFlags  > CT_CYCLES / 2;
+    const rightFlagged = rightFlags > CT_CYCLES / 2;
+    const avgLeft  = leftDisps.reduce((a,b)=>a+b,0)  / leftDisps.length;
+    const avgRight = rightDisps.reduce((a,b)=>a+b,0) / rightDisps.length;
+
+    ctResultCards.innerHTML = `
+        <div class="result-card">
+            <div class="eye-label">Mat trai (sau khi bo che mat phai)</div>
+            <div class="verdict ${leftFlagged?'flag':'ok'}">${leftFlagged?'Phat hien chuyen dong':'Khong phat hien'}</div>
+            <div style="font-size:.8rem;color:var(--muted);margin-top:6px;">Dich chuyen TB: ${(avgLeft*100).toFixed(1)}% / Nguong: ${(CT_SACCADE_THRESH*100).toFixed(0)}%</div>
+        </div>
+        <div class="result-card">
+            <div class="eye-label">Mat phai (sau khi bo che mat trai)</div>
+            <div class="verdict ${rightFlagged?'flag':'ok'}">${rightFlagged?'Phat hien chuyen dong':'Khong phat hien'}</div>
+            <div style="font-size:.8rem;color:var(--muted);margin-top:6px;">Dich chuyen TB: ${(avgRight*100).toFixed(1)}% / Nguong: ${(CT_SACCADE_THRESH*100).toFixed(0)}%</div>
+        </div>
+    `;
+
+    const sumEl = document.createElement('div');
+    sumEl.style.cssText = 'margin-top:16px;padding:12px 14px;border-radius:6px;font-size:.88rem;line-height:1.6;background:color-mix(in srgb,var(--accent) 8%,var(--panel));border:1px solid var(--line);';
+    sumEl.innerHTML = (leftFlagged||rightFlagged)
+        ? `<b>Goi y:</b> Phat hien chuyen dong tai dinh vi o ${leftFlagged&&rightFlagged?'ca hai mat':leftFlagged?'mat trai':'mat phai'}. Day <b>khong phai chan doan lac mat</b>. Nhieu yeu to (anh sang, chuyen dong dau, nhieu camera) co the anh huong. Nen dat lich kham voi bac si nhan khoa.`
+        : `<b>Goi y:</b> Khong phat hien chuyen dong tai dinh vi dang chu y trong test nay. Ket qua nay <b>khong loai tru</b> cac van de ve mat. Kham mat dinh ky van duoc khuyen nghi.`;
+    ctResultCards.insertAdjacentElement('afterend', sumEl);
+
+    ctCharts.innerHTML = '';
+    const sides = [
+        {label:'Mat trai - tung chu ky', allFrames:allLeftFrames,  flagged:leftFlagged},
+        {label:'Mat phai - tung chu ky', allFrames:allRightFrames, flagged:rightFlagged},
+    ];
+    sides.forEach(side => {
+        const box = document.createElement('div'); box.className = 'ct-chart-box';
+        const title = document.createElement('div'); title.className = 'chart-title'; title.textContent = side.label;
+        const cnv = document.createElement('canvas');
+        cnv.style.cssText = 'width:100%;height:120px;display:block;border:1px solid var(--line);border-radius:6px;background:var(--panel);position:static;transform:none;';
+        box.appendChild(title); box.appendChild(cnv);
+        ctCharts.appendChild(box);
+        requestAnimationFrame(() => drawTrajectoryChart(cnv, side.allFrames, side.flagged));
+    });
+
+    ctResultSection.classList.add('visible');
+    ctResultSection.scrollIntoView({behavior:'smooth',block:'start'});
+    setCtStatus('Hoan thanh! Xem ket qua ben duoi.');
+}
+
+function drawTrajectoryChart(cnv, allFrames, flagged) {
+    const W = cnv.offsetWidth || 320, H = cnv.offsetHeight || 120;
+    cnv.width = W; cnv.height = H;
+    const ctx2 = cnv.getContext('2d');
+    const allX = allFrames.flat().map(f => f.x);
+    if (!allX.length) {
+        ctx2.fillStyle = '#888'; ctx2.font = '12px sans-serif'; ctx2.textAlign = 'center';
+        ctx2.fillText('Khong co du lieu', W/2, H/2); return;
+    }
+    const xMin = Math.min(...allX) - 0.005, xMax = Math.max(...allX) + 0.005;
+    const xRange = xMax - xMin || 0.01;
+    const PAD = 20, plotW = W-PAD*2, plotH = H-PAD*2;
+
+    ctx2.strokeStyle = 'rgba(128,128,128,0.15)'; ctx2.lineWidth = 1;
+    for (let g=0; g<=4; g++) {
+        const gY = PAD + (g/4)*plotH;
+        ctx2.beginPath(); ctx2.moveTo(PAD,gY); ctx2.lineTo(W-PAD,gY); ctx2.stroke();
+    }
+
+    const COLORS = ['#2c6e63','#c1503a','#8a6fa0'];
+    allFrames.forEach((frames,ci) => {
+        if (!frames.length) return;
+        ctx2.beginPath(); ctx2.strokeStyle = COLORS[ci%COLORS.length]; ctx2.lineWidth = 1.8;
+        frames.forEach((f,fi) => {
+            const px = PAD + (f.t/CT_RECORD_MS)*plotW;
+            const py = PAD + plotH - ((f.x-xMin)/xRange)*plotH;
+            fi===0 ? ctx2.moveTo(px,py) : ctx2.lineTo(px,py);
+        });
+        ctx2.stroke();
+        if (frames[0]) {
+            const px = PAD+(frames[0].t/CT_RECORD_MS)*plotW, py = PAD+plotH-((frames[0].x-xMin)/xRange)*plotH;
+            ctx2.beginPath(); ctx2.arc(px,py,3,0,Math.PI*2);
+            ctx2.fillStyle = COLORS[ci%COLORS.length]; ctx2.fill();
+        }
+    });
+
+    const wxEnd = PAD+(CT_ANALYSIS_WIN_MS/CT_RECORD_MS)*plotW;
+    ctx2.strokeStyle = flagged?'#c1503a':'#2c6e63'; ctx2.lineWidth = 1; ctx2.setLineDash([3,3]);
+    ctx2.beginPath(); ctx2.moveTo(wxEnd,PAD); ctx2.lineTo(wxEnd,H-PAD); ctx2.stroke();
+    ctx2.setLineDash([]);
+
+    ctx2.fillStyle = '#888'; ctx2.font = '10px sans-serif';
+    ctx2.textAlign = 'left';  ctx2.fillText('0ms',  PAD, H-4);
+    ctx2.textAlign = 'right'; ctx2.fillText(`${CT_RECORD_MS}ms`, W-PAD, H-4);
+    ctx2.textAlign = 'left';  ctx2.fillText('X iris', PAD, PAD-4);
+    allFrames.forEach((_,ci) => {
+        ctx2.fillStyle = COLORS[ci%COLORS.length];
+        ctx2.fillText(`C${ci+1}`, PAD+ci*32, H-4);
+    });
+}
+
+// Button wiring
+ctStartCamBtn.addEventListener('click', ctStartCamera);
+ctStartTestBtn.addEventListener('click', () => {
+    if (!ctCamReady) return;
+    const old = ctResultCards.nextElementSibling;
+    if (old && old.tagName==='DIV' && !old.id) old.remove();
+    activeResultsCb = onCTResults;
+    runCoverTest();
+});
+ctStopBtn.addEventListener('click', abortCoverTest);
+cancelCoverBtn.addEventListener('click', abortCoverTest);
+ctRestartBtn.addEventListener('click', () => {
+    ctResultSection.classList.remove('visible');
+    updateCycleDots(-1);
+    ctIrisInfo.textContent = 'Iris trai: -- | Iris phai: --';
+    ctCycleInfo.textContent = '--';
+    setCtStatus('Bam "Bat dau Cover Test" de thu lai.');
+});
+</script>
+</body>
+</html>

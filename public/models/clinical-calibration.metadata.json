@@ -1,0 +1,36 @@
+{
+  "modelName": "cover-test-clinical-calibration",
+  "version": "0.1.0",
+  "status": "RESEARCH_ONLY",
+  "trainingDatasetVersion": null,
+  "referenceMethod": "PACT",
+  "features": [
+    "normalizedDisplacement",
+    "displacementX",
+    "displacementY",
+    "peakVelocity",
+    "timeToPeak",
+    "trajectoryStability",
+    "baselineStability",
+    "eyeWidth",
+    "sampleCount"
+  ],
+  "targets": ["horizontalDeviationPD", "verticalDeviationPD"],
+  "testDistanceCm": 33,
+  "validation": {
+    "subjectLevelSplit": true,
+    "maeHorizontalPD": null,
+    "maeVerticalPD": null,
+    "rmseHorizontalPD": null,
+    "rmseVerticalPD": null,
+    "r2Horizontal": null,
+    "r2Vertical": null,
+    "biasHorizontalPD": null,
+    "biasVerticalPD": null,
+    "limitsOfAgreement95HorizontalPD": null,
+    "limitsOfAgreement95VerticalPD": null
+  },
+  "clinicalValidationStatus": "NOT_VALIDATED",
+  "productionEnabled": false,
+  "modelArtifact": null
+}

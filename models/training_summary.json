@@ -1,0 +1,86 @@
+{
+  "model_architecture": "Small_MLP_32_16",
+  "seed": 42,
+  "feature_order": [
+    "leftHorizontalRatio",
+    "rightHorizontalRatio",
+    "leftVerticalRatio",
+    "rightVerticalRatio",
+    "interocularDistance",
+    "horizontalRatioDiff",
+    "verticalRatioDiff",
+    "leftEyeWidth",
+    "rightEyeWidth",
+    "irisDistanceRatio"
+  ],
+  "feature_count": 10,
+  "normalization": {
+    "mean": [
+      -0.5,
+      -0.5,
+      0.3512973396678339,
+      0.49381767939080806,
+      0.10695510428466891,
+      0.2432505806538707,
+      0.1425203397229742,
+      0.09572679016231302,
+      0.08979676896179854,
+      1.7805797631382294
+    ],
+    "scale": [
+      1.0,
+      1.0,
+      0.0309307376260904,
+      0.017418558488695463,
+      0.008645339195954057,
+      0.13242694122736717,
+      0.024961495514108527,
+      0.004512077039447126,
+      0.0011914543578636183,
+      0.11770371499249349
+    ],
+    "var": [
+      0.0,
+      0.0,
+      0.0009567105300940446,
+      0.0003034061798241048,
+      7.474188981309955e-05,
+      0.01753689476283656,
+      0.00062307625830086,
+      2.0358839209905937e-05,
+      1.4195634868722068e-06,
+      0.013854164523034137
+    ]
+  },
+  "dataset_statistics": {
+    "train_samples": 112,
+    "train_normal": 56,
+    "train_strabismus": 56,
+    "val_samples": 24,
+    "val_normal": 12,
+    "val_strabismus": 12
+  },
+  "validation_metrics": {
+    "val_accuracy": 1.0,
+    "val_f1": 1.0,
+    "val_auc": 1.0
+  },
+  "all_candidates": {
+    "Small_MLP_32_16": {
+      "val_accuracy": 1.0,
+      "val_f1": 1.0,
+      "val_auc": 1.0
+    },
+    "Logistic_Regression": {
+      "val_accuracy": 1.0,
+      "val_f1": 1.0,
+      "val_auc": 1.0
+    },
+    "Gradient_Boosting": {
+      "val_accuracy": 1.0,
+      "val_f1": 1.0,
+      "val_auc": 1.0
+    }
+  },
+  "threshold": 0.5
+}
