@@ -47,7 +47,7 @@ export default function BinocularVisionScreening() {
   // Vision, Hardware & Assistant Hooks
   const { stream, isActive, isLoading: isCamLoading, error: camError, start: startCam, stop: stopCam, attachVideo } = useCamera();
   const { quality, latestFeaturesRef, latestQualityRef, rawLandmarks, processResults } = useEyeTracking();
-  const { speak, cancel: cancelSpeech, isVoiceEnabled, toggleSound } = useSpeech(false);
+  const { speak, cancel: cancelSpeech, isVoiceEnabled, toggleSound } = useSpeech(true);
   const { smoothedPrediction, processFrameAI } = useStrabismusAI();
 
   // Frame results receiver (Runs MediaPipe Face Mesh, throttled AI, and active test distance calibration)
@@ -248,6 +248,8 @@ export default function BinocularVisionScreening() {
             isLoading={isCamLoading}
             error={camError}
             onVideoReady={initCamera}
+            speak={speak}
+            isVoiceEnabled={isVoiceEnabled}
           />
         )}
 
@@ -282,6 +284,8 @@ export default function BinocularVisionScreening() {
             isLoading={isCamLoading}
             error={camError}
             onVideoReady={initCamera}
+            speak={speak}
+            isVoiceEnabled={isVoiceEnabled}
           />
         )}
 

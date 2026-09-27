@@ -53,7 +53,7 @@ export default function StrabismusScreening() {
   // Hardware & Vision hooks
   const { stream, isActive, isLoading: isCameraLoading, error: cameraError, start: startCam, stop: stopCam } = useCamera();
   const { quality, latestFeaturesRef, latestQualityRef, rawLandmarks, processResults } = useEyeTracking();
-  const { isEnabled: isVoiceEnabled, toggleSound, speak, cancel: cancelSpeech } = useSpeech(false);
+  const { isEnabled: isVoiceEnabled, toggleSound, speak, cancel: cancelSpeech } = useSpeech(true);
 
   // AI Inference Hook (Supporting Signal)
   const {

@@ -30,10 +30,28 @@ export default function PositionCheck({
   isLoading = false,
   error = null,
   onVideoReady,
+  speak = null,
+  isVoiceEnabled = true,
 }) {
   const config = POSITION_CONFIG[testType] || POSITION_CONFIG.COVER_TEST;
   const status = positionReport?.status || POSITION_STATUS.INITIALIZING;
   const isReady = status === POSITION_STATUS.READY;
+
+  const spokenIntroRef = React.useRef(false);
+  React.useEffect(() => {
+    if (isVoiceEnabled && speak && !spokenIntroRef.current) {
+      spokenIntroRef.current = true;
+      speak(`${config.instruction}. Giữ đầu thẳng và nhìn vào camera.`);
+    }
+  }, [isVoiceEnabled, speak, config.instruction]);
+
+  const spokenReadyRef = React.useRef(false);
+  React.useEffect(() => {
+    if (isReady && isVoiceEnabled && speak && !spokenReadyRef.current) {
+      spokenReadyRef.current = true;
+      speak('Vị trí đã phù hợp. Hãy nhấn nút bắt đầu.');
+    }
+  }, [isReady, isVoiceEnabled, speak]);
 
   const checks = positionReport?.checks || {
     faceDetected: false,

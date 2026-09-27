@@ -14,9 +14,18 @@ export class AudioService {
     this.errorMessage = '';
     this.listeners = new Set();
     this.requestId = 0;
-    this.unlocked = false;
+    this.unlocked = true;
     this.initialized = false;
     this.handleVoicesChanged = this.loadVoices.bind(this);
+    if (this.isSupported()) {
+      this.initializeVoices();
+      if (this.window && typeof this.window.addEventListener === 'function') {
+        const autoUnlock = () => { this.unlock(); };
+        this.window.addEventListener('pointerdown', autoUnlock, { once: true, passive: true });
+        this.window.addEventListener('keydown', autoUnlock, { once: true, passive: true });
+        this.window.addEventListener('click', autoUnlock, { once: true, passive: true });
+      }
+    }
   }
 
   isSupported() { return Boolean(this.synth && this.Utterance); }
@@ -63,14 +72,19 @@ export class AudioService {
     });
   }
 
-  unlock() { this.unlocked = true; this.initializeVoices(); this.emit(); return this.isSupported(); }
+  unlock() {
+    this.unlocked = true;
+    this.initializeVoices();
+    try { this.synth?.resume?.(); } catch {}
+    this.emit();
+    return this.isSupported();
+  }
 
   async speak(text, options = {}) {
     const cleanText = typeof text === 'string' ? text.trim() : '';
     if (!cleanText) return false;
     if (!this.isSupported()) { this.fail(AUDIO_MESSAGES.unsupported); return false; }
-    if (options.userGesture) this.unlock();
-    if (!this.unlocked) { this.fail(AUDIO_MESSAGES.failed); return false; }
+    if (!this.unlocked || options.userGesture) this.unlock();
     if (this.currentText === cleanText && [AUDIO_STATES.SPEAKING, AUDIO_STATES.PAUSED].includes(this.state)) return true;
 
     this.stop(false);

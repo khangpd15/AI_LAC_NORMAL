@@ -2,9 +2,15 @@ import { useState, useCallback, useEffect } from 'react';
 import audioService from '../services/audioService.js';
 import { AUDIO_STATES } from '../constants/audioConfig.js';
 
-export function useSpeech(defaultEnabled = false) {
+export function useSpeech(defaultEnabled = true) {
   const [isEnabled, setIsEnabled] = useState(defaultEnabled);
   const [audioState, setAudioState] = useState(() => audioService.getSnapshot());
+
+  useEffect(() => {
+    if (isEnabled) {
+      audioService.unlock();
+    }
+  }, [isEnabled]);
 
   useEffect(() => audioService.subscribe(setAudioState), []);
 

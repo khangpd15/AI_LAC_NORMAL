@@ -47,7 +47,7 @@ export default function BrockStringTest() {
 
   // Camera & FaceMesh hooks
   const { stream, isActive, isLoading: isCamLoading, error: camError, start: startCam, stop: stopCam } = useCamera();
-  const { speak, cancel: cancelSpeech, isVoiceEnabled, toggleSound } = useSpeech();
+  const { speak, cancel: cancelSpeech, isVoiceEnabled, toggleSound } = useSpeech(true);
 
   // Execution refs
   const isAbortedRef = useRef(false);
