@@ -986,28 +986,57 @@ export default function CoverTestStep({
 
             {aiTransferState.status === 'success' && aiTransferState.result && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.86rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                    <div style={{ color: 'var(--text-dim)', fontSize: '0.78rem', marginBottom: '4px' }}>Dự đoán mô hình (Model Prediction):</div>
-                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: aiTransferState.result.prediction === 'NORMAL' ? '#34d399' : '#fbbf24' }}>
-                      {aiTransferState.result.prediction}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>
+                  {(aiTransferState.result.comparisonModels?.length
+                    ? aiTransferState.result.comparisonModels
+                    : [{
+                        key: 'korean_b2',
+                        label: 'Korean B2',
+                        prediction: aiTransferState.result.prediction,
+                        classProbability: aiTransferState.result.classProbability,
+                        model: aiTransferState.result.model,
+                        samplingProfile: 'Korean source → RemiCare webcam',
+                      }]
+                  ).map((modelResult) => (
+                    <div
+                      key={modelResult.key}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                      }}
+                    >
+                      <div style={{ color: '#93c5fd', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>
+                        {modelResult.label}
+                      </div>
+                      <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
+                        Model Prediction
+                      </div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: modelResult.prediction === 'NORMAL' ? '#34d399' : '#fbbf24', marginBottom: '8px' }}>
+                        {modelResult.prediction}
+                      </div>
+                      <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
+                        Model class probability
+                      </div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 600 }}>
+                        NORMAL: <span style={{ color: '#34d399' }}>{((modelResult.classProbability?.NORMAL ?? 0) * 100).toFixed(1)}%</span>
+                        {' | '}
+                        STRABISMUS: <span style={{ color: '#fbbf24' }}>{((modelResult.classProbability?.STRABISMUS ?? 0) * 100).toFixed(1)}%</span>
+                      </div>
+                      <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', lineHeight: 1.4, marginTop: '8px' }}>
+                        {modelResult.model?.version || 'research-model'}<br />
+                        {modelResult.samplingProfile}
+                      </div>
                     </div>
-                  </div>
-
-                  <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                    <div style={{ color: 'var(--text-dim)', fontSize: '0.78rem', marginBottom: '4px' }}>Xác suất phân lớp (Class Probability):</div>
-                    <div style={{ fontSize: '0.86rem', fontWeight: 600 }}>
-                      NORMAL: <span style={{ color: '#34d399' }}>{((aiTransferState.result.classProbability?.NORMAL ?? 0) * 100).toFixed(1)}%</span>
-                      {' | '}
-                      STRABISMUS: <span style={{ color: '#fbbf24' }}>{((aiTransferState.result.classProbability?.STRABISMUS ?? 0) * 100).toFixed(1)}%</span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
                 <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '8px 12px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-dim)', lineHeight: '1.6' }}>
                   <div>• <strong>Mô hình:</strong> {aiTransferState.result.model?.name || 'korean_shared_model'} ({aiTransferState.result.model?.version || 'shared-v1.0.0'}, 30 đặc trưng kỹ thuật)</div>
                   <div>• <strong>Domain shift:</strong> <span style={{ color: '#f59e0b', fontWeight: 600 }}>WARNING</span> (Korean IR Eye-tracker 60Hz → RemiCare Webcam 15Hz)</div>
                   <div>• <strong>Ý nghĩa lâm sàng:</strong> None (Clinical meaning: null)</div>
+                  <div>• <strong>Research-only output:</strong> Probability is model output and has not been clinically validated for RemiCare webcam data.</div>
                 </div>
               </div>
             )}

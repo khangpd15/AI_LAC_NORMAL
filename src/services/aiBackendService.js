@@ -76,6 +76,7 @@ export function buildTransferPayload(coverSummary, sampleId = null) {
     source: {
       device: 'WEBCAM',
       tracker: 'MEDIAPIPE_IRIS',
+      samplingRateHz: coverSummary?.datasetSampleRateHz || 15,
     },
     cycles,
   };
