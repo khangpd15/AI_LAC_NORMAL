@@ -88,6 +88,12 @@ export const POSITION_CONFIG = {
  * NOT clinical diagnostic criteria.
  */
 export const POSITION_QUALITY_CONFIG = {
+  FACE_CENTERING: {
+    TARGET_X: 0.5,
+    TARGET_Y: 0.5,
+    MAX_OFFSET_X: 0.10, // Face center must stay within the middle 20% horizontally
+    MAX_OFFSET_Y: 0.12, // Slightly looser vertically for different camera placements
+  },
   HEAD_POSE: {
     MAX_ROLL_DEG: 12.0,   // Engineering tolerance for lateral tilt
     MAX_YAW_DEG: 15.0,    // Engineering tolerance for horizontal turn
@@ -201,6 +207,7 @@ export const DATA_QUALITY_STATUS = {
 // Data Quality Error Reasons
 export const DATA_QUALITY_REASONS = {
   NO_FACE: 'NO_FACE',
+  FACE_NOT_CENTERED: 'FACE_NOT_CENTERED',
   ONE_EYE_MISSING: 'ONE_EYE_MISSING',
   IRIS_NOT_DETECTED: 'IRIS_NOT_DETECTED',
   INVALID_EYE_WIDTH: 'INVALID_EYE_WIDTH',

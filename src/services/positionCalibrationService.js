@@ -185,6 +185,7 @@ function calculateStability(history, currentEst) {
  *   faceDetected: boolean,
  *   checks: {
  *     faceDetected: boolean,
+ *     faceCentered: boolean,
  *     bothEyesDetected: boolean,
  *     irisDetected: boolean,
  *     distanceValid: boolean,
@@ -195,6 +196,7 @@ function calculateStability(history, currentEst) {
  *   headPose: { rollDeg: number, yawDeg: number, pitchDeg: number, isValid: boolean },
  *   quality: { status: string, score: number, reasons: string[] },
  *   boundingBox: { xMin: number, yMin: number, width: number, height: number } | null,
+ *   faceCentering: { centerX: number, centerY: number, offsetX: number, offsetY: number, isCentered: boolean } | null,
  *   history: number[],
  *   timestamp: number,
  *   validRange: { min: number, max: number, optimal: number }, // For backwards compatibility
@@ -226,6 +228,7 @@ export function estimateCameraDistance(
       faceDetected: false,
       checks: {
         faceDetected: false,
+        faceCentered: false,
         bothEyesDetected: false,
         irisDetected: false,
         distanceValid: false,
@@ -240,6 +243,7 @@ export function estimateCameraDistance(
         reasons: [DATA_QUALITY_REASONS.NO_FACE],
       },
       boundingBox: null,
+      faceCentering: null,
       history: [],
       timestamp: performance.now(),
       // Backwards compatibility fields
@@ -262,6 +266,32 @@ export function estimateCameraDistance(
 
   // Calculate face bounding box for UI visualization
   const boundingBox = calculateBoundingBox(landmarks);
+
+  // The face being detectable is not enough: its center must also be near the
+  // optical center of the video frame. This prevents a low/cornered face from
+  // passing solely because the eyes, pose, and estimated distance are valid.
+  const centeringConfig = POSITION_QUALITY_CONFIG.FACE_CENTERING;
+  const faceCentering = boundingBox
+    ? (() => {
+        const centerX = boundingBox.xMin + boundingBox.width / 2;
+        const centerY = boundingBox.yMin + boundingBox.height / 2;
+        const offsetX = centerX - centeringConfig.TARGET_X;
+        const offsetY = centerY - centeringConfig.TARGET_Y;
+        return {
+          centerX: Number(centerX.toFixed(3)),
+          centerY: Number(centerY.toFixed(3)),
+          offsetX: Number(offsetX.toFixed(3)),
+          offsetY: Number(offsetY.toFixed(3)),
+          isCentered:
+            Math.abs(offsetX) <= centeringConfig.MAX_OFFSET_X &&
+            Math.abs(offsetY) <= centeringConfig.MAX_OFFSET_Y,
+        };
+      })()
+    : null;
+  const faceCentered = Boolean(faceCentering?.isCentered);
+  if (!faceCentered) {
+    reasons.push(DATA_QUALITY_REASONS.FACE_NOT_CENTERED);
+  }
 
   // 1. Both eyes check
   const bothEyesDetected = Boolean(leftInner && leftOuter && rightInner && rightOuter);
@@ -346,6 +376,15 @@ export function estimateCameraDistance(
   } else if (!bothEyesDetected || !irisDetected) {
     status = POSITION_STATUS.LOW_CONFIDENCE;
     feedbackMessage = 'Không nhận diện rõ hai mắt hoặc mống mắt.';
+  } else if (!faceCentered) {
+    status = POSITION_STATUS.LOW_CONFIDENCE;
+    if (faceCentering?.offsetY > centeringConfig.MAX_OFFSET_Y) {
+      feedbackMessage = 'Khuôn mặt đang quá thấp. Hãy nâng camera hoặc ngồi cao hơn để đưa mặt vào giữa khung hình.';
+    } else if (faceCentering?.offsetY < -centeringConfig.MAX_OFFSET_Y) {
+      feedbackMessage = 'Khuôn mặt đang quá cao. Hãy hạ camera hoặc ngồi thấp hơn để đưa mặt vào giữa khung hình.';
+    } else {
+      feedbackMessage = 'Hãy di chuyển khuôn mặt vào giữa khung hình.';
+    }
   } else if (!headPose.isValid) {
     status = POSITION_STATUS.LOW_CONFIDENCE;
     feedbackMessage = 'Hãy nhìn thẳng vào camera.';
@@ -372,6 +411,7 @@ export function estimateCameraDistance(
       0.88 *
       (headPose.isValid ? 1.0 : 0.6) *
       (irisDetected ? 1.0 : 0.5) *
+      (faceCentered ? 1.0 : 0.55) *
       (isStable ? 1.0 : 0.7)
     ).toFixed(2)
   );
@@ -413,6 +453,7 @@ export function estimateCameraDistance(
     faceDetected: true,
     checks: {
       faceDetected: true,
+      faceCentered,
       bothEyesDetected,
       irisDetected,
       distanceValid: isDistanceValid,
@@ -427,6 +468,7 @@ export function estimateCameraDistance(
       reasons,
     },
     boundingBox,
+    faceCentering,
     history: updatedHistory,
     timestamp: performance.now(),
     // Backwards compatibility fields
@@ -467,4 +509,3 @@ export class DistanceStabilityTracker {
     return result;
   }
 }
-

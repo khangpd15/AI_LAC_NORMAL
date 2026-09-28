@@ -1,9 +1,9 @@
 /**
- * COMPREHENSIVE SCREENING TEST SUITE (CASE 1 - CASE 12)
+ * COMPREHENSIVE SCREENING TEST SUITE (CASE 1 - CASE 14)
  * Validates independent Position Check architecture, stability, and anti-flicker:
  * - Cover Test Target: 33–40 cm
  * - Brock String Target: 20–25 cm
- * - Edge Cases 1 to 12 as strictly specified by Section 31.
+ * - Edge Cases 1 to 14, including strict horizontal/vertical face centering.
  */
 
 import {
@@ -17,7 +17,7 @@ import {
 } from '../constants/binocularScreeningConfig.js';
 
 /**
- * Runs all validation test cases (CASE 1 to CASE 12) and returns diagnostic report
+ * Runs all validation test cases (CASE 1 to CASE 14) and returns diagnostic report
  * @returns {Array<{ id: string, name: string, passed: boolean, details: string }>}
  */
 export function runScreeningValidationSuite() {
@@ -30,6 +30,8 @@ export function runScreeningValidationSuite() {
     hasIris = true,
     headYaw = 0,
     headRoll = 0,
+    faceOffsetX = 0,
+    faceOffsetY = 0,
   } = {}) => {
     const lm = Array.from({ length: 478 }, () => ({ x: 0.5, y: 0.5, z: 0 }));
 
@@ -73,6 +75,17 @@ export function runScreeningValidationSuite() {
     // Nose & Glabella
     lm[1] = { x: 0.5 + headYaw * 0.005, y: 0.5 };
     lm[168] = { x: 0.5, y: 0.40 };
+
+    if (faceOffsetX !== 0 || faceOffsetY !== 0) {
+      for (let i = 0; i < lm.length; i++) {
+        if (!lm[i]) continue;
+        lm[i] = {
+          ...lm[i],
+          x: lm[i].x + faceOffsetX,
+          y: lm[i].y + faceOffsetY,
+        };
+      }
+    }
 
     return lm;
   };
@@ -360,6 +373,46 @@ export function runScreeningValidationSuite() {
     results.push({ id: 'CASE 12', name: 'Brock String 22cm quay lại Cover Test', passed: false, details: e.message });
   }
 
+  // ----------------------------------------------------
+  // CASE 13: Face too far horizontally from frame center -> disabled
+  // ----------------------------------------------------
+  try {
+    const lm = createMockLandmarksAtDistance(36, { faceOffsetX: 0.16 });
+    const res = estimateCameraDistance(lm, 640, 480, 'COVER_TEST', createStableHistory(36));
+    const passed =
+      res.status === POSITION_STATUS.LOW_CONFIDENCE &&
+      res.checks.faceCentered === false &&
+      res.checks.distanceValid === false;
+    results.push({
+      id: 'CASE 13',
+      name: 'Face lệch ngang khỏi tâm -> LOW_CONFIDENCE -> disabled',
+      passed,
+      details: `Status: ${res.status}, centered: ${res.checks.faceCentered}, offsetX: ${res.faceCentering?.offsetX}`,
+    });
+  } catch (e) {
+    results.push({ id: 'CASE 13', name: 'Face lệch ngang khỏi tâm', passed: false, details: e.message });
+  }
+
+  // ----------------------------------------------------
+  // CASE 14: Face too low in frame (screenshot regression) -> disabled
+  // ----------------------------------------------------
+  try {
+    const lm = createMockLandmarksAtDistance(36, { faceOffsetY: 0.24 });
+    const res = estimateCameraDistance(lm, 640, 480, 'COVER_TEST', createStableHistory(36));
+    const passed =
+      res.status === POSITION_STATUS.LOW_CONFIDENCE &&
+      res.checks.faceCentered === false &&
+      res.checks.distanceValid === false &&
+      res.feedbackMessage.includes('quá thấp');
+    results.push({
+      id: 'CASE 14',
+      name: 'Face quá thấp như ảnh hồi quy -> LOW_CONFIDENCE -> disabled',
+      passed,
+      details: `Status: ${res.status}, centered: ${res.checks.faceCentered}, offsetY: ${res.faceCentering?.offsetY}`,
+    });
+  } catch (e) {
+    results.push({ id: 'CASE 14', name: 'Face quá thấp trong khung', passed: false, details: e.message });
+  }
+
   return results;
 }
-

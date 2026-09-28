@@ -3,6 +3,7 @@ import CameraView from '../CameraView';
 import AudioButton from '../audio/AudioButton';
 import {
   POSITION_CONFIG,
+  POSITION_QUALITY_CONFIG,
   POSITION_STATUS,
 } from '../../constants/binocularScreeningConfig.js';
 
@@ -55,6 +56,7 @@ export default function PositionCheck({
 
   const checks = positionReport?.checks || {
     faceDetected: false,
+    faceCentered: false,
     bothEyesDetected: false,
     irisDetected: false,
     distanceValid: false,
@@ -65,6 +67,7 @@ export default function PositionCheck({
   const estimatedDistanceCm = positionReport?.estimatedDistanceCm ?? null;
   const stableDistanceCm = positionReport?.stableDistanceCm ?? estimatedDistanceCm;
   const feedbackMessage = positionReport?.feedbackMessage || 'Đang kết nối camera và nhận diện khuôn mặt...';
+  const centeringConfig = POSITION_QUALITY_CONFIG.FACE_CENTERING;
 
   // Dynamic visual track limits based on test config
   const trackMin = Math.max(10, config.minDistanceCm - 12);
@@ -110,6 +113,38 @@ export default function PositionCheck({
               error={error}
               onVideoReady={onVideoReady}
             />
+
+            {/* Safe zone for the center point of the detected face. */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: `${(centeringConfig.TARGET_X - centeringConfig.MAX_OFFSET_X) * 100}%`,
+                top: `${(centeringConfig.TARGET_Y - centeringConfig.MAX_OFFSET_Y) * 100}%`,
+                width: `${centeringConfig.MAX_OFFSET_X * 200}%`,
+                height: `${centeringConfig.MAX_OFFSET_Y * 200}%`,
+                border: `1px dashed ${checks.faceCentered ? 'rgba(16, 185, 129, 0.75)' : 'rgba(250, 204, 21, 0.85)'}`,
+                borderRadius: '12px',
+                background: checks.faceCentered ? 'rgba(16, 185, 129, 0.04)' : 'rgba(250, 204, 21, 0.035)',
+                pointerEvents: 'none',
+                zIndex: 7,
+                transition: 'border-color 0.15s ease-out',
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  width: '10px',
+                  height: '10px',
+                  border: '2px solid currentColor',
+                  borderRadius: '50%',
+                  color: checks.faceCentered ? '#10b981' : '#facc15',
+                  transform: 'translate(-50%, -50%)',
+                }}
+              />
+            </div>
 
             {/* Face Bounding Box indicator if face detected */}
             {positionReport?.boundingBox && checks.faceDetected && (
@@ -227,6 +262,20 @@ export default function PositionCheck({
                 <div className="check-text">
                   <strong>Khuôn mặt được phát hiện</strong>
                   <span>MediaPipe Face Mesh nhận diện rõ viền mặt</span>
+                </div>
+              </li>
+
+              <li className={`checklist-item ${checks.faceCentered ? 'pass' : 'fail'}`}>
+                <span className="check-icon" aria-hidden="true">
+                  {checks.faceCentered ? '✓' : '○'}
+                </span>
+                <div className="check-text">
+                  <strong>Khuôn mặt nằm giữa khung hình</strong>
+                  <span>
+                    {positionReport?.faceCentering
+                      ? `Lệch ngang ${Math.round(Math.abs(positionReport.faceCentering.offsetX) * 100)}%, dọc ${Math.round(Math.abs(positionReport.faceCentering.offsetY) * 100)}%`
+                      : 'Đưa tâm khuôn mặt vào vùng hướng dẫn'}
+                  </span>
                 </div>
               </li>
 
