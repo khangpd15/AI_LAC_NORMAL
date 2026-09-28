@@ -14,8 +14,9 @@ import {
 import { SCREENING_CONFIG, COVER_TEST_CONFIG } from '../../constants/screeningConfig.js';
 import { aggregateCoverCycles, createCoverFrame, createCoverSessionId, createCycleRecord, inconclusiveCycle, isCoverSessionCurrent, validateBaselinePair } from '../../services/coverTestProtocolService.js';
 import { createTimeSeriesRecorder } from '../../services/coverTestTimeSeriesService.js';
-import { captureScreeningFrame } from '../../services/screeningImageCaptureService.js';
-import { analyzeCoverTest, saveCoverTestSession } from '../../services/aiBackendService.js';
+import { captureScreeningFrame, captureEyeRegionCrop } from '../../services/screeningImageCaptureService.js';
+import { saveCoverTestSession as saveCoverTestCloudSession } from '../../services/coverTest/coverTestPersistenceService.js';
+import { analyzeCoverTest } from '../../services/aiBackendService.js';
 import { toCanonicalEye, getCoverInstruction } from '../../utils/eyeCoordinateMapping.js';
 
 /**
@@ -33,6 +34,7 @@ import { toCanonicalEye, getCoverInstruction } from '../../utils/eyeCoordinateMa
  * 5. Multi-cycle preservation without overwriting.
  */
 export default function CoverTestStep({
+  sessionId = null,
   videoRef,
   stream = null,
   landmarks = null,
@@ -79,14 +81,25 @@ export default function CoverTestStep({
   // Recorded summary data
   const [_completedCyclesList, setCompletedCyclesList] = useState([]);
   const [coverSummary, setCoverSummary] = useState(null);
-  const [debugSessionId, setDebugSessionId] = useState(() => createCoverSessionId());
+  const canonicalSessionId = useMemo(() => {
+    if (sessionId) return sessionId;
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return 'cover-session-fallback';
+  }, [sessionId]);
 
   // Execution refs
   const isAbortedRef = useRef(false);
   const currentBaselineRef = useRef(null);
-  const sessionIdRef = useRef(debugSessionId);
+  const sessionIdRef = useRef(canonicalSessionId);
+  const activeRunTokenRef = useRef(0);
+  const eyeImagesRef = useRef({});
+  const accumulatedCyclesRef = useRef([]);
   const phaseRafRef = useRef(null);
   const phaseResolveRef = useRef(null);
+
+  useEffect(() => {
+    sessionIdRef.current = canonicalSessionId;
+  }, [canonicalSessionId]);
 
   // Phase 4.2: AI Transfer Inference state (research experiment only)
   const [aiTransferState, setAiTransferState] = useState({
@@ -108,71 +121,87 @@ export default function CoverTestStep({
   });
   const hasSavedSessionRef = useRef(false);
 
-  const persistSessionSampling = useCallback(async (currentSessionId, allSamples) => {
+  const persistSessionSampling = useCallback(async (currentSessionId, cyclesList) => {
     if (hasSavedSessionRef.current) return;
     hasSavedSessionRef.current = true;
+    accumulatedCyclesRef.current = cyclesList || [];
+
+    const totalSamples = (cyclesList || []).reduce(
+      (acc, cycle) => acc + (cycle.samples?.length || cycle.rawTrajectory?.length || 0),
+      0
+    );
+
     setSessionSaveState({
       status: 'saving',
       sessionId: currentSessionId,
       sessionPath: null,
-      sampleCount: allSamples ? allSamples.length : 0,
+      sampleCount: totalSamples,
       error: null,
       message: null,
     });
 
-    const sessionPayload = {
-      sessionId: currentSessionId,
-      metadata: {
-        sessionId: currentSessionId,
-        testType: 'cover_test',
-        createdAt: new Date().toISOString(),
-        samplingRate: COVER_TEST_CONFIG.datasetSampleRateHz,
-        protocolVersion: 'cover-test-v1',
-        camera: {
-          mirrored: true,
-        },
-      },
-      samples: allSamples || [],
-    };
-
     try {
-      const result = await saveCoverTestSession(sessionPayload);
+      const result = await saveCoverTestCloudSession({
+        sessionId: currentSessionId,
+        clientMetadata: {
+          testType: 'cover_test',
+          createdAt: new Date().toISOString(),
+          samplingRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
+          protocolVersion: 'cover-test-v1',
+          camera: { mirrored: true },
+        },
+        cycles: cyclesList || [],
+        images: eyeImagesRef.current,
+        runInference: true,
+      });
+
       if (result.saved && result.success) {
         setSessionSaveState({
           status: 'saved',
           sessionId: currentSessionId,
-          sessionPath: result.sessionPath,
-          sampleCount: result.sampleCount || (allSamples ? allSamples.length : 0),
+          sessionPath: result.storageRoot,
+          sampleCount: totalSamples,
           error: null,
-          message: 'Dữ liệu kiểm tra đã được lưu trữ thành công.',
+          message: 'Dữ liệu kiểm tra và ảnh vùng mắt đã được lưu trữ an toàn lên Cloud.',
         });
+        if (result.aiResult) {
+          setAiTransferState({
+            status: 'success',
+            result: result.aiResult,
+            error: null,
+            detail: null,
+          });
+        }
       } else {
+        hasSavedSessionRef.current = false;
         setSessionSaveState({
           status: 'error',
           sessionId: currentSessionId,
           sessionPath: null,
-          sampleCount: allSamples ? allSamples.length : 0,
+          sampleCount: totalSamples,
           error: result.error || 'SAVE_FAILED',
           message: result.message || 'Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.',
         });
       }
     } catch (err) {
+      hasSavedSessionRef.current = false;
       setSessionSaveState({
         status: 'error',
         sessionId: currentSessionId,
         sessionPath: null,
-        sampleCount: allSamples ? allSamples.length : 0,
+        sampleCount: totalSamples,
         error: err?.message || 'NETWORK_ERROR',
-        message: 'Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.',
+        message: 'Lỗi mạng khi lưu dữ liệu kiểm tra. Vui lòng thử lại.',
       });
     }
   }, []);
 
   const retrySessionSave = useCallback(() => {
     hasSavedSessionRef.current = false;
-    const allSessionSamples = (_completedCyclesList || []).flatMap((c) => c.samples || c.rawTrajectory || []);
-    persistSessionSampling(sessionIdRef.current, allSessionSamples);
-  }, [_completedCyclesList, persistSessionSampling]);
+    persistSessionSampling(sessionIdRef.current, accumulatedCyclesRef.current);
+  }, [persistSessionSampling]);
+
+
 
   const requestAiTransfer = useCallback(async (summary) => {
     if (!summary || hasSentAiTransferRef.current) return;
@@ -492,11 +521,10 @@ export default function CoverTestStep({
     // LOCK fixation target position at test start (Sections 10, 11)
     isTargetLockedRef.current = true;
     setLockedTargetPos(fixationTargetPos);
-    const runSessionId = createCoverSessionId();
-    sessionIdRef.current = runSessionId;
-    setDebugSessionId(runSessionId);
+    const runToken = ++activeRunTokenRef.current;
     isAbortedRef.current = false;
-    const runIsCurrent = () => isCoverSessionCurrent(runSessionId, sessionIdRef.current, isAbortedRef.current);
+    const runIsCurrent = () => !isAbortedRef.current && runToken === activeRunTokenRef.current;
+    eyeImagesRef.current = {};
     setCompletedCyclesList([]);
     setCoverSummary(null);
     currentBaselineRef.current = null;
@@ -584,6 +612,14 @@ export default function CoverTestStep({
       if (!runIsCurrent()) return;
 
       // Phase 3a: Brief Uncover notice (0.8s)
+      // Protocol-Triggered Image Capture: LEFT eye crop
+      captureEyeRegionCrop(videoRef.current, latestFeaturesRef?.current?.raw?.landmarks || landmarks, 'LEFT').then((crop) => {
+        if (crop?.blob) {
+          eyeImagesRef.current[`${c}_left`] = crop.blob;
+          onImageCaptured?.(crop.metadata);
+        }
+      }).catch((e) => console.warn('[EyeCrop] Left eye capture note:', e));
+
       await executePhase({
         state: 'UNCOVER',
         title: 'Bỏ che mắt',
@@ -630,6 +666,14 @@ export default function CoverTestStep({
       if (!runIsCurrent()) return;
 
       // Phase 5a: Brief Uncover notice (0.8s)
+      // Protocol-Triggered Image Capture: RIGHT eye crop
+      captureEyeRegionCrop(videoRef.current, latestFeaturesRef?.current?.raw?.landmarks || landmarks, 'RIGHT').then((crop) => {
+        if (crop?.blob) {
+          eyeImagesRef.current[`${c}_right`] = crop.blob;
+          onImageCaptured?.(crop.metadata);
+        }
+      }).catch((e) => console.warn('[EyeCrop] Right eye capture note:', e));
+
       await executePhase({
         state: 'UNCOVER',
         title: 'Bỏ che mắt',
@@ -718,7 +762,6 @@ export default function CoverTestStep({
 
     if (runIsCurrent() && accumulatedCycles.length > 0) {
       const summaryPayload = aggregateCoverCycles(accumulatedCycles);
-      const allSessionSamples = accumulatedCycles.flatMap((cycle) => cycle.samples || cycle.rawTrajectory || []);
 
       setCoverSummary(summaryPayload);
       transitionToState('FINISHED', 3);
@@ -727,7 +770,7 @@ export default function CoverTestStep({
       }
 
       // Automatically persist raw sampling dataset to backend storage
-      persistSessionSampling(sessionIdRef.current, allSessionSamples);
+      persistSessionSampling(sessionIdRef.current, accumulatedCycles);
       requestAiTransfer(summaryPayload);
     }
   };
@@ -752,7 +795,7 @@ export default function CoverTestStep({
           cycle={cycleIndex}
           trackedEye={trackedEye}
           samples={liveSampleCount}
-          sessionId={debugSessionId}
+          sessionId={canonicalSessionId}
           timerDisplay={timerDisplay}
           startTime={trackingStartTime}
           elapsedMs={trackingElapsedMs}
@@ -1060,7 +1103,7 @@ export default function CoverTestStep({
                 💾 Dữ liệu nghiên cứu (Sampling Data)
               </span>
               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                {sessionSaveState.sessionId || debugSessionId}
+                {sessionSaveState.sessionId || canonicalSessionId}
               </span>
             </div>
 

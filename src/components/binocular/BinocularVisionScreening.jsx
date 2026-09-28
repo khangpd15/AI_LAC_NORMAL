@@ -255,6 +255,7 @@ export default function BinocularVisionScreening() {
 
         {currentStep === 'COVER' && (
           <CoverTestStep
+            sessionId={session.sessionId}
             videoRef={videoRef}
             stream={stream}
             landmarks={rawLandmarks}
