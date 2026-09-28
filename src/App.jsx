@@ -1,12 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import BinocularVisionScreening from './components/binocular/BinocularVisionScreening';
-import StaticEyeTest from './pages/StaticEyeTest';
-import StrabismusScreening from './pages/StrabismusScreening';
-import BrockStringTest from './components/BrockStringTest';
 import ErrorBoundary from './components/ErrorBoundary';
-import ClinicalCalibrationPanel from './components/research/ClinicalCalibrationPanel';
-import AudioDebugPanel from './components/audio/AudioDebugPanel';
-import ScreeningDatasetDebugPanel from './components/debug/ScreeningDatasetDebugPanel';
+
+// Lazy-loaded secondary screening modules and research panels (Code Splitting)
+const StaticEyeTest = lazy(() => import('./pages/StaticEyeTest'));
+const StrabismusScreening = lazy(() => import('./pages/StrabismusScreening'));
+const BrockStringTest = lazy(() => import('./components/BrockStringTest'));
+const ClinicalCalibrationPanel = lazy(() => import('./components/research/ClinicalCalibrationPanel'));
+const AudioDebugPanel = lazy(() => import('./components/audio/AudioDebugPanel'));
+const ScreeningDatasetDebugPanel = lazy(() => import('./components/debug/ScreeningDatasetDebugPanel'));
+
+function LoadingFallback() {
+  return (
+    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted, #94a3b8)' }}>
+      Đang tải hợp phần...
+    </div>
+  );
+}
 
 export default function App() {
   const isResearchCalibrationRoute = window.location.pathname === '/research/clinical-calibration';
@@ -52,7 +62,6 @@ export default function App() {
               >
                 Sàng lọc hai mắt
               </button>
-
             </nav>
 
             {/* Dark / Light Mode Toggle */}
@@ -72,13 +81,17 @@ export default function App() {
       {/* Main Content Area */}
       <main className="app-main">
         <ErrorBoundary>
-          {isResearchCalibrationRoute && <ClinicalCalibrationPanel />}
-          {!isResearchCalibrationRoute && <>
-            {activeTab === 'binocular' && <BinocularVisionScreening />}
-            {activeTab === 'static' && <StaticEyeTest />}
-            {activeTab === 'cover' && <StrabismusScreening />}
-            {activeTab === 'brock' && <BrockStringTest />}
-          </>}
+          <Suspense fallback={<LoadingFallback />}>
+            {isResearchCalibrationRoute && <ClinicalCalibrationPanel />}
+            {!isResearchCalibrationRoute && (
+              <>
+                {activeTab === 'binocular' && <BinocularVisionScreening />}
+                {activeTab === 'static' && <StaticEyeTest />}
+                {activeTab === 'cover' && <StrabismusScreening />}
+                {activeTab === 'brock' && <BrockStringTest />}
+              </>
+            )}
+          </Suspense>
         </ErrorBoundary>
       </main>
 
@@ -93,8 +106,11 @@ export default function App() {
           </p>
         </div>
       </footer>
-      <AudioDebugPanel />
-      <ScreeningDatasetDebugPanel />
+
+      <Suspense fallback={null}>
+        <AudioDebugPanel />
+        <ScreeningDatasetDebugPanel />
+      </Suspense>
     </div>
   );
 }

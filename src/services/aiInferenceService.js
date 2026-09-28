@@ -38,15 +38,22 @@ let sessionLoadingPromise = null;
  * @param {string} metadataUrl
  * @returns {Promise<any>}
  */
-export async function loadModelMetadata(metadataUrl = DEFAULT_METADATA_PATH) {
+export async function loadModelMetadata(metadataUrl = DEFAULT_METADATA_PATH, options = {}) {
   if (cachedMetadata) return cachedMetadata;
+  const timeoutMs = options.timeoutMs || 10000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(metadataUrl);
+    const res = await fetch(metadataUrl, { signal: controller.signal });
+    clearTimeout(timer);
     if (!res.ok) throw new Error(`HTTP ${res.status} fetching metadata`);
     cachedMetadata = await res.json();
     return cachedMetadata;
   } catch (err) {
-    console.warn('Could not fetch model metadata, using built-in defaults:', err);
+    clearTimeout(timer);
+    if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+      console.warn('Could not fetch model metadata, using built-in defaults:', err);
+    }
     cachedMetadata = {
       features: AI_FEATURE_ORDER,
       labels: { '0': 'normal', '1': 'strabismus' },
@@ -66,8 +73,12 @@ export async function getOrInitAISession(modelUrl = DEFAULT_MODEL_PATH) {
   if (sessionLoadingPromise) return sessionLoadingPromise;
 
   sessionLoadingPromise = (async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
     try {
-      console.log(`[RemiCare AI] Loading ONNX model from: ${modelUrl}`);
+      if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+        console.log(`[RemiCare AI] Loading ONNX model from: ${modelUrl}`);
+      }
       // Options optimized for mobile and desktop browsers
       const sessionOptions = {
         executionProviders: ['wasm'],
@@ -75,7 +86,8 @@ export async function getOrInitAISession(modelUrl = DEFAULT_MODEL_PATH) {
       };
 
       // Fetch model binary directly to ensure robust loading across all bundlers
-      const res = await fetch(modelUrl);
+      const res = await fetch(modelUrl, { signal: controller.signal });
+      clearTimeout(timer);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status} tải tệp mô hình ONNX`);
       }
@@ -84,9 +96,12 @@ export async function getOrInitAISession(modelUrl = DEFAULT_MODEL_PATH) {
 
       const session = await ort.InferenceSession.create(modelBytes, sessionOptions);
       cachedSession = session;
-      console.log('[RemiCare AI] ONNX InferenceSession successfully initialized');
+      if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+        console.log('[RemiCare AI] ONNX InferenceSession successfully initialized');
+      }
       return session;
     } catch (err) {
+      clearTimeout(timer);
       console.error('[RemiCare AI] Failed to load ONNX model:', err);
       sessionLoadingPromise = null; // allow retry
       throw new Error(`Không thể nạp mô hình AI ONNX: ${err.message}`);

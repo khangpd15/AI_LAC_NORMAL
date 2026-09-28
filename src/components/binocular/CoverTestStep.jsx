@@ -96,10 +96,19 @@ export default function CoverTestStep({
   const accumulatedCyclesRef = useRef([]);
   const phaseRafRef = useRef(null);
   const phaseResolveRef = useRef(null);
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     sessionIdRef.current = canonicalSessionId;
   }, [canonicalSessionId]);
+
+  // Request cancellation on component unmount
+  useEffect(() => {
+    abortControllerRef.current = new AbortController();
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   // Phase 4.2: AI Transfer Inference state (research experiment only)
   const [aiTransferState, setAiTransferState] = useState({
@@ -121,89 +130,6 @@ export default function CoverTestStep({
   });
   const hasSavedSessionRef = useRef(false);
 
-  const persistSessionSampling = useCallback(async (currentSessionId, cyclesList) => {
-    if (hasSavedSessionRef.current) return;
-    hasSavedSessionRef.current = true;
-    accumulatedCyclesRef.current = cyclesList || [];
-
-    const totalSamples = (cyclesList || []).reduce(
-      (acc, cycle) => acc + (cycle.samples?.length || cycle.rawTrajectory?.length || 0),
-      0
-    );
-
-    setSessionSaveState({
-      status: 'saving',
-      sessionId: currentSessionId,
-      sessionPath: null,
-      sampleCount: totalSamples,
-      error: null,
-      message: null,
-    });
-
-    try {
-      const targetSessionId = isValidUUIDv4(currentSessionId) ? currentSessionId : canonicalSessionId;
-      const result = await saveCoverTestCloudSession({
-        sessionId: targetSessionId,
-        clientMetadata: {
-          testType: 'cover_test',
-          createdAt: new Date().toISOString(),
-          samplingRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
-          protocolVersion: 'cover-test-v1',
-          camera: { mirrored: true },
-        },
-        cycles: cyclesList || [],
-        images: eyeImagesRef.current,
-        runInference: true,
-      });
-
-      if (result.saved && result.success) {
-        setSessionSaveState({
-          status: 'saved',
-          sessionId: targetSessionId,
-          sessionPath: result.storageRoot,
-          sampleCount: totalSamples,
-          error: null,
-          message: 'Dữ liệu kiểm tra và ảnh vùng mắt đã được lưu trữ an toàn lên Cloud.',
-        });
-        if (result.aiResult) {
-          setAiTransferState({
-            status: 'success',
-            result: result.aiResult,
-            error: null,
-            detail: null,
-          });
-        }
-      } else {
-        hasSavedSessionRef.current = false;
-        setSessionSaveState({
-          status: 'error',
-          sessionId: targetSessionId,
-          sessionPath: null,
-          sampleCount: totalSamples,
-          error: result.error || 'SAVE_FAILED',
-          message: result.message || 'Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.',
-        });
-      }
-    } catch (err) {
-      hasSavedSessionRef.current = false;
-      setSessionSaveState({
-        status: 'error',
-        sessionId: currentSessionId,
-        sessionPath: null,
-        sampleCount: totalSamples,
-        error: err?.message || 'NETWORK_ERROR',
-        message: 'Lỗi mạng khi lưu dữ liệu kiểm tra. Vui lòng thử lại.',
-      });
-    }
-  }, [canonicalSessionId]);
-
-  const retrySessionSave = useCallback(() => {
-    hasSavedSessionRef.current = false;
-    persistSessionSampling(canonicalSessionId, accumulatedCyclesRef.current);
-  }, [canonicalSessionId, persistSessionSampling]);
-
-
-
   const requestAiTransfer = useCallback(async (summary) => {
     if (!summary || hasSentAiTransferRef.current) return;
     hasSentAiTransferRef.current = true;
@@ -212,6 +138,7 @@ export default function CoverTestStep({
     try {
       const response = await analyzeCoverTest(summary, {
         sampleId: canonicalSessionId,
+        signal: abortControllerRef.current?.signal,
       });
 
       if (response && response.status === 'TRANSFER_EXPERIMENT') {
@@ -230,6 +157,7 @@ export default function CoverTestStep({
         });
       }
     } catch (err) {
+      if (err.name === 'AbortError') return;
       setAiTransferState({
         status: 'error',
         result: null,
@@ -239,8 +167,110 @@ export default function CoverTestStep({
     }
   }, [canonicalSessionId]);
 
+  const persistSessionSampling = useCallback(async (currentSessionId, cyclesList, summaryPayload = null) => {
+    if (hasSavedSessionRef.current) return;
+    hasSavedSessionRef.current = true;
+    accumulatedCyclesRef.current = cyclesList || [];
+
+    const totalSamples = (cyclesList || []).reduce(
+      (acc, cycle) => acc + (cycle.samples?.length || cycle.rawTrajectory?.length || 0),
+      0
+    );
+
+    setSessionSaveState({
+      status: 'saving',
+      sessionId: currentSessionId,
+      sessionPath: null,
+      sampleCount: totalSamples,
+      error: null,
+      message: null,
+    });
+
+    // Set AI inference to loading while backend processes both storage and model transfer
+    if (!hasSentAiTransferRef.current) {
+      setAiTransferState({ status: 'loading', result: null, error: null, detail: null });
+    }
+
+    try {
+      const targetSessionId = isValidUUIDv4(currentSessionId) ? currentSessionId : canonicalSessionId;
+      const result = await saveCoverTestCloudSession({
+        sessionId: targetSessionId,
+        clientMetadata: {
+          testType: 'cover_test',
+          createdAt: new Date().toISOString(),
+          samplingRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
+          protocolVersion: 'cover-test-v1',
+          camera: { mirrored: true },
+        },
+        cycles: cyclesList || [],
+        images: eyeImagesRef.current,
+        runInference: true,
+        signal: abortControllerRef.current?.signal,
+      });
+
+      if (result.saved && result.success) {
+        setSessionSaveState({
+          status: 'saved',
+          sessionId: targetSessionId,
+          sessionPath: result.storageRoot,
+          sampleCount: totalSamples,
+          error: null,
+          message: 'Dữ liệu kiểm tra và ảnh vùng mắt đã được lưu trữ an toàn lên Cloud.',
+        });
+
+        // If backend executed AI inference, fulfill AI transfer state directly without duplicate API call
+        if (result.aiResult) {
+          hasSentAiTransferRef.current = true;
+          setAiTransferState({
+            status: 'success',
+            result: result.aiResult,
+            error: null,
+            detail: null,
+          });
+        } else if (!hasSentAiTransferRef.current && (summaryPayload || coverSummary)) {
+          // Fallback only if backend saved successfully but omitted AI inference
+          requestAiTransfer(summaryPayload || coverSummary);
+        }
+      } else {
+        hasSavedSessionRef.current = false;
+        setSessionSaveState({
+          status: 'error',
+          sessionId: targetSessionId,
+          sessionPath: null,
+          sampleCount: totalSamples,
+          error: result.error || 'SAVE_FAILED',
+          message: result.message || 'Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.',
+        });
+        // Fallback to standalone AI inference endpoint if cloud storage persistence failed
+        if (!hasSentAiTransferRef.current && (summaryPayload || coverSummary)) {
+          requestAiTransfer(summaryPayload || coverSummary);
+        }
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      hasSavedSessionRef.current = false;
+      setSessionSaveState({
+        status: 'error',
+        sessionId: currentSessionId,
+        sessionPath: null,
+        sampleCount: totalSamples,
+        error: err?.message || 'NETWORK_ERROR',
+        message: 'Lỗi mạng khi lưu dữ liệu kiểm tra. Vui lòng thử lại.',
+      });
+      if (!hasSentAiTransferRef.current && (summaryPayload || coverSummary)) {
+        requestAiTransfer(summaryPayload || coverSummary);
+      }
+    }
+  }, [canonicalSessionId, coverSummary, requestAiTransfer]);
+
+  const retrySessionSave = useCallback(() => {
+    hasSavedSessionRef.current = false;
+    persistSessionSampling(canonicalSessionId, accumulatedCyclesRef.current, coverSummary);
+  }, [canonicalSessionId, coverSummary, persistSessionSampling]);
+
   useEffect(() => {
-    if (coverState === 'FINISHED' && coverSummary && !hasSentAiTransferRef.current) {
+    // Only dispatch standalone requestAiTransfer if session persistence is NOT active
+    if (coverState === 'FINISHED' && coverSummary && !hasSentAiTransferRef.current && !hasSavedSessionRef.current) {
       requestAiTransfer(coverSummary);
     }
   }, [coverState, coverSummary, requestAiTransfer]);
@@ -771,9 +801,10 @@ export default function CoverTestStep({
         speak('Đã hoàn thành phần kiểm tra.');
       }
 
-      // Automatically persist raw sampling dataset to backend storage
-      persistSessionSampling(canonicalSessionId, accumulatedCycles);
-      requestAiTransfer(summaryPayload);
+      // Automatically persist raw sampling dataset to backend storage.
+      // The cloud session persistence endpoint handles both storage and AI inference in ONE single roundtrip,
+      // eliminating duplicate inference calls and race conditions.
+      persistSessionSampling(canonicalSessionId, accumulatedCycles, summaryPayload);
     }
   };
 

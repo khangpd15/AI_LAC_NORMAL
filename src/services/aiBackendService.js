@@ -12,8 +12,10 @@
  */
 
 import { generateUUIDv4 } from './coverTestProtocolService.js';
+import { getApiBaseUrl, apiClient } from '../api/client.js';
+import { transferStrabismusApi } from '../api/transferApi.js';
+import { checkBackendHealthApi } from '../api/healthApi.js';
 
-const DEFAULT_BACKEND_URL = 'http://localhost:8000';
 const DEFAULT_TIMEOUT_MS = 15000;
 
 /**
@@ -23,9 +25,7 @@ const DEFAULT_TIMEOUT_MS = 15000;
  * @returns {string} Clean base URL without trailing slash
  */
 export function getBackendBaseUrl() {
-  const envUrl = typeof import.meta !== 'undefined' && import.meta.env?.VITE_AI_BACKEND_URL;
-  const rawUrl = envUrl || DEFAULT_BACKEND_URL;
-  return rawUrl.replace(/\/+$/, '');
+  return getApiBaseUrl();
 }
 
 /**
@@ -90,6 +90,7 @@ export function buildTransferPayload(coverSummary, sampleId = null) {
  * @param {Object} payloadOrSummary - Formatted ScreeningRequest or completed coverSummary
  * @param {Object} [options] - Configuration options
  * @param {number} [options.timeoutMs=15000] - Request timeout in milliseconds
+ * @param {AbortSignal} [options.signal] - Optional caller AbortSignal
  * @returns {Promise<Object>} Structured inference result or error state
  */
 export async function analyzeCoverTest(payloadOrSummary, options = {}) {
@@ -117,57 +118,39 @@ export async function analyzeCoverTest(payloadOrSummary, options = {}) {
     };
   }
 
-  const baseUrl = getBackendBaseUrl();
-  const endpoint = `${baseUrl}/api/v1/transfer/strabismus`;
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
+    const data = await transferStrabismusApi(payload, {
+      timeoutMs,
+      signal: options.signal || null,
     });
-
-    clearTimeout(timeoutId);
-
-    const data = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      if (response.status === 422) {
-        return {
-          status: 'INPUT_INCOMPATIBLE',
-          error: 'INVALID_TIME_SERIES',
-          inputCompatible: false,
-          message: 'Dữ liệu chuỗi thời gian không hợp lệ hoặc không tương thích mô hình.',
-          detail: data?.detail || response.statusText,
-        };
-      }
-
-      return {
-        status: 'SERVER_ERROR',
-        error: 'MODEL_ERROR',
-        inputCompatible: false,
-        message: 'Không thể xử lý suy luận mô hình AI.',
-        detail: data?.detail || `HTTP ${response.status}: ${response.statusText}`,
-      };
-    }
-
     return data;
   } catch (err) {
-    clearTimeout(timeoutId);
-
-    if (err.name === 'AbortError') {
+    if (err.name === 'AbortError' || err.name === 'TimeoutError' || err.isTimeout) {
       return {
         status: 'BACKEND_TIMEOUT',
         error: 'TIMEOUT',
         inputCompatible: false,
         message: 'Hệ thống AI phản hồi quá thời gian cho phép (15 giây).',
+      };
+    }
+
+    if (err.status === 422) {
+      return {
+        status: 'INPUT_INCOMPATIBLE',
+        error: 'INVALID_TIME_SERIES',
+        inputCompatible: false,
+        message: 'Dữ liệu chuỗi thời gian không hợp lệ hoặc không tương thích mô hình.',
+        detail: err.data?.detail || err.message,
+      };
+    }
+
+    if (err.status && err.status >= 500) {
+      return {
+        status: 'SERVER_ERROR',
+        error: 'MODEL_ERROR',
+        inputCompatible: false,
+        message: 'Không thể xử lý suy luận mô hình AI.',
+        detail: err.data?.detail || `HTTP ${err.status}`,
       };
     }
 
@@ -184,30 +167,16 @@ export async function analyzeCoverTest(payloadOrSummary, options = {}) {
 /**
  * Diagnostics helper: checks backend operational health status.
  * 
+ * @param {Object} [options]
  * @returns {Promise<Object>} Health check status or error
  */
-export async function checkBackendHealth() {
-  const baseUrl = getBackendBaseUrl();
-  const endpoint = `${baseUrl}/health`;
-  try {
-    const response = await fetch(endpoint, { method: 'GET' });
-    if (!response.ok) {
-      return { status: 'error', code: response.status };
-    }
-    return await response.json();
-  } catch (err) {
-    return { status: 'unavailable', error: err.message };
-  }
+export async function checkBackendHealth(options = {}) {
+  return checkBackendHealthApi(options);
 }
 
 /**
  * Automatically persists a completed Cover Test session (metadata and raw sampling)
- * to the backend storage under data/cover_test/sessions/<session_id>/.
- * 
- * Strict architectural rule:
- * 1. Must validate payload structure.
- * 2. Does NOT claim success unless backend returns saved === true and HTTP 200/201.
- * 3. Never transmits PII (name, phone, email, etc.).
+ * to the legacy backend storage endpoint under /api/cover-test/sessions.
  * 
  * @param {Object} sessionData - { sessionId, metadata, samples }
  * @param {Object} [options]
@@ -240,33 +209,20 @@ export async function saveCoverTestSession(sessionData, options = {}) {
     samples: sessionData.samples,
   };
 
-  const baseUrl = getBackendBaseUrl();
-  const endpoint = `${baseUrl}/api/cover-test/sessions`;
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    const response = await fetch(endpoint, {
+    const data = await apiClient('/api/cover-test/sessions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
+      body: payload,
+      timeoutMs,
+      signal: options.signal || null,
     });
 
-    clearTimeout(timeoutId);
-
-    const data = await response.json().catch(() => null);
-
-    if (!response.ok || !data?.saved) {
+    if (!data?.saved) {
       return {
         success: false,
         saved: false,
         sessionId: sessionData.sessionId,
-        error: data?.detail || `HTTP_${response.status}`,
+        error: data?.detail || 'SAVE_FAILED',
         message: 'Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.',
       };
     }
@@ -280,17 +236,14 @@ export async function saveCoverTestSession(sessionData, options = {}) {
       message: 'Dữ liệu kiểm tra đã được lưu trữ thành công.',
     };
   } catch (err) {
-    clearTimeout(timeoutId);
-
-    const isTimeout = err.name === 'AbortError';
+    const isTimeout = err.name === 'AbortError' || err.name === 'TimeoutError' || err.isTimeout;
     return {
       success: false,
       saved: false,
       sessionId: sessionData.sessionId,
-      error: isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
+      error: isTimeout ? 'TIMEOUT' : (err.data?.detail || 'NETWORK_ERROR'),
       message: 'Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.',
       detail: err.message,
     };
   }
 }
-
