@@ -12,7 +12,7 @@ import {
   FIXATION_TARGET_CONFIG,
 } from '../../constants/binocularScreeningConfig.js';
 import { SCREENING_CONFIG, COVER_TEST_CONFIG } from '../../constants/screeningConfig.js';
-import { aggregateCoverCycles, createCoverFrame, createCoverSessionId, createCycleRecord, inconclusiveCycle, isCoverSessionCurrent, validateBaselinePair } from '../../services/coverTestProtocolService.js';
+import { aggregateCoverCycles, createCoverFrame, createCycleRecord, generateUUIDv4, inconclusiveCycle, isCoverSessionCurrent, isValidUUIDv4, validateBaselinePair } from '../../services/coverTestProtocolService.js';
 import { createTimeSeriesRecorder } from '../../services/coverTestTimeSeriesService.js';
 import { captureScreeningFrame, captureEyeRegionCrop } from '../../services/screeningImageCaptureService.js';
 import { saveCoverTestSession as saveCoverTestCloudSession } from '../../services/coverTest/coverTestPersistenceService.js';
@@ -82,9 +82,9 @@ export default function CoverTestStep({
   const [_completedCyclesList, setCompletedCyclesList] = useState([]);
   const [coverSummary, setCoverSummary] = useState(null);
   const canonicalSessionId = useMemo(() => {
-    if (sessionId) return sessionId;
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-    return 'cover-session-fallback';
+    if (isValidUUIDv4(sessionId)) return sessionId;
+    if (sessionId) console.warn('[CoverTestStep] Non-UUID sessionId provided, generating canonical UUID v4:', sessionId);
+    return generateUUIDv4();
   }, [sessionId]);
 
   // Execution refs
@@ -141,8 +141,9 @@ export default function CoverTestStep({
     });
 
     try {
+      const targetSessionId = isValidUUIDv4(currentSessionId) ? currentSessionId : canonicalSessionId;
       const result = await saveCoverTestCloudSession({
-        sessionId: currentSessionId,
+        sessionId: targetSessionId,
         clientMetadata: {
           testType: 'cover_test',
           createdAt: new Date().toISOString(),
@@ -158,7 +159,7 @@ export default function CoverTestStep({
       if (result.saved && result.success) {
         setSessionSaveState({
           status: 'saved',
-          sessionId: currentSessionId,
+          sessionId: targetSessionId,
           sessionPath: result.storageRoot,
           sampleCount: totalSamples,
           error: null,
@@ -176,7 +177,7 @@ export default function CoverTestStep({
         hasSavedSessionRef.current = false;
         setSessionSaveState({
           status: 'error',
-          sessionId: currentSessionId,
+          sessionId: targetSessionId,
           sessionPath: null,
           sampleCount: totalSamples,
           error: result.error || 'SAVE_FAILED',
@@ -194,12 +195,12 @@ export default function CoverTestStep({
         message: 'Lỗi mạng khi lưu dữ liệu kiểm tra. Vui lòng thử lại.',
       });
     }
-  }, []);
+  }, [canonicalSessionId]);
 
   const retrySessionSave = useCallback(() => {
     hasSavedSessionRef.current = false;
-    persistSessionSampling(sessionIdRef.current, accumulatedCyclesRef.current);
-  }, [persistSessionSampling]);
+    persistSessionSampling(canonicalSessionId, accumulatedCyclesRef.current);
+  }, [canonicalSessionId, persistSessionSampling]);
 
 
 
@@ -210,7 +211,7 @@ export default function CoverTestStep({
 
     try {
       const response = await analyzeCoverTest(summary, {
-        sampleId: sessionIdRef.current,
+        sampleId: canonicalSessionId,
       });
 
       if (response && response.status === 'TRANSFER_EXPERIMENT') {
@@ -236,7 +237,7 @@ export default function CoverTestStep({
         detail: err?.message,
       });
     }
-  }, []);
+  }, [canonicalSessionId]);
 
   useEffect(() => {
     if (coverState === 'FINISHED' && coverSummary && !hasSentAiTransferRef.current) {
@@ -320,7 +321,7 @@ export default function CoverTestStep({
     isAbortedRef.current = true;
     isTargetLockedRef.current = false;
     setLockedTargetPos(null);
-    sessionIdRef.current = createCoverSessionId();
+    // Never clobber the canonical UUID v4 session ID on run invalidation
     if (phaseRafRef.current !== null) cancelAnimationFrame(phaseRafRef.current);
     phaseRafRef.current = null;
     phaseResolveRef.current?.(null);
@@ -378,6 +379,7 @@ export default function CoverTestStep({
       cycleNum,
     }) => {
       return new Promise((resolve) => {
+        const phaseRunToken = activeRunTokenRef.current;
         const phaseSessionId = sessionIdRef.current;
         let settled = false;
         const finish = (value) => {
@@ -416,7 +418,7 @@ export default function CoverTestStep({
         let prevSec = initialSeconds;
 
         const loop = () => {
-          if (!isCoverSessionCurrent(phaseSessionId, sessionIdRef.current, isAbortedRef.current)) {
+          if (isAbortedRef.current || phaseRunToken !== activeRunTokenRef.current || !isCoverSessionCurrent(phaseSessionId, sessionIdRef.current, isAbortedRef.current)) {
             finish(null);
             return;
           }
@@ -770,7 +772,7 @@ export default function CoverTestStep({
       }
 
       // Automatically persist raw sampling dataset to backend storage
-      persistSessionSampling(sessionIdRef.current, accumulatedCycles);
+      persistSessionSampling(canonicalSessionId, accumulatedCycles);
       requestAiTransfer(summaryPayload);
     }
   };

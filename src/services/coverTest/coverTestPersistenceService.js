@@ -11,6 +11,7 @@
  */
 
 import { getBackendBaseUrl } from '../aiBackendService.js';
+import { isValidUUIDv4 } from '../coverTestProtocolService.js';
 
 const PERSISTENCE_TIMEOUT_MS = 30000;
 
@@ -38,6 +39,16 @@ export async function saveCoverTestSession({
       saved: false,
       error: 'MISSING_SESSION_ID',
       message: 'Thiếu mã định danh phiên kiểm tra hợp lệ (sessionId).',
+    };
+  }
+
+  if (!isValidUUIDv4(sessionId)) {
+    return {
+      success: false,
+      saved: false,
+      sessionId,
+      error: 'INVALID_SESSION_UUID',
+      message: `Mã phiên kiểm tra không phải là UUID v4 hợp lệ (${sessionId}).`,
     };
   }
 

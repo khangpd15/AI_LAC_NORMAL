@@ -11,6 +11,8 @@
  * 4. All model outputs are labeled as TRANSFER_EXPERIMENT (domain shift warning active, clinical meaning: null).
  */
 
+import { generateUUIDv4 } from './coverTestProtocolService.js';
+
 const DEFAULT_BACKEND_URL = 'http://localhost:8000';
 const DEFAULT_TIMEOUT_MS = 15000;
 
@@ -38,7 +40,7 @@ export function buildTransferPayload(coverSummary, sampleId = null) {
   const effectiveSampleId =
     sampleId ||
     coverSummary?.sampleId ||
-    (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'sample-' + Date.now());
+    generateUUIDv4();
 
   const rawCycles = coverSummary?.cycles || coverSummary?.accumulatedCycles || [];
 
