@@ -9,6 +9,7 @@ export default function EyeOverlay({
   videoWidth = 640,
   videoHeight = 480,
   isTrackingValid = true,
+  isMirrored = true,
 }) {
   const canvasRef = useRef(null);
 
@@ -128,5 +129,12 @@ export default function EyeOverlay({
     }
   }, [landmarks, videoWidth, videoHeight, isTrackingValid]);
 
-  return <canvas ref={canvasRef} className="eye-overlay-canvas" aria-hidden="true" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className="eye-overlay-canvas"
+      style={isMirrored ? undefined : { transform: 'none' }}
+      aria-hidden="true"
+    />
+  );
 }

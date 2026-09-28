@@ -13,6 +13,7 @@
 
 import { COVER_TEST_CONFIG } from '../constants/screeningConfig.js';
 import { median } from './coverTestMeasurementService.js';
+import { toCanonicalEye } from '../utils/eyeCoordinateMapping.js';
 
 const isRealNumber = (v) => typeof v === 'number' && Number.isFinite(v);
 
@@ -217,11 +218,16 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
     const leftValid = Boolean(leftCoordsValid && coverEye !== 'left');
     const rightValid = Boolean(rightCoordsValid && coverEye !== 'right');
 
-    // Standardized Sample Schema (Section 8: index, t, phase, leftX, leftY, leftValid, rightX, rightY, rightValid, trackingQuality)
+    const canonicalCoveredEye = coverEye ? toCanonicalEye(coverEye) : null;
+    const epochTimestamp = Date.now();
+
+    // Standardized Sample Schema (Section 8: index, timestamp, t, phase, coveredEye, leftEye, rightEye, trackingQuality...)
     const sample = {
       index: samples.length,
+      timestamp: epochTimestamp,
       t,
       phase,
+      coveredEye: canonicalCoveredEye,
       leftX: leftCoordsValid ? Number(leftX.toFixed(4)) : null,
       leftY: leftCoordsValid ? Number(leftY.toFixed(4)) : null,
       leftValid,
@@ -229,6 +235,17 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
       rightY: rightCoordsValid ? Number(rightY.toFixed(4)) : null,
       rightValid,
       trackingQuality,
+
+      leftEye: {
+        x: leftCoordsValid ? Number(leftX.toFixed(4)) : null,
+        y: leftCoordsValid ? Number(leftY.toFixed(4)) : null,
+        valid: leftValid,
+      },
+      rightEye: {
+        x: rightCoordsValid ? Number(rightX.toFixed(4)) : null,
+        y: rightCoordsValid ? Number(rightY.toFixed(4)) : null,
+        valid: rightValid,
+      },
 
       // Supplementary properties for ML kinematics & backward compatibility
       left: {

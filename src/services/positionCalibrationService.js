@@ -251,8 +251,8 @@ export function estimateCameraDistance(
   }
 
   // Landmark indices
-  const leftIris = landmarks[LANDMARKS.LEFT_IRIS_CENTER]; // 468
-  const rightIris = landmarks[LANDMARKS.RIGHT_IRIS_CENTER]; // 473
+  const leftIris = landmarks[LANDMARKS.LEFT_IRIS_CENTER]; // 473 (anatomical left iris)
+  const rightIris = landmarks[LANDMARKS.RIGHT_IRIS_CENTER]; // 468 (anatomical right iris)
   const leftInner = landmarks[LANDMARKS.LEFT_INNER_CANTHUS]; // 362
   const leftOuter = landmarks[LANDMARKS.LEFT_OUTER_CANTHUS]; // 263
   const rightInner = landmarks[LANDMARKS.RIGHT_INNER_CANTHUS]; // 133

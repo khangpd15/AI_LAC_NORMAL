@@ -309,7 +309,7 @@ export default function StrabismusScreening() {
       const coverLeftResult = await executePhase({
         stateName: COVER_TEST_STATES.COVER_LEFT,
         title: 'Che MẮT TRÁI bằng lòng bàn tay',
-        text: 'Dùng tay che mắt trái lại (mắt bên phải màn hình). Mắt phải tiếp tục nhìn điểm đỏ.',
+        text: 'Dùng tay che mắt trái lại. Mắt phải tiếp tục nhìn điểm đỏ.',
         subtext: 'Không ép chặt vào mi mắt, giữ yên đầu.',
         highlightEye: 'LEFT',
         durationMs: SCREENING_CONFIG.COVER_MS,
@@ -352,7 +352,7 @@ export default function StrabismusScreening() {
       const coverRightResult = await executePhase({
         stateName: COVER_TEST_STATES.COVER_RIGHT,
         title: 'Che MẮT PHẢI bằng lòng bàn tay',
-        text: 'Dùng tay che mắt phải lại (mắt bên trái màn hình). Mắt trái tiếp tục nhìn điểm đỏ.',
+        text: 'Dùng tay che mắt phải lại. Mắt trái tiếp tục nhìn điểm đỏ.',
         subtext: 'Không ép chặt vào mi mắt, giữ yên đầu.',
         highlightEye: 'RIGHT',
         durationMs: SCREENING_CONFIG.COVER_MS,

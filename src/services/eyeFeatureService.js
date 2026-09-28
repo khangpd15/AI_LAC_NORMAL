@@ -79,7 +79,7 @@ export function validateEyeTrackingQuality(multiFaceLandmarks, requireBothEyes =
   let headRollDeg = null;
   let headYawDeg = null;
   if (leftEar && rightEar && nose) {
-    headRollDeg = Math.atan2(rightEar.y - leftEar.y, rightEar.x - leftEar.x) * 180 / Math.PI;
+    headRollDeg = Math.atan2(leftEar.y - rightEar.y, leftEar.x - rightEar.x) * 180 / Math.PI;
     const earMidX = (leftEar.x + rightEar.x) / 2;
     headYawDeg = (nose.x - earMidX) * 100;
     headPoseValid = Math.abs(headRollDeg) <= 12 && Math.abs(headYawDeg) <= 15;

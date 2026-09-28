@@ -196,3 +196,98 @@ export async function checkBackendHealth() {
     return { status: 'unavailable', error: err.message };
   }
 }
+
+/**
+ * Automatically persists a completed Cover Test session (metadata and raw sampling)
+ * to the backend storage under data/cover_test/sessions/<session_id>/.
+ * 
+ * Strict architectural rule:
+ * 1. Must validate payload structure.
+ * 2. Does NOT claim success unless backend returns saved === true and HTTP 200/201.
+ * 3. Never transmits PII (name, phone, email, etc.).
+ * 
+ * @param {Object} sessionData - { sessionId, metadata, samples }
+ * @param {Object} [options]
+ * @param {number} [options.timeoutMs=15000]
+ * @returns {Promise<{ success: boolean, sessionId: string, saved: boolean, message?: string, error?: string, sessionPath?: string }>}
+ */
+export async function saveCoverTestSession(sessionData, options = {}) {
+  const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS;
+
+  if (!sessionData || !sessionData.sessionId || !Array.isArray(sessionData.samples)) {
+    return {
+      success: false,
+      saved: false,
+      error: 'INVALID_PAYLOAD',
+      message: 'Không thể lưu dữ liệu kiểm tra do cấu trúc không hợp lệ.',
+    };
+  }
+
+  // Sanitize to prevent accidental PII leakage
+  const sanitizedMetadata = { ...(sessionData.metadata || {}) };
+  delete sanitizedMetadata.name;
+  delete sanitizedMetadata.phone;
+  delete sanitizedMetadata.email;
+  delete sanitizedMetadata.address;
+  delete sanitizedMetadata.cccd;
+
+  const payload = {
+    sessionId: sessionData.sessionId,
+    metadata: sanitizedMetadata,
+    samples: sessionData.samples,
+  };
+
+  const baseUrl = getBackendBaseUrl();
+  const endpoint = `${baseUrl}/api/cover-test/sessions`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !data?.saved) {
+      return {
+        success: false,
+        saved: false,
+        sessionId: sessionData.sessionId,
+        error: data?.detail || `HTTP_${response.status}`,
+        message: 'Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.',
+      };
+    }
+
+    return {
+      success: true,
+      saved: true,
+      sessionId: data.sessionId || sessionData.sessionId,
+      sessionPath: data.sessionPath,
+      sampleCount: data.sampleCount,
+      message: 'Dữ liệu kiểm tra đã được lưu trữ thành công.',
+    };
+  } catch (err) {
+    clearTimeout(timeoutId);
+
+    const isTimeout = err.name === 'AbortError';
+    return {
+      success: false,
+      saved: false,
+      sessionId: sessionData.sessionId,
+      error: isTimeout ? 'TIMEOUT' : 'NETWORK_ERROR',
+      message: 'Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.',
+      detail: err.message,
+    };
+  }
+}
+

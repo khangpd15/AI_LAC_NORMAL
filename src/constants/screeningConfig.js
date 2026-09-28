@@ -148,8 +148,9 @@ export const COVER_TEST_STATES = {
 // MediaPipe 468-point Face Mesh indices
 export const LANDMARKS = {
   // Iris centers (available when refineLandmarks: true)
-  LEFT_IRIS_CENTER: 468,
-  RIGHT_IRIS_CENTER: 473,
+  // MediaPipe FaceMesh standard: 473 is Left Iris center, 468 is Right Iris center
+  LEFT_IRIS_CENTER: 473,
+  RIGHT_IRIS_CENTER: 468,
 
   // Eye corners (Nasal = Inner, Temporal = Outer)
   LEFT_INNER_CORNER: 362,
@@ -168,16 +169,17 @@ export const LANDMARKS = {
   RIGHT_BOTTOM_LID: 145,
 
   // Extra iris ring landmarks for high-detail overlay
-  LEFT_IRIS_PERIMETER: [469, 470, 471, 472],
-  RIGHT_IRIS_PERIMETER: [474, 475, 476, 477],
+  // 474-477 surround left iris (473), 469-472 surround right iris (468)
+  LEFT_IRIS_PERIMETER: [474, 475, 476, 477],
+  RIGHT_IRIS_PERIMETER: [469, 470, 471, 472],
 
   // Head pose reference points (Nose tip, Chin, Forehead, Ear regions)
   NOSE_TIP: 1,
   GLABELLA: 168,
   CHIN: 152,
   FOREHEAD: 10,
-  LEFT_EAR_TRAGUS: 234,
-  RIGHT_EAR_TRAGUS: 454,
+  LEFT_EAR_TRAGUS: 454,
+  RIGHT_EAR_TRAGUS: 234,
 };
 
 export const MEDICAL_DISCLAIMER_TEXT =

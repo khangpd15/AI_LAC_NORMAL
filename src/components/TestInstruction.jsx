@@ -1,4 +1,5 @@
 import React from 'react';
+import { toCanonicalEye } from '../utils/eyeCoordinateMapping';
 
 /**
  * TestInstruction Component - Large legible phase guidance for the user
@@ -9,11 +10,12 @@ export default function TestInstruction({
   highlightEye = null, // 'LEFT' | 'RIGHT' | null
   subtext = null,
 }) {
+  const canonicalEye = toCanonicalEye(highlightEye);
   return (
     <div className="test-instruction-panel">
-      {highlightEye && (
-        <div className={`eye-badge eye-${highlightEye.toLowerCase()}`}>
-          {highlightEye === 'LEFT' ? '👁 Che MẮT TRÁI (bên phải màn hình)' : '👁 Che MẮT PHẢI (bên trái màn hình)'}
+      {canonicalEye && (
+        <div className={`eye-badge eye-${canonicalEye.toLowerCase()}`}>
+          {canonicalEye === 'LEFT' ? '👁 Che MẮT TRÁI' : '👁 Che MẮT PHẢI'}
         </div>
       )}
 

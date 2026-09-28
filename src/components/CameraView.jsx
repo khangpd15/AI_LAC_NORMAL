@@ -1,13 +1,18 @@
 import React, { useState, useCallback, useEffect, useRef, useImperativeHandle } from 'react';
 import EyeOverlay from './EyeOverlay';
 import { attachStreamToVideo } from '../services/cameraService';
+import {
+  getOccluderScreenClass,
+  getTrackedEyeScreenClass,
+  toCanonicalEye,
+} from '../utils/eyeCoordinateMapping';
 
 /**
  * CameraView Component - Houses webcam video feed, overlay canvas, and tracking quality indicators.
  * Architecture:
  *   <div className="camera-frame">
- *     <video ... />        (z-index: 1, scaleX(-1))
- *     <EyeOverlay ... />    (z-index: 2, scaleX(-1), transparent)
+ *     <video ... />        (z-index: 1, scaleX(-1) if mirrored)
+ *     <EyeOverlay ... />    (z-index: 2, scaleX(-1) if mirrored, transparent)
  *     {occluder}           (z-index: 3, visual cover instruction)
  *     {overlays}           (z-index: 4, placeholder, loading, error)
  *   </div>
@@ -23,10 +28,11 @@ export default function CameraView({
   videoWidth: propWidth = 640,
   videoHeight: propHeight = 480,
   onVideoReady,
-  occluderEye = null, // 'left' | 'right' | null (eye being covered)
-  trackedEye = null,  // 'left' | 'right' | null (eye being tracked)
+  occluderEye = null, // 'left' | 'right' | 'LEFT' | 'RIGHT' | null (eye being covered)
+  trackedEye = null,  // 'left' | 'right' | 'LEFT' | 'RIGHT' | null (eye being tracked)
   cleanMode = false,  // Child-friendly test mode: suppresses technical tracking badges
   compact = false,
+  isMirrored = true,  // Default true for webcam mirror view
 }) {
   const nodeRef = useRef(null);
   const [actualDimensions, setActualDimensions] = useState({ width: propWidth, height: propHeight });
@@ -119,7 +125,8 @@ export default function CameraView({
           onPlay={() => {
             setCameraStatus(isActive && landmarks ? 'TRACKING' : 'VIDEO_READY');
           }}
-          className="camera-video-feed"
+          className={`camera-video-feed ${isMirrored ? '' : 'unmirrored'}`}
+          style={isMirrored ? undefined : { transform: 'none' }}
           aria-label="Khung hình webcam"
         />
 
@@ -130,27 +137,23 @@ export default function CameraView({
             videoWidth={actualDimensions.width}
             videoHeight={actualDimensions.height}
             isTrackingValid={quality ? quality.isValid : Boolean(landmarks)}
+            isMirrored={isMirrored}
           />
         )}
 
         {/* Layer 3: Visual Occluder Overlay for Cover Test */}
         {occluderEye && (
           <div
-            className={`camera-occluder-zone ${
-              // Note: camera has scaleX(-1) mirror effect!
-              // User's Left eye appears on the RIGHT side of the mirrored screen
-              // User's Right eye appears on the LEFT side of the mirrored screen
-              occluderEye.toLowerCase() === 'left' ? 'occluder-screen-right' : 'occluder-screen-left'
-            }`}
+            className={`camera-occluder-zone ${getOccluderScreenClass(occluderEye, isMirrored)}`}
             aria-live="polite"
           >
             <div className="occluder-patch">
               <span className="occluder-icon" aria-hidden="true">✋</span>
               <span className="occluder-text">
-                {occluderEye.toLowerCase() === 'left' ? 'CHE MẮT TRÁI' : 'CHE MẮT PHẢI'}
+                {toCanonicalEye(occluderEye) === 'LEFT' ? 'CHE MẮT TRÁI' : 'CHE MẮT PHẢI'}
               </span>
               <small className="occluder-subtext">
-                (Dùng tay hoặc bìa che mắt {occluderEye.toLowerCase() === 'left' ? 'trái' : 'phải'})
+                (Dùng tay che kín mắt {toCanonicalEye(occluderEye) === 'LEFT' ? 'trái' : 'phải'} của bạn)
               </small>
             </div>
           </div>
@@ -159,14 +162,12 @@ export default function CameraView({
         {/* Layer 3b: Tracked Eye Focus Reticle */}
         {trackedEye && !occluderEye && (
           <div
-            className={`camera-tracked-indicator ${
-              trackedEye.toLowerCase() === 'left' ? 'target-screen-right' : 'target-screen-left'
-            }`}
+            className={`camera-tracked-indicator ${getTrackedEyeScreenClass(trackedEye, isMirrored)}`}
           >
             <div className="tracked-reticle">
               <span className="reticle-ring" />
               <span className="reticle-label">
-                👁 THEO DÕI {trackedEye.toLowerCase() === 'left' ? 'MẮT TRÁI' : 'MẮT PHẢI'}
+                👁 THEO DÕI {toCanonicalEye(trackedEye) === 'LEFT' ? 'MẮT TRÁI' : 'MẮT PHẢI'}
               </span>
             </div>
           </div>

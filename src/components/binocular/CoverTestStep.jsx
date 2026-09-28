@@ -15,7 +15,8 @@ import { SCREENING_CONFIG, COVER_TEST_CONFIG } from '../../constants/screeningCo
 import { aggregateCoverCycles, createCoverFrame, createCoverSessionId, createCycleRecord, inconclusiveCycle, isCoverSessionCurrent, validateBaselinePair } from '../../services/coverTestProtocolService.js';
 import { createTimeSeriesRecorder } from '../../services/coverTestTimeSeriesService.js';
 import { captureScreeningFrame } from '../../services/screeningImageCaptureService.js';
-import { analyzeCoverTest } from '../../services/aiBackendService.js';
+import { analyzeCoverTest, saveCoverTestSession } from '../../services/aiBackendService.js';
+import { toCanonicalEye, getCoverInstruction } from '../../utils/eyeCoordinateMapping.js';
 
 /**
  * CoverTestStep Component
@@ -95,6 +96,83 @@ export default function CoverTestStep({
     detail: null,
   });
   const hasSentAiTransferRef = useRef(false);
+
+  // Cover Test sampling dataset persistence state
+  const [sessionSaveState, setSessionSaveState] = useState({
+    status: 'idle', // 'idle' | 'saving' | 'saved' | 'error'
+    sessionId: null,
+    sessionPath: null,
+    sampleCount: 0,
+    error: null,
+    message: null,
+  });
+  const hasSavedSessionRef = useRef(false);
+
+  const persistSessionSampling = useCallback(async (currentSessionId, allSamples) => {
+    if (hasSavedSessionRef.current) return;
+    hasSavedSessionRef.current = true;
+    setSessionSaveState({
+      status: 'saving',
+      sessionId: currentSessionId,
+      sessionPath: null,
+      sampleCount: allSamples ? allSamples.length : 0,
+      error: null,
+      message: null,
+    });
+
+    const sessionPayload = {
+      sessionId: currentSessionId,
+      metadata: {
+        sessionId: currentSessionId,
+        testType: 'cover_test',
+        createdAt: new Date().toISOString(),
+        samplingRate: COVER_TEST_CONFIG.datasetSampleRateHz,
+        protocolVersion: 'cover-test-v1',
+        camera: {
+          mirrored: true,
+        },
+      },
+      samples: allSamples || [],
+    };
+
+    try {
+      const result = await saveCoverTestSession(sessionPayload);
+      if (result.saved && result.success) {
+        setSessionSaveState({
+          status: 'saved',
+          sessionId: currentSessionId,
+          sessionPath: result.sessionPath,
+          sampleCount: result.sampleCount || (allSamples ? allSamples.length : 0),
+          error: null,
+          message: 'Dữ liệu kiểm tra đã được lưu trữ thành công.',
+        });
+      } else {
+        setSessionSaveState({
+          status: 'error',
+          sessionId: currentSessionId,
+          sessionPath: null,
+          sampleCount: allSamples ? allSamples.length : 0,
+          error: result.error || 'SAVE_FAILED',
+          message: result.message || 'Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.',
+        });
+      }
+    } catch (err) {
+      setSessionSaveState({
+        status: 'error',
+        sessionId: currentSessionId,
+        sessionPath: null,
+        sampleCount: allSamples ? allSamples.length : 0,
+        error: err?.message || 'NETWORK_ERROR',
+        message: 'Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.',
+      });
+    }
+  }, []);
+
+  const retrySessionSave = useCallback(() => {
+    hasSavedSessionRef.current = false;
+    const allSessionSamples = (_completedCyclesList || []).flatMap((c) => c.samples || c.rawTrajectory || []);
+    persistSessionSampling(sessionIdRef.current, allSessionSamples);
+  }, [_completedCyclesList, persistSessionSampling]);
 
   const requestAiTransfer = useCallback(async (summary) => {
     if (!summary || hasSentAiTransferRef.current) return;
@@ -490,15 +568,16 @@ export default function CoverTestStep({
       }
 
       // Phase 2: Cover Left Eye (4.5s)
+      const leftCoverInstr = getCoverInstruction('LEFT');
       await executePhase({
         state: 'COVER',
-        title: 'Che mắt trái',
-        text: 'Dùng tay che kín mắt trái (bên phải bạn).',
-        subtext: 'Mắt phải tiếp tục nhìn vào chấm tròn.',
+        title: leftCoverInstr.title,
+        text: leftCoverInstr.text,
+        subtext: leftCoverInstr.subtext,
         coverEye: 'left',
         trackEye: null,
         durationMs: 4500,
-        speechText: 'Che mắt trái.',
+        speechText: leftCoverInstr.speechText,
         cycleNum: c,
       });
 
@@ -535,15 +614,16 @@ export default function CoverTestStep({
       if (!runIsCurrent()) return;
 
       // Phase 4: Cover Right Eye (4.5s)
+      const rightCoverInstr = getCoverInstruction('RIGHT');
       await executePhase({
         state: 'COVER',
-        title: 'Che mắt phải',
-        text: 'Dùng tay che kín mắt phải (bên trái bạn).',
-        subtext: 'Mắt trái tiếp tục nhìn vào chấm tròn.',
+        title: rightCoverInstr.title,
+        text: rightCoverInstr.text,
+        subtext: rightCoverInstr.subtext,
         coverEye: 'right',
         trackEye: null,
         durationMs: 4500,
-        speechText: 'Che mắt phải.',
+        speechText: rightCoverInstr.speechText,
         cycleNum: c,
       });
 
@@ -638,12 +718,17 @@ export default function CoverTestStep({
 
     if (runIsCurrent() && accumulatedCycles.length > 0) {
       const summaryPayload = aggregateCoverCycles(accumulatedCycles);
+      const allSessionSamples = accumulatedCycles.flatMap((cycle) => cycle.samples || cycle.rawTrajectory || []);
 
       setCoverSummary(summaryPayload);
       transitionToState('FINISHED', 3);
       if (speak) {
         speak('Đã hoàn thành phần kiểm tra.');
       }
+
+      // Automatically persist raw sampling dataset to backend storage
+      persistSessionSampling(sessionIdRef.current, allSessionSamples);
+      requestAiTransfer(summaryPayload);
     }
   };
 
@@ -730,20 +815,20 @@ export default function CoverTestStep({
                 gap: '14px',
               }}
             >
-              {coverState === 'COVER' && coveredEye === 'left' ? (
+              {coverState === 'COVER' && toCanonicalEye(coveredEye) === 'LEFT' ? (
                 <>
-                  <span title="Mắt phải mở">👁️</span>
                   <span title="Che mắt trái" style={{ filter: 'grayscale(1)', opacity: 0.65 }}>✋</span>
+                  <span title="Mắt phải mở">👁️</span>
                 </>
-              ) : coverState === 'COVER' && coveredEye === 'right' ? (
+              ) : coverState === 'COVER' && toCanonicalEye(coveredEye) === 'RIGHT' ? (
                 <>
-                  <span title="Che mắt phải" style={{ filter: 'grayscale(1)', opacity: 0.65 }}>✋</span>
                   <span title="Mắt trái mở">👁️</span>
+                  <span title="Che mắt phải" style={{ filter: 'grayscale(1)', opacity: 0.65 }}>✋</span>
                 </>
               ) : (
                 <>
-                  <span title="Mắt phải mở">👁️</span>
                   <span title="Mắt trái mở">👁️</span>
+                  <span title="Mắt phải mở">👁️</span>
                 </>
               )}
             </div>
@@ -924,6 +1009,66 @@ export default function CoverTestStep({
                   <div>• <strong>Domain shift:</strong> <span style={{ color: '#f59e0b', fontWeight: 600 }}>WARNING</span> (Korean IR Eye-tracker 60Hz → RemiCare Webcam 15Hz)</div>
                   <div>• <strong>Ý nghĩa lâm sàng:</strong> None (Clinical meaning: null)</div>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Research Sampling Storage Status (Section 5 & 12) */}
+          <div
+            style={{
+              background: 'rgba(15, 23, 42, 0.6)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              marginBottom: '20px',
+              maxWidth: '640px',
+              margin: '0 auto 20px auto',
+              textAlign: 'left',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                💾 Dữ liệu nghiên cứu (Sampling Data)
+              </span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                {sessionSaveState.sessionId || debugSessionId}
+              </span>
+            </div>
+
+            {sessionSaveState.status === 'saving' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                <span className="spinner-small" aria-hidden="true" />
+                <span>Đang tự động lưu trữ sampling thô vào thư mục data/...</span>
+              </div>
+            )}
+
+            {sessionSaveState.status === 'saved' && (
+              <div style={{ background: 'rgba(52, 211, 153, 0.1)', border: '1px solid rgba(52, 211, 153, 0.3)', borderRadius: '8px', padding: '10px 14px' }}>
+                <div style={{ color: '#34d399', fontWeight: 600, fontSize: '0.88rem', marginBottom: '2px' }}>
+                  ✅ Đã lưu raw sampling thành công!
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+                  Đã ghi nhận <strong>{sessionSaveState.sampleCount}</strong> mẫu dữ liệu chuỗi thời gian (15 Hz) phục vụ đào tạo và nghiên cứu AI.
+                </div>
+              </div>
+            )}
+
+            {sessionSaveState.status === 'error' && (
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '10px 14px' }}>
+                <div style={{ color: '#f87171', fontWeight: 600, fontSize: '0.88rem', marginBottom: '4px' }}>
+                  ⚠️ Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                  {sessionSaveState.message || sessionSaveState.error}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.8rem', padding: '4px 10px' }}
+                  onClick={retrySessionSave}
+                >
+                  🔄 Thử lại lưu dữ liệu
+                </button>
               </div>
             )}
           </div>
