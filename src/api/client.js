@@ -12,7 +12,7 @@
  */
 
 const DEFAULT_BACKEND_URL = 'http://localhost:8000';
-const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_TIMEOUT_MS = 60000;
 
 // In-flight deduplication cache
 const inFlightRequests = new Map();
@@ -68,7 +68,7 @@ function logPerfMetrics({ method, url, status, totalMs, ttfbMs, parseMs, serverT
  * @param {string} [options.method='GET']
  * @param {Object|FormData|string} [options.body]
  * @param {Object} [options.headers]
- * @param {number} [options.timeoutMs=15000]
+ * @param {number} [options.timeoutMs=60000]
  * @param {AbortSignal} [options.signal] - External signal for component unmount cancellation
  * @param {boolean} [options.deduplicate=true] - Prevent duplicate simultaneous identical requests
  * @param {number} [options.cacheTtlMs=0] - If > 0 and method is GET, cache response for given ms

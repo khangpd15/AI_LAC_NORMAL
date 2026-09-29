@@ -6,7 +6,7 @@
 
 import { apiClient } from './client.js';
 
-const PERSISTENCE_TIMEOUT_MS = 30000;
+const PERSISTENCE_TIMEOUT_MS = 60000;
 
 /**
  * Saves complete 3-cycle Cover Test session, trajectories, and eye crops.

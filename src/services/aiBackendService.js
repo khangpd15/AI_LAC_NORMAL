@@ -16,7 +16,7 @@ import { getApiBaseUrl, apiClient } from '../api/client.js';
 import { transferStrabismusApi } from '../api/transferApi.js';
 import { checkBackendHealthApi } from '../api/healthApi.js';
 
-const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_TIMEOUT_MS = 60000;
 
 /**
  * Resolves the configured AI backend URL from environment variables.
@@ -89,7 +89,7 @@ export function buildTransferPayload(coverSummary, sampleId = null) {
  * 
  * @param {Object} payloadOrSummary - Formatted ScreeningRequest or completed coverSummary
  * @param {Object} [options] - Configuration options
- * @param {number} [options.timeoutMs=15000] - Request timeout in milliseconds
+ * @param {number} [options.timeoutMs=60000] - Request timeout in milliseconds
  * @param {AbortSignal} [options.signal] - Optional caller AbortSignal
  * @returns {Promise<Object>} Structured inference result or error state
  */
@@ -130,7 +130,7 @@ export async function analyzeCoverTest(payloadOrSummary, options = {}) {
         status: 'BACKEND_TIMEOUT',
         error: 'TIMEOUT',
         inputCompatible: false,
-        message: 'Hệ thống AI phản hồi quá thời gian cho phép (15 giây).',
+        message: 'Hệ thống AI phản hồi quá thời gian cho phép (1 phút).',
       };
     }
 
@@ -180,7 +180,7 @@ export async function checkBackendHealth(options = {}) {
  * 
  * @param {Object} sessionData - { sessionId, metadata, samples }
  * @param {Object} [options]
- * @param {number} [options.timeoutMs=15000]
+ * @param {number} [options.timeoutMs=60000]
  * @returns {Promise<{ success: boolean, sessionId: string, saved: boolean, message?: string, error?: string, sessionPath?: string }>}
  */
 export async function saveCoverTestSession(sessionData, options = {}) {

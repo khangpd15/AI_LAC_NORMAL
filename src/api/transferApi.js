@@ -4,14 +4,14 @@
 
 import { apiClient } from './client.js';
 
-const INFERENCE_TIMEOUT_MS = 15000;
+const INFERENCE_TIMEOUT_MS = 60000;
 
 /**
  * Sends Cover Test raw observation trajectories to FastAPI AI Transfer endpoint.
  * 
  * @param {Object} payload - Standardized transfer payload
  * @param {Object} [options]
- * @param {number} [options.timeoutMs=15000]
+ * @param {number} [options.timeoutMs=60000]
  * @param {AbortSignal} [options.signal]
  * @returns {Promise<Object>}
  */

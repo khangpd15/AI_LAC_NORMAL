@@ -89,7 +89,7 @@ export async function saveCoverTestSession({
         saved: false,
         sessionId,
         error: 'TIMEOUT',
-        message: 'Quá thời gian kết nối máy chủ (30 giây). Vui lòng thử lại.',
+        message: 'Quá thời gian kết nối máy chủ (1 phút). Vui lòng thử lại.',
       };
     }
 
