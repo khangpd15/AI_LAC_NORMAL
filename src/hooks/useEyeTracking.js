@@ -26,7 +26,7 @@ export function useEyeTracking() {
   const latestRawLandmarksRef = useRef(null);
   const latestQualityRef = useRef(quality);
 
-  const processResults = useCallback((results) => {
+  const processResults = useCallback((results, frameTimestamp = null) => {
     const multiLm = results?.multiFaceLandmarks;
     const qualityReport = validateEyeTrackingQuality(multiLm);
 
@@ -44,8 +44,14 @@ export function useEyeTracking() {
     }
 
     const lm = multiLm[0];
-    const now = performance.now();
-    const extracted = extractEyeFeatures(lm, now, { applySmoothing: true });
+    // Resolve timestamp: prefer explicit frameTimestamp or results.presentationTime (rVFC), fallback to performance.now()
+    const timestamp = (typeof frameTimestamp === 'number' && Number.isFinite(frameTimestamp))
+      ? frameTimestamp
+      : ((results && typeof results.presentationTime === 'number' && Number.isFinite(results.presentationTime))
+          ? results.presentationTime
+          : performance.now());
+
+    const extracted = extractEyeFeatures(lm, timestamp, { applySmoothing: true });
 
     latestFeaturesRef.current = extracted;
     latestLandmarksRef.current = lm;
@@ -55,7 +61,7 @@ export function useEyeTracking() {
     setRawLandmarks(lm);
     setSmoothedLandmarks(lm);
 
-    return { features: extracted, landmarks: lm, quality: qualityReport };
+    return { features: extracted, landmarks: lm, quality: qualityReport, timestamp };
   }, []);
 
   const reset = useCallback(() => {

@@ -215,8 +215,8 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
       ? (typeof quality.score === 'number' ? Number(quality.score.toFixed(2)) : 0.95)
       : (isFullyValidSample ? 0.85 : 0.50);
 
-    const isBlinkL = Boolean(features?.isBlinkLeft);
-    const isBlinkR = Boolean(features?.isBlinkRight);
+    const isBlinkL = Boolean(features?.isBlinkMaskedLeft ?? features?.isBlinkLeft);
+    const isBlinkR = Boolean(features?.isBlinkMaskedRight ?? features?.isBlinkRight);
     const leftValid = Boolean(leftCoordsValid && coverEye !== 'left' && !isBlinkL);
     const rightValid = Boolean(rightCoordsValid && coverEye !== 'right' && !isBlinkR);
 

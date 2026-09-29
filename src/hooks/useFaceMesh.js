@@ -56,6 +56,12 @@ export function useFaceMesh(onResults, options = {}) {
   const videoElementRef = useRef(null);
   const isSendingRef = useRef(false);
   const lastSendTimeRef = useRef(0);
+  const rvfcIdRef = useRef(null);
+  const lastFrameTimestampRef = useRef(performance.now());
+
+  // Check support for requestVideoFrameCallback (Chrome 83+, Edge 83+, Firefox 132+)
+  // Safari iOS < 18 requires requestAnimationFrame fallback
+  const supportsRVFC = typeof HTMLVideoElement !== 'undefined' && 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
 
   const stopLoop = useCallback(() => {
     isLoopRunningRef.current = false;
@@ -63,6 +69,10 @@ export function useFaceMesh(onResults, options = {}) {
     if (rafIdRef.current) {
       cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = null;
+    }
+    if (rvfcIdRef.current !== null && videoElementRef.current?.cancelVideoFrameCallback) {
+      videoElementRef.current.cancelVideoFrameCallback(rvfcIdRef.current);
+      rvfcIdRef.current = null;
     }
   }, []);
 
@@ -79,6 +89,10 @@ export function useFaceMesh(onResults, options = {}) {
         cancelAnimationFrame(rafIdRef.current);
         rafIdRef.current = null;
       }
+      if (rvfcIdRef.current !== null && videoElementRef.current?.cancelVideoFrameCallback) {
+        videoElementRef.current.cancelVideoFrameCallback(rvfcIdRef.current);
+        rvfcIdRef.current = null;
+      }
       isLoopRunningRef.current = false;
     }
 
@@ -88,59 +102,97 @@ export function useFaceMesh(onResults, options = {}) {
 
     setFaceMeshResultsCallback((results) => {
       if (onResultsRef.current) {
-        onResultsRef.current(results);
+        // Attach browser-decoded frame timestamp to results object
+        // Note: presentationTime is a DOMHighResTimeStamp from the browser compositor,
+        // avoiding JS event loop jitter. It is NOT a camera sensor hardware clock.
+        if (results && typeof results === 'object') {
+          results.presentationTime = lastFrameTimestampRef.current;
+        }
+        onResultsRef.current(results, lastFrameTimestampRef.current);
       }
     });
 
-    if (isLoopRunningRef.current && rafIdRef.current) {
+    if (isLoopRunningRef.current && (rafIdRef.current || rvfcIdRef.current !== null)) {
       return;
     }
     isLoopRunningRef.current = true;
     isSendingRef.current = false;
 
-    const tick = async () => {
-      if (!isLoopRunningRef.current) return;
-
+    // Common frame dispatch with lock & watchdog
+    const processSingleFrame = async (frameTimestamp) => {
       const currentVideo = videoElementRef.current;
-      if (currentVideo) {
-        // Auto-resume playback if stream is attached but video is paused
-        if (currentVideo.paused && currentVideo.srcObject) {
-          currentVideo.play().catch(() => {});
-        }
+      if (!currentVideo || !isLoopRunningRef.current) return;
 
-        // Safety watchdog: if isSending was stuck for > 1000ms, unlock it
-        const now = performance.now();
-        if (isSendingRef.current && now - lastSendTimeRef.current > 1000) {
-          console.warn('[FaceMesh] Watchdog: Resetting stuck isSending lock');
-          isSendingRef.current = false;
-        }
-
-        if (
-          !isSendingRef.current &&
-          currentVideo.readyState >= 2 &&
-          currentVideo.videoWidth > 0 &&
-          !currentVideo.paused &&
-          faceMeshRef.current
-        ) {
-          isSendingRef.current = true;
-          lastSendTimeRef.current = performance.now();
-          try {
-            await sendFrameToFaceMesh(faceMeshRef.current, currentVideo);
-          } catch (err) {
-            console.warn('[FaceMesh] sendFrame error:', err);
-          } finally {
-            isSendingRef.current = false;
-          }
-        }
+      // Auto-resume playback if stream is attached but video is paused
+      if (currentVideo.paused && currentVideo.srcObject) {
+        currentVideo.play().catch(() => {});
       }
 
-      if (isLoopRunningRef.current) {
-        rafIdRef.current = requestAnimationFrame(tick);
+      // Safety watchdog: if isSending was stuck for > 1000ms, unlock it
+      const clockNow = performance.now();
+      if (isSendingRef.current && clockNow - lastSendTimeRef.current > 1000) {
+        console.warn('[FaceMesh] Watchdog: Resetting stuck isSending lock');
+        isSendingRef.current = false;
+      }
+
+      if (
+        !isSendingRef.current &&
+        currentVideo.readyState >= 2 &&
+        currentVideo.videoWidth > 0 &&
+        !currentVideo.paused &&
+        faceMeshRef.current
+      ) {
+        isSendingRef.current = true;
+        lastSendTimeRef.current = clockNow;
+        lastFrameTimestampRef.current = frameTimestamp;
+        try {
+          await sendFrameToFaceMesh(faceMeshRef.current, currentVideo);
+        } catch (err) {
+          console.warn('[FaceMesh] sendFrame error:', err);
+        } finally {
+          isSendingRef.current = false;
+        }
       }
     };
 
-    tick();
-  }, [init]);
+    if (supportsRVFC && typeof videoElement.requestVideoFrameCallback === 'function') {
+      // Progressive enhancement: requestVideoFrameCallback
+      const tickRVFC = async (now, metadata) => {
+        if (!isLoopRunningRef.current) return;
+        const currentVideo = videoElementRef.current;
+        if (!currentVideo) return;
+
+        // Extract presentationTime from metadata when available
+        const frameTimestamp = (metadata && typeof metadata.presentationTime === 'number')
+          ? metadata.presentationTime
+          : now;
+
+        await processSingleFrame(frameTimestamp);
+
+        if (isLoopRunningRef.current && currentVideo?.requestVideoFrameCallback) {
+          rvfcIdRef.current = currentVideo.requestVideoFrameCallback(tickRVFC);
+        }
+      };
+
+      rvfcIdRef.current = videoElement.requestVideoFrameCallback(tickRVFC);
+    } else {
+      // Fallback: requestAnimationFrame
+      const tickRAF = async (rafTimestamp) => {
+        if (!isLoopRunningRef.current) return;
+        const currentVideo = videoElementRef.current;
+        if (!currentVideo) return;
+
+        const frameTimestamp = typeof rafTimestamp === 'number' ? rafTimestamp : performance.now();
+        await processSingleFrame(frameTimestamp);
+
+        if (isLoopRunningRef.current) {
+          rafIdRef.current = requestAnimationFrame(tickRAF);
+        }
+      };
+
+      rafIdRef.current = requestAnimationFrame(tickRAF);
+    }
+  }, [init, supportsRVFC]);
 
   // Clean up loop on unmount (shared instance is preserved)
   useEffect(() => {
@@ -148,6 +200,11 @@ export function useFaceMesh(onResults, options = {}) {
       isLoopRunningRef.current = false;
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+      if (rvfcIdRef.current !== null && videoElementRef.current?.cancelVideoFrameCallback) {
+        videoElementRef.current.cancelVideoFrameCallback(rvfcIdRef.current);
+        rvfcIdRef.current = null;
       }
     };
   }, []);
@@ -156,6 +213,7 @@ export function useFaceMesh(onResults, options = {}) {
     isReady,
     isLoading,
     error,
+    supportsRVFC,
     init,
     startLoop,
     stopLoop,

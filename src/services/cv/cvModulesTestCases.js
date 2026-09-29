@@ -11,6 +11,11 @@ import { OneEuroFilter1D, OneEuroFilter2D, LandmarkOneEuroFilterManager } from '
 import { projectPointOntoSegment, GazeFixationTracker } from './gazeTracker.js';
 import { calculateEyeRoi, calculateCanthalRollAngle } from './eyeRoiService.js';
 import { FrontendQualityGate } from './frontendQualityGate.js';
+import {
+  BLINK_CONFIG,
+  BlinkTemporalBuffer,
+  applyBlinkBlankingToTrajectory,
+} from '../eyeFeatureService.js';
 
 export function runCvModulesTestCases() {
   const results = [];
@@ -207,6 +212,73 @@ export function runCvModulesTestCases() {
     });
   } catch (e) {
     results.push({ id: 'CV-7', name: 'Quality gate test', passed: false, details: e.message });
+  }
+
+  // 8. BlinkTemporalBuffer [-60ms, +120ms] Window & Cover Eye Handling
+  try {
+    const buffer = new BlinkTemporalBuffer();
+    // Simulate streaming:
+    // Frame at t=1000ms: normal EAR = 0.28
+    const f1 = buffer.update(1000, 0.28, 0.28);
+    // Frame at t=1033ms: blink occurs on Left Eye EAR = 0.12
+    const f2 = buffer.update(1033, 0.12, 0.28);
+    // Frame at t=1066ms: recovering EAR = 0.25 (falls in +120ms post-blink window)
+    const f3 = buffer.update(1066, 0.25, 0.28);
+    // Frame at t=1100ms: still inside +120ms window (1033 + 120 = 1153)
+    const f4 = buffer.update(1100, 0.28, 0.28);
+    // Frame at t=1200ms: after post-blink window (> 1033 + 120 = 1153)
+    const f5 = buffer.update(1200, 0.28, 0.28);
+
+    // Test COVER phase edge case: when left eye is covered, left blink should NOT mask fellow open right eye
+    buffer.reset();
+    const fCovered = buffer.update(2000, 0.10, 0.28, 'left');
+
+    const passed =
+      !f1.isBlinkMasked &&
+      f2.isBlinkLeft && f2.isBlinkMaskedLeft &&
+      f3.isBlinkMaskedLeft && !f3.isBlinkLeft && // f3 is within post-mask window even though raw EAR is normal
+      f4.isBlinkMaskedLeft &&
+      !f5.isBlinkMaskedLeft &&
+      !fCovered.isBlinkMaskedLeft && !fCovered.isBlinkMaskedRight; // Left eye covered, so no mask applied to fellow eye
+
+    results.push({
+      id: 'CV-8',
+      name: 'BlinkTemporalBuffer correctly masks [-60ms, +120ms] temporal window and respects COVER phase edge case',
+      passed,
+      details: `f2_masked=${f2.isBlinkMaskedLeft}, f3_masked=${f3.isBlinkMaskedLeft}, f5_masked=${f5.isBlinkMaskedLeft}, fCovered_masked=${fCovered.isBlinkMasked}`,
+    });
+  } catch (e) {
+    results.push({ id: 'CV-8', name: 'BlinkTemporalBuffer test', passed: false, details: e.message });
+  }
+
+  // 9. Trajectory Retrospective Blink Blanking
+  try {
+    const rawFrames = [
+      { t: 0, leftEar: 0.28, rightEar: 0.28 },
+      { t: 40, leftEar: 0.28, rightEar: 0.28 }, // 40ms before blink at 80ms -> inside -60ms window
+      { t: 80, leftEar: 0.10, rightEar: 0.28 }, // BLINK!
+      { t: 120, leftEar: 0.25, rightEar: 0.28 }, // 40ms after blink -> inside +120ms window
+      { t: 180, leftEar: 0.28, rightEar: 0.28 }, // 100ms after blink -> inside +120ms window
+      { t: 250, leftEar: 0.28, rightEar: 0.28 }, // 170ms after blink -> expired
+    ];
+
+    const processed = applyBlinkBlankingToTrajectory(rawFrames);
+    const passed =
+      !processed[0].isBlinkMasked &&
+      processed[1].isBlinkMasked && // Retroactively masked (-60ms window)
+      processed[2].isBlinkMasked && // Blink frame
+      processed[3].isBlinkMasked && // Post-blink (+120ms window)
+      processed[4].isBlinkMasked && // Post-blink (+120ms window)
+      !processed[5].isBlinkMasked;  // Expired
+
+    results.push({
+      id: 'CV-9',
+      name: 'applyBlinkBlankingToTrajectory applies retrospective -60ms pre-mask and +120ms post-mask to time series',
+      passed,
+      details: `Frame masks: [${processed.map((p) => (p.isBlinkMasked ? 'MASK' : 'OK')).join(', ')}]`,
+    });
+  } catch (e) {
+    results.push({ id: 'CV-9', name: 'applyBlinkBlankingToTrajectory test', passed: false, details: e.message });
   }
 
   return results;

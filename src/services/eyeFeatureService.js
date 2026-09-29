@@ -2,12 +2,182 @@
  * Eye Feature Service - Feature extraction, landmark validation and saccade analysis
  */
 
-import { LANDMARKS, SCREENING_CONFIG } from '../constants/screeningConfig';
+import { LANDMARKS, SCREENING_CONFIG } from '../constants/screeningConfig.js';
 import { LandmarkOneEuroFilterManager } from './cv/oneEuroFilter.js';
 import { projectPointOntoSegment } from './cv/gazeTracker.js';
 
 // Shared instance of One Euro Filter for live camera stream
 export const sharedLandmarkFilter = new LandmarkOneEuroFilterManager(1.2, 0.008);
+
+// Configurable parameters for Blink Blanking Window
+// NOTE: -60ms and +120ms are clinical ophthalmology literature reference values
+// (Nahass et al. 2025; Casiez et al.).
+// In production/testing, these should be benchmarked against target webcams and MediaPipe tracking latency.
+export const BLINK_CONFIG = Object.freeze({
+  EAR_THRESHOLD: 0.18,
+  PRE_BLINK_MASK_MS: 60,   // Window preceding blink onset (eyelid descending)
+  POST_BLINK_MASK_MS: 120, // Window following blink offset (eyelid reopening / settling)
+  MAX_HISTORY_MS: 3000,    // Buffer retention period
+});
+
+/**
+ * Stateful temporal buffer for blink artifact blanking in streaming frames
+ */
+export class BlinkTemporalBuffer {
+  constructor(config = {}) {
+    this.earThreshold = config.EAR_THRESHOLD ?? BLINK_CONFIG.EAR_THRESHOLD;
+    this.preMaskMs = config.PRE_BLINK_MASK_MS ?? BLINK_CONFIG.PRE_BLINK_MASK_MS;
+    this.postMaskMs = config.POST_BLINK_MASK_MS ?? BLINK_CONFIG.POST_BLINK_MASK_MS;
+    this.maxHistoryMs = config.MAX_HISTORY_MS ?? BLINK_CONFIG.MAX_HISTORY_MS;
+    this.history = [];
+  }
+
+  reset() {
+    this.history = [];
+  }
+
+  /**
+   * Updates buffer with current frame measurements and evaluates temporal masking
+   * @param {number} timestamp
+   * @param {number} leftEar
+   * @param {number} rightEar
+   * @param {string|null} [coveredEye=null] - 'left' | 'right' | null
+   * @returns {{
+   *   isBlinkLeft: boolean,
+   *   isBlinkRight: boolean,
+   *   isBlinkMaskedLeft: boolean,
+   *   isBlinkMaskedRight: boolean,
+   *   isBlinkMasked: boolean
+   * }}
+   */
+  update(timestamp, leftEar, rightEar, coveredEye = null) {
+    const isBlinkL = leftEar < this.earThreshold;
+    const isBlinkR = rightEar < this.earThreshold;
+
+    this.history.push({
+      timestamp,
+      leftEar,
+      rightEar,
+      isBlinkL,
+      isBlinkR,
+    });
+
+    const cutoff = timestamp - this.maxHistoryMs;
+    while (this.history.length > 0 && this.history[0].timestamp < cutoff) {
+      this.history.shift();
+    }
+
+    let isBlinkMaskedLeft = false;
+    let isBlinkMaskedRight = false;
+
+    // Edge case: In COVER phase, only mask blink for the open eye.
+    // The covered eye is excluded from fellow-eye analysis and should not trigger false blink masking.
+    const checkLeft = coveredEye !== 'left';
+    const checkRight = coveredEye !== 'right';
+
+    for (let i = this.history.length - 1; i >= 0; i--) {
+      const entry = this.history[i];
+      const dt = timestamp - entry.timestamp;
+
+      // History entries are chronological. If dt exceeds postMaskMs, earlier entries also exceed it.
+      if (dt > this.postMaskMs) {
+        break;
+      }
+
+      // Check if entry was a blink and falls in [-preMaskMs, +postMaskMs] relative to timestamp
+      // i.e., timestamp >= entry.timestamp - preMaskMs && timestamp <= entry.timestamp + postMaskMs
+      if (dt >= -this.preMaskMs && dt <= this.postMaskMs) {
+        if (checkLeft && entry.isBlinkL) {
+          isBlinkMaskedLeft = true;
+        }
+        if (checkRight && entry.isBlinkR) {
+          isBlinkMaskedRight = true;
+        }
+      }
+
+      if ((!checkLeft || isBlinkMaskedLeft) && (!checkRight || isBlinkMaskedRight)) {
+        break;
+      }
+    }
+
+    const finalMaskL = checkLeft ? isBlinkMaskedLeft : false;
+    const finalMaskR = checkRight ? isBlinkMaskedRight : false;
+
+    return {
+      isBlinkLeft: isBlinkL,
+      isBlinkRight: isBlinkR,
+      isBlinkMaskedLeft: finalMaskL,
+      isBlinkMaskedRight: finalMaskR,
+      isBlinkMasked: finalMaskL || finalMaskR,
+    };
+  }
+}
+
+export const sharedBlinkBuffer = new BlinkTemporalBuffer();
+
+/**
+ * Post-processing helper that applies full retrospective Blink Blanking Window
+ * to a trajectory array of recorded frames.
+ * Eliminates false peak velocity spikes around blinks.
+ * 
+ * @param {Array<any>} frames - Array of trajectory frames with { t/timestamp, leftEar, rightEar, ... }
+ * @param {Object} [options]
+ * @param {string|null} [options.coveredEye=null]
+ * @param {number} [options.preMaskMs=60]
+ * @param {number} [options.postMaskMs=120]
+ * @param {number} [options.earThreshold=0.18]
+ * @returns {Array<any>} New array of frames with isBlinkMasked, isBlinkMaskedLeft, isBlinkMaskedRight annotated
+ */
+export function applyBlinkBlankingToTrajectory(frames, options = {}) {
+  if (!Array.isArray(frames) || frames.length === 0) return [];
+
+  const preMaskMs = options.preMaskMs ?? BLINK_CONFIG.PRE_BLINK_MASK_MS;
+  const postMaskMs = options.postMaskMs ?? BLINK_CONFIG.POST_BLINK_MASK_MS;
+  const earThreshold = options.earThreshold ?? BLINK_CONFIG.EAR_THRESHOLD;
+  const coveredEye = options.coveredEye ?? null;
+
+  // Identify all blink timestamps
+  const blinkEvents = [];
+  for (const f of frames) {
+    const t = f.timestamp ?? f.t ?? 0;
+    const leftEar = f.leftEar ?? f.features?.leftEar ?? 0.3;
+    const rightEar = f.rightEar ?? f.features?.rightEar ?? 0.3;
+    const isBlinkL = (f.isBlinkLeft ?? f.features?.isBlinkLeft) || (leftEar < earThreshold);
+    const isBlinkR = (f.isBlinkRight ?? f.features?.isBlinkRight) || (rightEar < earThreshold);
+
+    if (isBlinkL || isBlinkR) {
+      blinkEvents.push({ t, isBlinkL, isBlinkR });
+    }
+  }
+
+  const checkLeft = coveredEye !== 'left';
+  const checkRight = coveredEye !== 'right';
+
+  return frames.map((f) => {
+    const t = f.timestamp ?? f.t ?? 0;
+    let maskedL = false;
+    let maskedR = false;
+
+    for (const b of blinkEvents) {
+      if (t >= b.t - preMaskMs && t <= b.t + postMaskMs) {
+        if (checkLeft && b.isBlinkL) maskedL = true;
+        if (checkRight && b.isBlinkR) maskedR = true;
+        if ((!checkLeft || maskedL) && (!checkRight || maskedR)) break;
+      }
+    }
+
+    const isBlinkMaskedLeft = checkLeft ? maskedL : false;
+    const isBlinkMaskedRight = checkRight ? maskedR : false;
+    const isBlinkMasked = isBlinkMaskedLeft || isBlinkMaskedRight;
+
+    return {
+      ...f,
+      isBlinkMaskedLeft,
+      isBlinkMaskedRight,
+      isBlinkMasked,
+    };
+  });
+}
 
 /**
  * Validates tracking quality of landmarks
@@ -223,9 +393,20 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now(), opt
       (2 * Math.max(0.001, Math.hypot(rightOuter.x - rightInner.x, rightOuter.y - rightInner.y)))
     : 0.30;
 
-  const isBlinkLeft = leftEar < 0.18;
-  const isBlinkRight = rightEar < 0.18;
+  const isBlinkLeft = leftEar < BLINK_CONFIG.EAR_THRESHOLD;
+  const isBlinkRight = rightEar < BLINK_CONFIG.EAR_THRESHOLD;
   const isBlinking = isBlinkLeft || isBlinkRight;
+
+  // Temporal blink blanking window with cover eye edge case
+  if (options.resetBlinkBuffer) {
+    sharedBlinkBuffer.reset();
+  }
+  const blinkStatus = sharedBlinkBuffer.update(
+    timestamp,
+    leftEar,
+    rightEar,
+    options.coveredEye || null
+  );
 
   const validLeftX = leftIris ? leftIris.x : null;
   const validLeftY = leftIris ? leftIris.y : null;
@@ -245,6 +426,9 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now(), opt
     isBlinkLeft,
     isBlinkRight,
     isBlinking,
+    isBlinkMaskedLeft: blinkStatus.isBlinkMaskedLeft,
+    isBlinkMaskedRight: blinkStatus.isBlinkMaskedRight,
+    isBlinkMasked: blinkStatus.isBlinkMasked,
     leftHorizontalRatio: clampedLeftH,
     rightHorizontalRatio: clampedRightH,
     leftVerticalRatio: clampedLeftV,
@@ -285,7 +469,9 @@ export function calculateRefixationDisplacement(
     return { displacement: null, displaced: false, peakDisplacement: null, peakVelocity: null, meanVelocity: null };
   }
 
-  const windowFrames = frames.filter((f) => f.t <= windowMs);
+  const windowFrames = frames.filter(
+    (f) => f.t <= windowMs && !f.isBlink && !f.isBlinking && !f.isBlinkMasked && !f.features?.isBlinkMasked
+  );
   if (windowFrames.length < 2) {
     return { displacement: 0, displaced: false, peakDisplacement: 0, peakVelocity: 0, meanVelocity: 0 };
   }
