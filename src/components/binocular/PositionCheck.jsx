@@ -24,6 +24,7 @@ export default function PositionCheck({
   videoRef,
   stream = null,
   landmarks,
+  features = null,
   positionReport,
   onProceed,
   onRetry,
@@ -107,6 +108,7 @@ export default function PositionCheck({
               videoRef={videoRef}
               stream={stream}
               landmarks={landmarks}
+              features={features}
               quality={positionReport?.quality}
               isActive={isActive}
               isLoading={isLoading}
@@ -146,13 +148,13 @@ export default function PositionCheck({
               />
             </div>
 
-            {/* Face Bounding Box indicator if face detected */}
+            {/* Face Bounding Box indicator if face detected (mirrored to match scaleX(-1) camera feed) */}
             {positionReport?.boundingBox && checks.faceDetected && (
               <div
                 className="face-bounding-box"
                 style={{
                   position: 'absolute',
-                  left: `${positionReport.boundingBox.xMin * 100}%`,
+                  left: `${Math.max(0, (1.0 - positionReport.boundingBox.xMin - positionReport.boundingBox.width) * 100)}%`,
                   top: `${positionReport.boundingBox.yMin * 100}%`,
                   width: `${positionReport.boundingBox.width * 100}%`,
                   height: `${positionReport.boundingBox.height * 100}%`,

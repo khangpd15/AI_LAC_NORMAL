@@ -3,10 +3,16 @@
  */
 
 import { LANDMARKS, SCREENING_CONFIG } from '../constants/screeningConfig';
+import { LandmarkOneEuroFilterManager } from './cv/oneEuroFilter.js';
+import { projectPointOntoSegment } from './cv/gazeTracker.js';
+
+// Shared instance of One Euro Filter for live camera stream
+export const sharedLandmarkFilter = new LandmarkOneEuroFilterManager(1.2, 0.008);
 
 /**
  * Validates tracking quality of landmarks
  * @param {Array<any>} multiFaceLandmarks
+ * @param {boolean} requireBothEyes
  * @returns {{
  *   isValid: boolean,
  *   reason: string | null,
@@ -40,7 +46,7 @@ export function validateEyeTrackingQuality(multiFaceLandmarks, requireBothEyes =
     };
   }
 
-  // Check left eye landmarks (362, 263, 468)
+  // Check left eye landmarks (362, 263, 473)
   const leftEyeOk = Boolean(
     lm[LANDMARKS.LEFT_INNER_CORNER] &&
     lm[LANDMARKS.LEFT_OUTER_CORNER] &&
@@ -49,7 +55,7 @@ export function validateEyeTrackingQuality(multiFaceLandmarks, requireBothEyes =
     Number.isFinite(lm[LANDMARKS.LEFT_IRIS_CENTER].y)
   );
 
-  // Check right eye landmarks (133, 33, 473)
+  // Check right eye landmarks (133, 33, 468)
   const rightEyeOk = Boolean(
     lm[LANDMARKS.RIGHT_INNER_CORNER] &&
     lm[LANDMARKS.RIGHT_OUTER_CORNER] &&
@@ -106,25 +112,32 @@ export function validateEyeTrackingQuality(multiFaceLandmarks, requireBothEyes =
  * Extracts normalized eye geometric features from face mesh landmarks
  * @param {Array<{x:number, y:number, z?:number}>} landmarks
  * @param {number} timestamp
- * @returns {{
- *   timestamp: number,
- *   leftIrisX: number,
- *   leftIrisY: number,
- *   rightIrisX: number,
- *   rightIrisY: number,
- *   leftEyeWidth: number,
- *   rightEyeWidth: number,
- *   leftHorizontalRatio: number,
- *   rightHorizontalRatio: number,
- *   leftVerticalRatio: number,
- *   rightVerticalRatio: number,
- *   interocularDistance: number
- * }}
+ * @param {Object} [options]
+ * @param {boolean} [options.applySmoothing=true]
+ * @returns {Object|null}
  */
-export function extractEyeFeatures(landmarks, timestamp = performance.now()) {
-  const lm = landmarks;
+export function extractEyeFeatures(landmarks, timestamp = performance.now(), options = {}) {
+  let lm = landmarks;
   if (!lm) {
     return null;
+  }
+
+  // Optional temporal smoothing using One Euro Filter
+  const applySmoothing = options.applySmoothing ?? false;
+  if (applySmoothing) {
+    const keyIndices = [
+      LANDMARKS.LEFT_IRIS_CENTER,
+      LANDMARKS.RIGHT_IRIS_CENTER,
+      LANDMARKS.LEFT_INNER_CORNER,
+      LANDMARKS.LEFT_OUTER_CORNER,
+      LANDMARKS.RIGHT_INNER_CORNER,
+      LANDMARKS.RIGHT_OUTER_CORNER,
+      LANDMARKS.LEFT_TOP_LID,
+      LANDMARKS.LEFT_BOTTOM_LID,
+      LANDMARKS.RIGHT_TOP_LID,
+      LANDMARKS.RIGHT_BOTTOM_LID,
+    ];
+    lm = sharedLandmarkFilter.filterLandmarks(lm, timestamp / 1000.0, keyIndices);
   }
 
   const leftIris = lm[LANDMARKS.LEFT_IRIS_CENTER] || null;
@@ -140,7 +153,7 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now()) {
   const rightTop = lm[LANDMARKS.RIGHT_TOP_LID] || (rightIris ? { x: rightIris.x, y: rightIris.y - 0.02 } : null);
   const rightBottom = lm[LANDMARKS.RIGHT_BOTTOM_LID] || (rightIris ? { x: rightIris.x, y: rightIris.y + 0.02 } : null);
 
-  // Calculate eye widths safely (null if anatomical corners are missing)
+  // Calculate eye widths safely
   const leftEyeWidth = (leftInner && leftOuter)
     ? Math.max(0.001, Math.hypot(leftOuter.x - leftInner.x, leftOuter.y - leftInner.y))
     : null;
@@ -148,30 +161,26 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now()) {
     ? Math.max(0.001, Math.hypot(rightOuter.x - rightInner.x, rightOuter.y - rightInner.y))
     : null;
 
-  // Horizontal ratios safely
+  // Vector-projected horizontal gaze ratios (roll-invariant)
   let leftHorizontalRatio = 0.5;
   if (leftIris && leftInner && leftOuter) {
-    const leftDeltaX = leftOuter.x - leftInner.x;
-    leftHorizontalRatio = Math.abs(leftDeltaX) > 1e-5 ? (leftIris.x - leftInner.x) / leftDeltaX : 0.5;
+    leftHorizontalRatio = projectPointOntoSegment(leftIris, leftInner, leftOuter);
   }
 
   let rightHorizontalRatio = 0.5;
   if (rightIris && rightInner && rightOuter) {
-    const rightDeltaX = rightOuter.x - rightInner.x;
-    rightHorizontalRatio = Math.abs(rightDeltaX) > 1e-5 ? (rightIris.x - rightInner.x) / rightDeltaX : 0.5;
+    rightHorizontalRatio = projectPointOntoSegment(rightIris, rightInner, rightOuter);
   }
 
-  // Vertical ratios safely
+  // Vector-projected vertical gaze ratios
   let leftVerticalRatio = 0.5;
   if (leftIris && leftTop && leftBottom) {
-    const leftAperture = Math.max(0.001, Math.abs(leftBottom.y - leftTop.y));
-    leftVerticalRatio = (leftIris.y - leftTop.y) / leftAperture;
+    leftVerticalRatio = projectPointOntoSegment(leftIris, leftTop, leftBottom);
   }
 
   let rightVerticalRatio = 0.5;
   if (rightIris && rightTop && rightBottom) {
-    const rightAperture = Math.max(0.001, Math.abs(rightBottom.y - rightTop.y));
-    rightVerticalRatio = (rightIris.y - rightTop.y) / rightAperture;
+    rightVerticalRatio = projectPointOntoSegment(rightIris, rightTop, rightBottom);
   }
 
   // Interocular distance (distance between inner canthi)
@@ -183,10 +192,40 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now()) {
     : interocularDistance;
   const irisDistanceRatio = irisDistance / Math.max(0.01, interocularDistance);
 
+  // Estimated physical distance (cm) via D = 4095 / (irisDistance * 640)
+  const irisDistancePx = irisDistance * 640.0;
+  const estimatedDistanceCm = irisDistancePx > 1.0 ? Number((4095.0 / irisDistancePx).toFixed(1)) : 50.0;
+
   const clampedLeftH = Math.min(1.5, Math.max(-0.5, leftHorizontalRatio));
   const clampedRightH = Math.min(1.5, Math.max(-0.5, rightHorizontalRatio));
   const clampedLeftV = Math.min(1.5, Math.max(-0.5, leftVerticalRatio));
   const clampedRightV = Math.min(1.5, Math.max(-0.5, rightVerticalRatio));
+
+  // Dual-vertical Eye Aspect Ratio (EAR) for realtime blink detection
+  const l_v1_top = lm[385] || leftTop;
+  const l_v1_bot = lm[380] || leftBottom;
+  const l_v2_top = lm[386] || leftTop;
+  const l_v2_bot = lm[374] || leftBottom;
+  const r_v1_top = lm[158] || rightTop;
+  const r_v1_bot = lm[153] || rightBottom;
+  const r_v2_top = lm[159] || rightTop;
+  const r_v2_bot = lm[145] || rightBottom;
+
+  const leftEar = (leftInner && leftOuter && l_v1_top && l_v1_bot && l_v2_top && l_v2_bot)
+    ? (Math.hypot(l_v1_top.x - l_v1_bot.x, l_v1_top.y - l_v1_bot.y) +
+       Math.hypot(l_v2_top.x - l_v2_bot.x, l_v2_top.y - l_v2_bot.y)) /
+      (2 * Math.max(0.001, Math.hypot(leftOuter.x - leftInner.x, leftOuter.y - leftInner.y)))
+    : 0.30;
+
+  const rightEar = (rightInner && rightOuter && r_v1_top && r_v1_bot && r_v2_top && r_v2_bot)
+    ? (Math.hypot(r_v1_top.x - r_v1_bot.x, r_v1_top.y - r_v1_bot.y) +
+       Math.hypot(r_v2_top.x - r_v2_bot.x, r_v2_top.y - r_v2_bot.y)) /
+      (2 * Math.max(0.001, Math.hypot(rightOuter.x - rightInner.x, rightOuter.y - rightInner.y)))
+    : 0.30;
+
+  const isBlinkLeft = leftEar < 0.18;
+  const isBlinkRight = rightEar < 0.18;
+  const isBlinking = isBlinkLeft || isBlinkRight;
 
   const validLeftX = leftIris ? leftIris.x : null;
   const validLeftY = leftIris ? leftIris.y : null;
@@ -201,6 +240,11 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now()) {
     rightIrisY: validRightY,
     leftEyeWidth,
     rightEyeWidth,
+    leftEar: Number(leftEar.toFixed(3)),
+    rightEar: Number(rightEar.toFixed(3)),
+    isBlinkLeft,
+    isBlinkRight,
+    isBlinking,
     leftHorizontalRatio: clampedLeftH,
     rightHorizontalRatio: clampedRightH,
     leftVerticalRatio: clampedLeftV,
@@ -209,6 +253,7 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now()) {
     horizontalRatioDiff: Math.abs(clampedLeftH - clampedRightH),
     verticalRatioDiff: Math.abs(clampedLeftV - clampedRightV),
     irisDistanceRatio,
+    estimatedDistanceCm,
     raw: {
       leftIrisX: validLeftX,
       leftIrisY: validLeftY,

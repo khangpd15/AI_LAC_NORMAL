@@ -215,8 +215,10 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
       ? (typeof quality.score === 'number' ? Number(quality.score.toFixed(2)) : 0.95)
       : (isFullyValidSample ? 0.85 : 0.50);
 
-    const leftValid = Boolean(leftCoordsValid && coverEye !== 'left');
-    const rightValid = Boolean(rightCoordsValid && coverEye !== 'right');
+    const isBlinkL = Boolean(features?.isBlinkLeft);
+    const isBlinkR = Boolean(features?.isBlinkRight);
+    const leftValid = Boolean(leftCoordsValid && coverEye !== 'left' && !isBlinkL);
+    const rightValid = Boolean(rightCoordsValid && coverEye !== 'right' && !isBlinkR);
 
     const canonicalCoveredEye = coverEye ? toCanonicalEye(coverEye) : null;
     const epochTimestamp = Date.now();

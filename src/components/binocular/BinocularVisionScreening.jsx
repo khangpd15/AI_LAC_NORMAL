@@ -46,7 +46,7 @@ export default function BinocularVisionScreening() {
 
   // Vision, Hardware & Assistant Hooks
   const { stream, isActive, isLoading: isCamLoading, error: camError, start: startCam, stop: stopCam, attachVideo } = useCamera();
-  const { quality, latestFeaturesRef, latestQualityRef, rawLandmarks, processResults } = useEyeTracking();
+  const { quality, features, latestFeaturesRef, latestQualityRef, rawLandmarks, processResults } = useEyeTracking();
   const { speak, cancel: cancelSpeech, isVoiceEnabled, toggleSound } = useSpeech(true);
   const { smoothedPrediction, processFrameAI } = useStrabismusAI();
 
@@ -241,6 +241,7 @@ export default function BinocularVisionScreening() {
             videoRef={videoRef}
             stream={stream}
             landmarks={rawLandmarks}
+            features={features}
             positionReport={positionReport}
             onProceed={handleCoverPositionProceed}
             onRetry={handlePositionRetry}
@@ -278,6 +279,7 @@ export default function BinocularVisionScreening() {
             videoRef={videoRef}
             stream={stream}
             landmarks={rawLandmarks}
+            features={features}
             positionReport={positionReport}
             onProceed={handleBrockPositionProceed}
             onRetry={handlePositionRetry}

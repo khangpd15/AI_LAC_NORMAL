@@ -21,6 +21,8 @@ export default function CameraView({
   videoRef,
   stream = null,
   landmarks = null,
+  features = null,
+  featuresRef = null,
   quality = null,
   isActive = false,
   isLoading = false,
@@ -33,6 +35,7 @@ export default function CameraView({
   cleanMode = false,  // Child-friendly test mode: suppresses technical tracking badges
   compact = false,
   isMirrored = true,  // Default true for webcam mirror view
+  showDebug = false,
 }) {
   const nodeRef = useRef(null);
   const [actualDimensions, setActualDimensions] = useState({ width: propWidth, height: propHeight });
@@ -134,10 +137,14 @@ export default function CameraView({
         {isActive && (
           <EyeOverlay
             landmarks={landmarks}
+            features={features}
+            featuresRef={featuresRef}
+            quality={quality}
             videoWidth={actualDimensions.width}
             videoHeight={actualDimensions.height}
             isTrackingValid={quality ? quality.isValid : Boolean(landmarks)}
             isMirrored={isMirrored}
+            showDebug={showDebug}
           />
         )}
 

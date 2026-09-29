@@ -19,9 +19,11 @@ export function useEyeTracking() {
 
   const [features, setFeatures] = useState(null);
   const [rawLandmarks, setRawLandmarks] = useState(null);
+  const [smoothedLandmarks, setSmoothedLandmarks] = useState(null);
 
   const latestFeaturesRef = useRef(null);
   const latestLandmarksRef = useRef(null);
+  const latestRawLandmarksRef = useRef(null);
   const latestQualityRef = useRef(quality);
 
   const processResults = useCallback((results) => {
@@ -34,19 +36,24 @@ export function useEyeTracking() {
     if (!multiLm || multiLm.length === 0 || !multiLm[0]) {
       setFeatures(null);
       setRawLandmarks(null);
+      setSmoothedLandmarks(null);
       latestFeaturesRef.current = null;
       latestLandmarksRef.current = null;
+      latestRawLandmarksRef.current = null;
       return null;
     }
 
     const lm = multiLm[0];
-    const extracted = extractEyeFeatures(lm, performance.now());
+    const now = performance.now();
+    const extracted = extractEyeFeatures(lm, now, { applySmoothing: true });
 
     latestFeaturesRef.current = extracted;
     latestLandmarksRef.current = lm;
+    latestRawLandmarksRef.current = lm;
 
     setFeatures(extracted);
     setRawLandmarks(lm);
+    setSmoothedLandmarks(lm);
 
     return { features: extracted, landmarks: lm, quality: qualityReport };
   }, []);
@@ -54,6 +61,7 @@ export function useEyeTracking() {
   const reset = useCallback(() => {
     setFeatures(null);
     setRawLandmarks(null);
+    setSmoothedLandmarks(null);
     setQuality({
       isValid: false,
       reason: 'Chưa bắt đầu',
@@ -70,8 +78,10 @@ export function useEyeTracking() {
     quality,
     features,
     rawLandmarks,
+    smoothedLandmarks,
     latestFeaturesRef,
     latestLandmarksRef,
+    latestRawLandmarksRef,
     latestQualityRef,
     processResults,
     reset,
