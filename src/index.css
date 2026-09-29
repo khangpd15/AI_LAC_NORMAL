@@ -325,6 +325,18 @@ body {
   display: block;
 }
 
+/* ==========================================================================
+   CAMERA PREVIEW
+   Dimmed (20–30% opacity) & softly blurred (1–2px) to allow posture alignment
+   without drawing focus away from the central fixation target.
+   ========================================================================== */
+.camera-preview {
+  opacity: 0.25;
+  filter: blur(1.5px);
+  -webkit-filter: blur(1.5px);
+  transition: opacity var(--transition-normal);
+}
+
 .eye-overlay-canvas {
   position: absolute;
   inset: 0;

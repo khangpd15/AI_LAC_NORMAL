@@ -128,7 +128,7 @@ export default function CameraView({
           onPlay={() => {
             setCameraStatus(isActive && landmarks ? 'TRACKING' : 'VIDEO_READY');
           }}
-          className={`camera-video-feed ${isMirrored ? '' : 'unmirrored'}`}
+          className={`camera-video-feed camera-preview ${isMirrored ? '' : 'unmirrored'}`}
           style={isMirrored ? undefined : { transform: 'none' }}
           aria-label="Khung hình webcam"
         />
