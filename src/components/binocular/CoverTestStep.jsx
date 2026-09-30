@@ -1061,78 +1061,76 @@ export default function CoverTestStep({
               </div>
             )}
 
-            {aiTransferState.status === 'success' && aiTransferState.result && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.86rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>
-                  {(aiTransferState.result.comparisonModels?.length
-                    ? aiTransferState.result.comparisonModels
-                    : [{
-                        key: 'korean_10_15fps_transfer',
-                        label: 'Korean 10–15 FPS Transfer Research Model',
-                        prediction: aiTransferState.result.prediction,
-                        classProbability: aiTransferState.result.classProbability,
-                        model: {
-                          name: 'Korean 10–15 FPS Transfer Research Model',
-                          version: 'research-model',
-                        },
-                        samplingProfile: '10–15 FPS research pipeline',
-                      }]
-                  ).map((modelResult) => {
-                    const cleanLabel = (modelResult.label && !modelResult.label.includes('60') && !modelResult.label.includes('Baseline') && !modelResult.label.includes('B2'))
-                      ? modelResult.label
-                      : 'Korean 10–15 FPS Transfer Research Model';
-                    const cleanSamplingProfile = (modelResult.samplingProfile && !modelResult.samplingProfile.includes('60') && !modelResult.samplingProfile.includes('tracker'))
-                      ? modelResult.samplingProfile
-                      : '10–15 FPS research pipeline';
-                    const cleanVersion = modelResult.model?.version || 'research-model';
+            {aiTransferState.status === 'success' && aiTransferState.result && (() => {
+              const res = aiTransferState.result;
+              // Strictly select the 10–15 FPS transfer research model, never the 60 Hz baseline
+              const candidate15 = res.comparisonModels?.find(
+                (m) =>
+                  m.key === 'korean_15fps_candidate' ||
+                  m.key === 'korean_10_15fps_research_model'
+              ) || (res.comparisonModels && res.comparisonModels.length > 0 && res.comparisonModels[0].key !== 'korean_b2' ? res.comparisonModels[0] : null);
 
-                    return (
-                      <div
-                        key={modelResult.key}
-                        style={{
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          padding: '12px',
-                          borderRadius: '8px',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
-                        }}
-                      >
-                        <div style={{ color: '#93c5fd', fontSize: '0.8rem', fontWeight: 700, marginBottom: '8px' }}>
-                          {cleanLabel}
-                        </div>
-                        <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
-                          Model Prediction
-                        </div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: modelResult.prediction === 'NORMAL' ? '#34d399' : '#fbbf24', marginBottom: '8px' }}>
-                          {modelResult.prediction}
-                        </div>
-                        <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
-                          Model class probability
-                        </div>
-                        <div style={{ fontSize: '0.84rem', fontWeight: 600 }}>
-                          NORMAL: <span style={{ color: '#34d399' }}>{((modelResult.classProbability?.NORMAL ?? 0) * 100).toFixed(1)}%</span>
-                          {' | '}
-                          STRABISMUS: <span style={{ color: '#fbbf24' }}>{((modelResult.classProbability?.STRABISMUS ?? 0) * 100).toFixed(1)}%</span>
-                        </div>
-                        <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', lineHeight: 1.4, marginTop: '8px' }}>
-                          {cleanVersion}<br />
-                          {cleanSamplingProfile}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              const modelResult = candidate15 || {
+                label: 'Korean 10–15 FPS Transfer Research Model',
+                prediction: res.prediction,
+                classProbability: res.classProbability || res.classProbabilities,
+                model: {
+                  name: 'Korean 10–15 FPS Transfer Research Model',
+                  version: 'remicare-transfer-10to15fps-candidate-v1.1.0',
+                },
+                samplingProfile: '10–15 FPS research pipeline',
+              };
 
-                <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-dim)', lineHeight: '1.6' }}>
-                  <div>• <strong>Mô hình:</strong> Korean 10–15 FPS Transfer Research Model</div>
-                  <div>• <strong>Model ID:</strong> remicare-transfer-10to15fps-candidate-v1.1.0</div>
-                  <div>• <strong>Đặc trưng:</strong> 30 technical features</div>
-                  <div>• <strong>Domain shift:</strong> <span style={{ color: '#f59e0b', fontWeight: 600 }}>WARNING</span></div>
-                  <div>• Dữ liệu nghiên cứu → RemiCare webcam 10–15 FPS</div>
-                  <div>• <strong>Ý nghĩa lâm sàng:</strong> None</div>
-                  <div>• <strong>Research-only output:</strong> Probability is model output and has not been clinically validated for RemiCare webcam data.</div>
+              const cleanPrediction = modelResult.prediction || 'INCONCLUSIVE';
+              const cleanProbabilities = modelResult.classProbability || modelResult.classProbabilities || { NORMAL: 0, STRABISMUS: 0 };
+              const cleanVersion = modelResult.model?.version || 'remicare-transfer-10to15fps-candidate-v1.1.0';
+              const cleanProfile = '10–15 FPS research pipeline';
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.86rem' }}>
+                  <div
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      padding: '14px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                    }}
+                  >
+                    <div style={{ color: '#93c5fa', fontSize: '0.88rem', fontWeight: 700, marginBottom: '8px' }}>
+                      Korean 10–15 FPS Transfer Research Model
+                    </div>
+                    <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
+                      Model Prediction
+                    </div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: cleanPrediction === 'NORMAL' ? '#34d399' : '#fbbf24', marginBottom: '8px' }}>
+                      {cleanPrediction}
+                    </div>
+                    <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
+                      Model class probability
+                    </div>
+                    <div style={{ fontSize: '0.84rem', fontWeight: 600 }}>
+                      NORMAL: <span style={{ color: '#34d399' }}>{((cleanProbabilities.NORMAL ?? 0) * 100).toFixed(1)}%</span>
+                      {' | '}
+                      STRABISMUS: <span style={{ color: '#fbbf24' }}>{((cleanProbabilities.STRABISMUS ?? 0) * 100).toFixed(1)}%</span>
+                    </div>
+                    <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', lineHeight: 1.4, marginTop: '8px' }}>
+                      {cleanVersion}<br />
+                      {cleanProfile}
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-dim)', lineHeight: '1.6' }}>
+                    <div>• <strong>Mô hình:</strong> Korean 10–15 FPS Transfer Research Model</div>
+                    <div>• <strong>Model ID:</strong> remicare-transfer-10to15fps-candidate-v1.1.0</div>
+                    <div>• <strong>Đặc trưng:</strong> 30 technical features</div>
+                    <div>• <strong>Domain shift:</strong> <span style={{ color: '#f59e0b', fontWeight: 600 }}>WARNING</span></div>
+                    <div>• Dữ liệu nghiên cứu → RemiCare webcam 10–15 FPS</div>
+                    <div>• <strong>Ý nghĩa lâm sàng:</strong> None</div>
+                    <div>• <strong>Research-only output:</strong> Probability is model output and has not been clinically validated for RemiCare webcam data.</div>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Research Sampling Storage Status (Section 5 & 12) */}
