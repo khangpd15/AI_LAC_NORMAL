@@ -43,7 +43,7 @@ export default function PositionCheck({
   React.useEffect(() => {
     if (isVoiceEnabled && speak && !spokenIntroRef.current) {
       spokenIntroRef.current = true;
-      speak(`${config.instruction}. Giữ đầu thẳng và nhìn vào camera.`);
+      speak(`Dạ, cô chú ${config.instruction.toLowerCase()} nghen. Mình giữ đầu thẳng và nhìn vào camera nha.`);
     }
   }, [isVoiceEnabled, speak, config.instruction]);
 
@@ -51,7 +51,7 @@ export default function PositionCheck({
   React.useEffect(() => {
     if (isReady && isVoiceEnabled && speak && !spokenReadyRef.current) {
       spokenReadyRef.current = true;
-      speak('Vị trí đã phù hợp. Hãy nhấn nút bắt đầu.');
+      speak('Dạ, vị trí đã rất tốt rồi nghen. Cô chú bấm nút bắt đầu nha.');
     }
   }, [isReady, isVoiceEnabled, speak]);
 
@@ -98,7 +98,7 @@ export default function PositionCheck({
           {config.instruction}. Giữ đầu thẳng và nhìn vào camera để hệ thống chuẩn bị bài kiểm tra.
         </p>
       </div>
-      <AudioButton text="Đưa khuôn mặt vào đúng vị trí." label="Nghe hướng dẫn" />
+      <AudioButton text={`Dạ, cô chú ${config.instruction.toLowerCase()} nghen. Mình giữ đầu thẳng, nhìn thẳng vào camera và chờ hệ thống báo sẵn sàng nha.`} label="Nghe hướng dẫn" />
 
       <div className="position-check-layout">
         {/* Left Column: Camera Preview with Live Landmarking & Face Bounding Box */}
@@ -125,12 +125,12 @@ export default function PositionCheck({
                 top: `${(centeringConfig.TARGET_Y - centeringConfig.MAX_OFFSET_Y) * 100}%`,
                 width: `${centeringConfig.MAX_OFFSET_X * 200}%`,
                 height: `${centeringConfig.MAX_OFFSET_Y * 200}%`,
-                border: `1px dashed ${checks.faceCentered ? 'rgba(16, 185, 129, 0.75)' : 'rgba(250, 204, 21, 0.85)'}`,
+                border: `2px dashed ${checks.faceCentered ? 'var(--color-mint)' : 'var(--color-soft-amber)'}`,
                 borderRadius: '12px',
-                background: checks.faceCentered ? 'rgba(16, 185, 129, 0.04)' : 'rgba(250, 204, 21, 0.035)',
+                background: checks.faceCentered ? 'rgba(0, 171, 155, 0.08)' : 'rgba(242, 198, 109, 0.08)',
                 pointerEvents: 'none',
                 zIndex: 7,
-                transition: 'border-color 0.15s ease-out',
+                transition: 'all 0.15s ease-out',
               }}
             >
               <span
@@ -142,7 +142,7 @@ export default function PositionCheck({
                   height: '10px',
                   border: '2px solid currentColor',
                   borderRadius: '50%',
-                  color: checks.faceCentered ? '#10b981' : '#facc15',
+                  color: checks.faceCentered ? 'var(--color-mint)' : 'var(--color-soft-amber)',
                   transform: 'translate(-50%, -50%)',
                 }}
               />
@@ -158,12 +158,12 @@ export default function PositionCheck({
                   top: `${positionReport.boundingBox.yMin * 100}%`,
                   width: `${positionReport.boundingBox.width * 100}%`,
                   height: `${positionReport.boundingBox.height * 100}%`,
-                  border: isReady ? '2px solid #10b981' : '2px dashed #38bdf8',
+                  border: isReady ? '2px solid var(--color-mint)' : '2px dashed var(--color-soft-mint)',
                   borderRadius: '10px',
                   pointerEvents: 'none',
                   boxShadow: isReady
-                    ? '0 0 14px rgba(16, 185, 129, 0.45)'
-                    : '0 0 8px rgba(56, 189, 248, 0.35)',
+                    ? '0 0 14px rgba(0, 171, 155, 0.45)'
+                    : '0 0 8px rgba(184, 232, 223, 0.35)',
                   transition: 'all 0.15s ease-out',
                   zIndex: 8,
                 }}
@@ -173,7 +173,7 @@ export default function PositionCheck({
                     position: 'absolute',
                     top: '-22px',
                     left: '4px',
-                    background: isReady ? '#10b981' : 'rgba(15, 23, 42, 0.85)',
+                    background: isReady ? 'var(--color-mint)' : 'var(--color-deep-teal)',
                     color: '#fff',
                     fontSize: '11px',
                     fontWeight: 700,
@@ -194,7 +194,7 @@ export default function PositionCheck({
             <div className="distance-gauge-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <span className="distance-gauge-label">Khoảng cách yêu cầu: </span>
-                <strong style={{ color: 'var(--primary)', marginLeft: '4px' }}>{config.targetRangeLabel}</strong>
+                <strong style={{ color: 'var(--color-deep-teal)', marginLeft: '4px' }}>{config.targetRangeLabel}</strong>
               </div>
               <div>
                 <span className="distance-gauge-label">Khoảng cách ước tính: </span>
@@ -324,7 +324,7 @@ export default function PositionCheck({
               </li>
             </ul>
 
-            <div className="checklist-safety-note" style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '10px', borderRadius: '8px', marginTop: '12px' }}>
+            <div className="checklist-safety-note" style={{ background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '8px', marginTop: '12px' }}>
               <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
                 💡 <strong>Ghi chú:</strong> {config.clinicalNote}
               </p>

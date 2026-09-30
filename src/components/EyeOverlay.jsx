@@ -126,8 +126,8 @@ export default function EyeOverlay({
     };
 
     // 1. Draw 16-point Anatomical Eye Contours
-    drawContour(LEFT_EYE_CONTOUR, 'rgba(6, 182, 212, 0.75)', 'rgba(6, 182, 212, 0.08)');
-    drawContour(RIGHT_EYE_CONTOUR, 'rgba(16, 185, 129, 0.75)', 'rgba(16, 185, 129, 0.08)');
+    drawContour(LEFT_EYE_CONTOUR, 'rgba(0, 171, 155, 0.75)', 'rgba(0, 171, 155, 0.08)');
+    drawContour(RIGHT_EYE_CONTOUR, 'rgba(38, 122, 120, 0.75)', 'rgba(38, 122, 120, 0.08)');
 
     // 2. Draw Canthal Lines (Inner Canthus to Outer Canthus)
     const lInner = landmarks[LANDMARKS.LEFT_INNER_CORNER];
@@ -135,7 +135,7 @@ export default function EyeOverlay({
     const rInner = landmarks[LANDMARKS.RIGHT_INNER_CORNER];
     const rOuter = landmarks[LANDMARKS.RIGHT_OUTER_CORNER];
 
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+    ctx.strokeStyle = 'rgba(242, 198, 109, 0.55)';
     ctx.lineWidth = 1.0;
     if (lInner && lOuter) {
       ctx.beginPath();
@@ -150,28 +150,28 @@ export default function EyeOverlay({
       ctx.stroke();
     }
 
-    // Draw Canthal Points (Amber)
+    // Draw Canthal Points (Soft Amber)
     const corners = [lInner, lOuter, rInner, rOuter];
-    corners.forEach((pt) => drawPoint(pt, '#f59e0b', 2.5));
+    corners.forEach((pt) => drawPoint(pt, '#F2C56D', 2.5));
 
     // 3. Draw Iris Centers (473 Left, 468 Right) & Perimeter Rings
     const leftIris = landmarks[LANDMARKS.LEFT_IRIS_CENTER];
     const rightIris = landmarks[LANDMARKS.RIGHT_IRIS_CENTER];
 
     if (leftIris) {
-      drawPoint(leftIris, '#06b6d4', 3.0);
-      drawCrosshair(leftIris, '#22d3ee', 7);
+      drawPoint(leftIris, '#00AB9B', 3.0);
+      drawCrosshair(leftIris, '#B8E8DF', 7);
     }
     if (rightIris) {
-      drawPoint(rightIris, '#10b981', 3.0);
-      drawCrosshair(rightIris, '#34d399', 7);
+      drawPoint(rightIris, '#267A78', 3.0);
+      drawCrosshair(rightIris, '#B8E8DF', 7);
     }
 
     if (LANDMARKS.LEFT_IRIS_PERIMETER) {
-      drawContour(LANDMARKS.LEFT_IRIS_PERIMETER, 'rgba(34, 211, 238, 0.85)');
+      drawContour(LANDMARKS.LEFT_IRIS_PERIMETER, 'rgba(0, 171, 155, 0.85)');
     }
     if (LANDMARKS.RIGHT_IRIS_PERIMETER) {
-      drawContour(LANDMARKS.RIGHT_IRIS_PERIMETER, 'rgba(52, 211, 153, 0.85)');
+      drawContour(LANDMARKS.RIGHT_IRIS_PERIMETER, 'rgba(38, 122, 120, 0.85)');
     }
 
     // 4. Draw Roll-Aligned Ocular ROI Boundary Boxes
@@ -230,8 +230,8 @@ export default function EyeOverlay({
         ctx.restore();
       };
 
-      drawRoiBox(leftRoi, 'rgba(6, 182, 212, 0.85)', 'L-ROI');
-      drawRoiBox(rightRoi, 'rgba(16, 185, 129, 0.85)', 'R-ROI');
+      drawRoiBox(leftRoi, 'rgba(0, 171, 155, 0.85)', 'L-ROI');
+      drawRoiBox(rightRoi, 'rgba(38, 122, 120, 0.85)', 'R-ROI');
     }
 
     // 5. Draw Gaze Projection Vector
@@ -258,8 +258,8 @@ export default function EyeOverlay({
         ctx.fill();
       };
 
-      if (leftIris) drawGazeVector(leftIris, effectiveFeatures.leftHorizontalRatio, effectiveFeatures.leftVerticalRatio, '#22d3ee');
-      if (rightIris) drawGazeVector(rightIris, effectiveFeatures.rightHorizontalRatio, effectiveFeatures.rightVerticalRatio, '#34d399');
+      if (leftIris) drawGazeVector(leftIris, effectiveFeatures.leftHorizontalRatio, effectiveFeatures.leftVerticalRatio, '#00AB9B');
+      if (rightIris) drawGazeVector(rightIris, effectiveFeatures.rightHorizontalRatio, effectiveFeatures.rightVerticalRatio, '#267A78');
     }
   }, [landmarks, videoWidth, videoHeight, isTrackingValid, features, featuresRef, showRoi]);
 
@@ -280,9 +280,9 @@ export default function EyeOverlay({
             position: 'absolute',
             bottom: '12px',
             left: '12px',
-            background: 'rgba(15, 23, 42, 0.88)',
+            background: 'rgba(0, 84, 93, 0.92)',
             backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(56, 189, 248, 0.35)',
+            border: '1px solid var(--color-soft-mint)',
             borderRadius: '10px',
             padding: '10px 14px',
             color: '#f8fafc',
@@ -296,40 +296,40 @@ export default function EyeOverlay({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>REMICARE CV HUD</span>
-            <span style={{ color: '#94a3b8', fontSize: '10px' }}>FPS: {currentFps}</span>
+            <span style={{ color: 'var(--color-mint)', fontWeight: 'bold' }}>REMICARE CV HUD</span>
+            <span style={{ color: 'var(--color-soft-mint)', fontSize: '10px' }}>FPS: {currentFps}</span>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '6px' }}>
             <div>
-              <span style={{ color: '#94a3b8' }}>L-EAR: </span>
-              <span style={{ color: (features?.leftEar ?? 0.3) < 0.18 ? '#ef4444' : '#10b981' }}>
+              <span style={{ color: 'var(--color-soft-mint)' }}>L-EAR: </span>
+              <span style={{ color: (features?.leftEar ?? 0.3) < 0.18 ? 'var(--color-warm-coral)' : 'var(--color-soft-mint)' }}>
                 {features?.leftEar?.toFixed(2) ?? '--'}
               </span>
             </div>
             <div>
-              <span style={{ color: '#94a3b8' }}>R-EAR: </span>
-              <span style={{ color: (features?.rightEar ?? 0.3) < 0.18 ? '#ef4444' : '#10b981' }}>
+              <span style={{ color: 'var(--color-soft-mint)' }}>R-EAR: </span>
+              <span style={{ color: (features?.rightEar ?? 0.3) < 0.18 ? 'var(--color-warm-coral)' : 'var(--color-soft-mint)' }}>
                 {features?.rightEar?.toFixed(2) ?? '--'}
               </span>
             </div>
             <div>
-              <span style={{ color: '#94a3b8' }}>Dist: </span>
+              <span style={{ color: 'var(--color-soft-mint)' }}>Dist: </span>
               <span>{features?.estimatedDistanceCm ? `${features.estimatedDistanceCm} cm` : '--'}</span>
             </div>
             <div>
-              <span style={{ color: '#94a3b8' }}>Blink: </span>
-              <span style={{ color: features?.isBlinking ? '#ef4444' : '#10b981' }}>
+              <span style={{ color: 'var(--color-soft-mint)' }}>Blink: </span>
+              <span style={{ color: features?.isBlinking ? 'var(--color-warm-coral)' : 'var(--color-soft-mint)' }}>
                 {features?.isBlinking ? 'ACTIVE' : 'NO'}
               </span>
             </div>
           </div>
 
           {/* 2D Gaze Grid Visualizer */}
-          <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px solid rgba(184, 232, 223, 0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-              <span style={{ color: '#94a3b8' }}>Gaze Map:</span>
-              <span style={{ color: '#38bdf8' }}>
+              <span style={{ color: 'var(--color-soft-mint)' }}>Gaze Map:</span>
+              <span style={{ color: 'var(--color-mint)' }}>
                 {features?.leftHorizontalRatio?.toFixed(2) ?? '--'} / {features?.leftVerticalRatio?.toFixed(2) ?? '--'}
               </span>
             </div>
@@ -338,7 +338,7 @@ export default function EyeOverlay({
                 width: '100%',
                 height: '42px',
                 background: 'rgba(0, 0, 0, 0.35)',
-                border: '1px solid rgba(56, 189, 248, 0.25)',
+                border: '1px solid var(--color-soft-mint)',
                 borderRadius: '6px',
                 position: 'relative',
                 overflow: 'hidden',
@@ -355,8 +355,8 @@ export default function EyeOverlay({
                     width: '7px',
                     height: '7px',
                     borderRadius: '50%',
-                    background: '#22d3ee',
-                    boxShadow: '0 0 6px #22d3ee',
+                    background: 'var(--color-mint)',
+                    boxShadow: '0 0 6px var(--color-mint)',
                     left: `${Math.max(5, Math.min(95, features.leftHorizontalRatio * 100))}%`,
                     top: `${Math.max(5, Math.min(95, features.leftVerticalRatio * 100))}%`,
                     transform: 'translate(-50%, -50%)',
@@ -368,7 +368,7 @@ export default function EyeOverlay({
           </div>
 
           <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: (quality?.isValid ?? isTrackingValid) ? '#10b981' : '#f59e0b', fontSize: '10px' }}>
+            <span style={{ color: (quality?.isValid ?? isTrackingValid) ? 'var(--color-soft-mint)' : 'var(--color-soft-amber)', fontSize: '10px' }}>
               ● {quality?.status || (isTrackingValid ? 'FRAME ACCEPTED' : 'FRAME REJECTED')}
             </span>
             <button
@@ -377,7 +377,7 @@ export default function EyeOverlay({
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#64748b',
+                color: 'var(--color-soft-mint)',
                 cursor: 'pointer',
                 fontSize: '10px',
                 padding: '0 2px',
@@ -399,10 +399,10 @@ export default function EyeOverlay({
             position: 'absolute',
             bottom: '8px',
             left: '8px',
-            background: 'rgba(15, 23, 42, 0.75)',
-            border: '1px solid rgba(56, 189, 248, 0.3)',
+            background: 'rgba(0, 84, 93, 0.85)',
+            border: '1px solid var(--color-soft-mint)',
             borderRadius: '6px',
-            color: '#38bdf8',
+            color: '#ffffff',
             fontSize: '10px',
             padding: '3px 8px',
             cursor: 'pointer',

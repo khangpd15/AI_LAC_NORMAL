@@ -3,7 +3,7 @@ import BinocularVisionScreening from './components/binocular/BinocularVisionScre
 import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState('light');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -19,13 +19,11 @@ export default function App() {
       <header className="app-header">
         <div className="header-inner">
           <div className="brand-group">
-            <div className="brand-symbol" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="9" />
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
-              </svg>
-            </div>
+            <img
+              src="/images/logo.jpg"
+              alt="Logo RemiCare"
+              className="brand-logo-img"
+            />
             <div className="brand-text">
               <span className="brand-title">RemiCare AI</span>
               <span className="brand-subtitle">Digital Binocular Vision Screening</span>

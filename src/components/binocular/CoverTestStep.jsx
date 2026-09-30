@@ -382,7 +382,7 @@ export default function CoverTestStep({
   const handleAbortTest = useCallback(() => {
     invalidateActiveRun();
     setCoverState('IDLE');
-    if (speak) speak('Đã dừng bài kiểm tra.');
+    if (speak) speak('Dạ, đã tạm dừng bài kiểm tra rồi nghen.');
   }, [invalidateActiveRun, speak]);
 
   // Logging state changes as required by Step 6
@@ -570,7 +570,7 @@ export default function CoverTestStep({
       text: 'Ngồi thẳng và nhìn vào chấm tròn ở giữa.',
       subtext: 'Chu kỳ 1 sẽ bắt đầu trong giây lát...',
       durationMs: 3000,
-      speechText: 'Chuẩn bị bắt đầu. Hãy nhìn thẳng vào chấm đỏ.',
+      speechText: 'Dạ, mình chuẩn bị bắt đầu nghen. Cô chú nhìn thẳng vào chấm tròn ở giữa nha.',
       cycleNum: 1,
     });
 
@@ -593,7 +593,7 @@ export default function CoverTestStep({
         coverEye: null,
         trackEye: null,
         durationMs: 4000,
-        speechText: 'Nhìn vào chấm tròn ở giữa.',
+        speechText: 'Dạ, cô chú nhìn vào chấm tròn ở giữa nghen.',
         cycleNum: c,
       });
 
@@ -615,7 +615,7 @@ export default function CoverTestStep({
         setCompletedCyclesList([...accumulatedCycles]);
         transitionToState('CYCLE_COMPLETE', c);
         if (c < SCREENING_CONFIG.CYCLES) {
-          await executePhase({ state: 'NEXT_CYCLE', title: 'Chuẩn bị lần tiếp theo', text: 'Dữ liệu chưa ổn định. Hãy giữ đầu yên và thử chu kỳ tiếp theo.', subtext: `Chu kỳ ${c + 1} sẽ bắt đầu sau ít giây.`, durationMs: 2500, speechText: 'Giữ đầu yên. Chuẩn bị lần tiếp theo.', cycleNum: c });
+          await executePhase({ state: 'NEXT_CYCLE', title: 'Chuẩn bị lần tiếp theo', text: 'Dữ liệu chưa ổn định. Hãy giữ đầu yên và thử chu kỳ tiếp theo.', subtext: `Chu kỳ ${c + 1} sẽ bắt đầu sau ít giây.`, durationMs: 2500, speechText: 'Dạ, mình giữ đầu yên nghen. Chuẩn bị cho lần tiếp theo nha.', cycleNum: c });
         }
         continue;
       }
@@ -660,7 +660,7 @@ export default function CoverTestStep({
         coverEye: null,
         trackEye: 'right',
         durationMs: 800,
-        speechText: 'Bỏ che mắt.',
+        speechText: 'Dạ, mình bỏ tay ra và tiếp tục nhìn thẳng nha.',
         cycleNum: c,
       });
 
@@ -714,7 +714,7 @@ export default function CoverTestStep({
         coverEye: null,
         trackEye: 'left',
         durationMs: 800,
-        speechText: 'Bỏ che mắt.',
+        speechText: 'Dạ, mình bỏ tay ra và tiếp tục nhìn thẳng nha.',
         cycleNum: c,
       });
 
@@ -786,7 +786,7 @@ export default function CoverTestStep({
           text: 'Chớp mắt nhẹ nhàng và thư giãn trong giây lát.',
           subtext: `Chu kỳ ${c + 1} sẽ bắt đầu sau ít giây.`,
           durationMs: 2500,
-          speechText: 'Chuẩn bị lần tiếp theo.',
+          speechText: 'Dạ, cô chú chớp mắt nhẹ nhàng nghen. Chuẩn bị lần tiếp theo nha.',
           cycleNum: c,
         });
       }
@@ -798,7 +798,7 @@ export default function CoverTestStep({
       setCoverSummary(summaryPayload);
       transitionToState('FINISHED', 3);
       if (speak) {
-        speak('Đã hoàn thành phần kiểm tra.');
+        speak('Dạ, bài kiểm tra che mắt đã hoàn tất rồi nghen cô chú.');
       }
 
       // Automatically persist raw sampling dataset to backend storage.
@@ -954,9 +954,9 @@ export default function CoverTestStep({
 
             <div style={{ marginTop: '8px', fontSize: '1.05rem', fontWeight: '700' }}>
               {coverSummary.verdict === COVER_TEST_VERDICTS.REFIXATION_DETECTED ? (
-                <span style={{ color: 'var(--accent-amber)' }}>🟡 Đã ghi nhận chuyển động tái định thị</span>
+                <span style={{ color: '#704800' }}>🟡 Đã ghi nhận chuyển động tái định thị</span>
               ) : coverSummary.verdict === COVER_TEST_VERDICTS.NO_SIGNIFICANT_REFIXATION ? (
-                <span style={{ color: 'var(--accent-emerald)' }}>🟢 Không ghi nhận tái định thị bất thường</span>
+                <span style={{ color: 'var(--color-deep-green)' }}>🟢 Không ghi nhận tái định thị bất thường</span>
               ) : (
                 <span style={{ color: 'var(--text-muted)' }}>⚪ Dữ liệu chưa đủ kết luận</span>
               )}
@@ -964,15 +964,15 @@ export default function CoverTestStep({
           </div>
 
           {/* Clinician & researcher data breakdown */}
-          <div className="clinician-detail-box" style={{ maxWidth: '640px', margin: '0 auto 24px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px' }}>
-            <h4 style={{ margin: '0 0 10px 0', fontSize: '0.92rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div className="clinician-detail-box" style={{ maxWidth: '640px', margin: '0 auto 24px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', borderRadius: '12px', padding: '16px' }}>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '0.92rem', color: 'var(--color-deep-teal)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: '700' }}>
               Chi tiết dữ liệu lâm sàng 3 chu kỳ:
             </h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
               {coverSummary.cycles.map((cyc) => (
                 <div key={cyc.cycleIndex} style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem' }}>
-                  <div style={{ fontWeight: '700', marginBottom: '4px' }}>Chu kỳ {cyc.cycleIndex}</div>
-                  <div>Chất lượng: <strong style={{ color: cyc.quality?.isValid ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}>{cyc.quality?.isValid ? 'Hợp lệ' : 'Chưa đạt'}</strong></div>
+                  <div style={{ fontWeight: '700', marginBottom: '4px', color: 'var(--color-deep-teal)' }}>Chu kỳ {cyc.cycleIndex}</div>
+                  <div>Chất lượng: <strong style={{ color: cyc.quality?.isValid ? 'var(--color-deep-green)' : '#704800' }}>{cyc.quality?.isValid ? 'Hợp lệ' : 'Chưa đạt'}</strong></div>
                   <div>Tái định thị: <strong>{cyc.isRefixationNotable ? 'Có' : 'Không'}</strong></div>
                 </div>
               ))}
@@ -985,17 +985,17 @@ export default function CoverTestStep({
             style={{
               maxWidth: '640px',
               margin: '0 auto 20px',
-              background: 'rgba(15, 23, 42, 0.65)',
-              border: '1px solid rgba(59, 130, 246, 0.25)',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--color-soft-mint)',
               borderRadius: '12px',
               padding: '18px 20px',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+              boxShadow: 'var(--shadow-sm)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.2rem' }}>🔬</span>
-                <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#60a5fa' }}>
+                <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-deep-teal)' }}>
                   AI Transfer Experiment
                 </h4>
               </div>
@@ -1006,9 +1006,10 @@ export default function CoverTestStep({
                   letterSpacing: '0.05em',
                   padding: '3px 8px',
                   borderRadius: '999px',
-                  background: 'rgba(59, 130, 246, 0.15)',
-                  color: '#93c5fd',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  background: 'var(--color-pale-teal)',
+                  color: 'var(--color-deep-teal)',
+                  border: '1px solid var(--color-soft-mint)',
+                  fontWeight: 600,
                 }}
               >
                 Nghiên cứu / Thử nghiệm
@@ -1018,12 +1019,12 @@ export default function CoverTestStep({
             {/* Scientific Disclaimer */}
             <div
               style={{
-                background: 'rgba(234, 179, 8, 0.1)',
-                border: '1px solid rgba(234, 179, 8, 0.3)',
+                background: 'rgba(242, 198, 109, 0.16)',
+                border: '1px solid var(--color-soft-amber)',
                 borderRadius: '8px',
                 padding: '10px 14px',
                 fontSize: '0.85rem',
-                color: '#fde047',
+                color: '#704800',
                 marginBottom: '14px',
                 lineHeight: '1.45',
               }}
@@ -1040,8 +1041,8 @@ export default function CoverTestStep({
             )}
 
             {aiTransferState.status === 'error' && (
-              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '12px 14px' }}>
-                <div style={{ color: '#f87171', fontWeight: 600, fontSize: '0.9rem', marginBottom: '4px' }}>
+              <div style={{ background: 'rgba(242, 140, 123, 0.15)', border: '1px solid var(--color-warm-coral)', borderRadius: '8px', padding: '12px 14px' }}>
+                <div style={{ color: '#8a1f12', fontWeight: 600, fontSize: '0.9rem', marginBottom: '4px' }}>
                   {aiTransferState.error || 'Không thể kết nối tới hệ thống AI.'}
                 </div>
                 <p style={{ margin: '0 0 10px 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
@@ -1089,32 +1090,32 @@ export default function CoverTestStep({
               const cleanProfile = modelResult.samplingProfile || 'Korean recordings augmented across fixed and variable 10–15 FPS with simulated frame drops';
 
               const cardStyle = {
-                background: 'rgba(255, 255, 255, 0.03)',
+                background: 'var(--color-pale-teal)',
                 padding: '14px 16px',
                 borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                border: '1px solid var(--color-soft-mint)',
               };
 
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.86rem' }}>
                   {/* Card: Korean 10-15 FPS candidate */}
                   <div style={cardStyle}>
-                    <div style={{ color: '#93c5fa', fontSize: '0.88rem', fontWeight: 700, marginBottom: '8px' }}>
+                    <div style={{ color: 'var(--color-deep-teal)', fontSize: '0.88rem', fontWeight: 700, marginBottom: '8px' }}>
                       {cleanLabel}
                     </div>
                     <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
                       Model Prediction
                     </div>
-                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: cleanPrediction === 'NORMAL' ? '#34d399' : '#fbbf24', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: cleanPrediction === 'NORMAL' ? 'var(--color-deep-green)' : 'var(--color-warm-coral)', marginBottom: '8px' }}>
                       {cleanPrediction}
                     </div>
                     <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
                       Model class probability
                     </div>
                     <div style={{ fontSize: '0.84rem', fontWeight: 600 }}>
-                      NORMAL: <span style={{ color: '#34d399' }}>{((cleanProbabilities.NORMAL ?? 0) * 100).toFixed(1)}%</span>
+                      NORMAL: <span style={{ color: 'var(--color-deep-green)' }}>{((cleanProbabilities.NORMAL ?? 0) * 100).toFixed(1)}%</span>
                       {' | '}
-                      STRABISMUS: <span style={{ color: '#fbbf24' }}>{((cleanProbabilities.STRABISMUS ?? 0) * 100).toFixed(1)}%</span>
+                      STRABISMUS: <span style={{ color: '#8c5a00' }}>{((cleanProbabilities.STRABISMUS ?? 0) * 100).toFixed(1)}%</span>
                     </div>
                     <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', lineHeight: 1.4, marginTop: '8px' }}>
                       {cleanVersion}<br />
@@ -1123,9 +1124,9 @@ export default function CoverTestStep({
                   </div>
 
                   {/* Metadata section */}
-                  <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-dim)', lineHeight: '1.6' }}>
+                  <div style={{ background: 'rgba(0, 84, 93, 0.04)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-dim)', lineHeight: '1.6', border: '1px solid var(--border-subtle)' }}>
                     <div>• <strong>Mô hình:</strong> {cleanLabel} ({cleanVersion}, 14 đặc trưng kỹ thuật)</div>
-                    <div>• <strong>Domain shift:</strong> <span style={{ color: '#f59e0b', fontWeight: 600 }}>WARNING</span> (Korean IR Eye-tracker 60Hz → RemiCare Webcam 15Hz)</div>
+                    <div>• <strong>Domain shift:</strong> <span style={{ color: '#8c5a00', fontWeight: 700 }}>WARNING</span> (Korean IR Eye-tracker 60Hz → RemiCare Webcam 15Hz)</div>
                     <div>• <strong>Ý nghĩa lâm sàng:</strong> None (Clinical meaning: null)</div>
                     <div>• <strong>Research-only output:</strong> Probability is model output and has not been clinically validated for RemiCare webcam data.</div>
                   </div>
@@ -1137,18 +1138,19 @@ export default function CoverTestStep({
           {/* Research Sampling Storage Status (Section 5 & 12) */}
           <div
             style={{
-              background: 'rgba(15, 23, 42, 0.6)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--color-soft-mint)',
               borderRadius: '12px',
               padding: '16px 20px',
               marginBottom: '20px',
               maxWidth: '640px',
               margin: '0 auto 20px auto',
               textAlign: 'left',
+              boxShadow: 'var(--shadow-sm)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>
+              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-deep-teal)' }}>
                 💾 Dữ liệu nghiên cứu (Sampling Data)
               </span>
               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -1164,19 +1166,19 @@ export default function CoverTestStep({
             )}
 
             {sessionSaveState.status === 'saved' && (
-              <div style={{ background: 'rgba(52, 211, 153, 0.1)', border: '1px solid rgba(52, 211, 153, 0.3)', borderRadius: '8px', padding: '10px 14px' }}>
-                <div style={{ color: '#34d399', fontWeight: 600, fontSize: '0.88rem', marginBottom: '2px' }}>
+              <div style={{ background: 'var(--color-pale-teal)', border: '1px solid var(--color-mint)', borderRadius: '8px', padding: '10px 14px' }}>
+                <div style={{ color: 'var(--color-deep-green)', fontWeight: 600, fontSize: '0.88rem', marginBottom: '2px' }}>
                   ✅ Đã lưu raw sampling thành công!
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                   Đã ghi nhận <strong>{sessionSaveState.sampleCount}</strong> mẫu dữ liệu chuỗi thời gian (15 Hz) phục vụ đào tạo và nghiên cứu AI.
                 </div>
               </div>
             )}
 
             {sessionSaveState.status === 'error' && (
-              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '10px 14px' }}>
-                <div style={{ color: '#f87171', fontWeight: 600, fontSize: '0.88rem', marginBottom: '4px' }}>
+              <div style={{ background: 'rgba(242, 140, 123, 0.15)', border: '1px solid var(--color-warm-coral)', borderRadius: '8px', padding: '10px 14px' }}>
+                <div style={{ color: '#8a1f12', fontWeight: 600, fontSize: '0.88rem', marginBottom: '4px' }}>
                   ⚠️ Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
@@ -1233,7 +1235,7 @@ export default function CoverTestStep({
             {isVoiceEnabled ? '🔊 Âm thanh BẬT' : '🔇 Âm thanh TẮT'}
           </button>
         </div>
-        <AudioButton text="Chúng ta bắt đầu kiểm tra mắt nhé. Nhìn vào chấm tròn ở giữa." onActivate={() => { if (!isVoiceEnabled) toggleSound?.(); }} />
+        <AudioButton text="Dạ, cô chú cứ bình tĩnh nghen. Mình ngồi thẳng người, nhìn vào chấm tròn ở giữa màn hình và làm theo hướng dẫn từng bước nha." onActivate={() => { if (!isVoiceEnabled) toggleSound?.(); }} />
       </div>
 
       <div className="cover-running-layout">
@@ -1254,7 +1256,7 @@ export default function CoverTestStep({
         {/* Right Column: Introduction & Child-friendly instructions */}
         <div className="instruction-column">
           <div className="cover-state-machine-box">
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', color: 'var(--text-main)' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', color: 'var(--color-deep-teal)' }}>
               Hướng dẫn thực hiện Cover Test
             </h3>
             <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '14px' }}>
@@ -1262,26 +1264,26 @@ export default function CoverTestStep({
             </p>
 
             <div className="intro-steps-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '10px' }}>
                 <span style={{ fontSize: '1.4rem' }}>🔴</span>
                 <div style={{ fontSize: '0.88rem' }}>
-                  <strong>Nhìn vào chấm đỏ ở giữa màn hình</strong>
+                  <strong style={{ color: 'var(--color-deep-teal)' }}>Nhìn vào chấm đỏ ở giữa màn hình</strong>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Giữ đầu thẳng và mắt nhìn cố định vào tâm chấm.</div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '10px' }}>
                 <span style={{ fontSize: '1.4rem' }}>✋</span>
                 <div style={{ fontSize: '0.88rem' }}>
-                  <strong>Che mắt theo hiệu lệnh</strong>
+                  <strong style={{ color: 'var(--color-deep-teal)' }}>Che mắt theo hiệu lệnh</strong>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Dùng lòng bàn tay hoặc miếng che che mắt trái/phải theo giọng nói.</div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '10px' }}>
                 <span style={{ fontSize: '1.4rem' }}>👀</span>
                 <div style={{ fontSize: '0.88rem' }}>
-                  <strong>Bỏ che mắt &amp; tiếp tục nhìn thẳng</strong>
+                  <strong style={{ color: 'var(--color-deep-teal)' }}>Bỏ che mắt &amp; tiếp tục nhìn thẳng</strong>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Hạ tay xuống và giữ ánh nhìn cố định vào chấm đỏ.</div>
                 </div>
               </div>

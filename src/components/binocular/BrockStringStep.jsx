@@ -82,7 +82,7 @@ export default function BrockStringStep({
   const handleAbortTest = useCallback(() => {
     isAbortedRef.current = true;
     setStage('TRANSITION');
-    if (speak) speak('Đã dừng bài kiểm tra.');
+    if (speak) speak('Dạ, đã tạm dừng bài kiểm tra rồi nghen.');
   }, [speak]);
 
   // Collect frames for current target
@@ -117,7 +117,7 @@ export default function BrockStringStep({
         let prevSec = initialSeconds;
 
         if (speak) {
-          speak(target.id === 'NEAR' ? 'Nhìn vào chấm tròn ở giữa.' : 'Tiếp tục nhìn vào chấm tròn.');
+          speak(target.id === 'NEAR' ? 'Dạ, cô chú nhìn vào chấm tròn ở giữa nghen.' : 'Dạ, mình tiếp tục nhìn vào chấm tròn nha.');
         }
 
         let rafId = null;
@@ -192,7 +192,7 @@ export default function BrockStringStep({
       setSessionResults(overallEvaluation);
       setStage('COMPLETED');
       if (speak) {
-        speak('Đã hoàn thành.');
+        speak('Dạ, bài kiểm tra Brock String đã hoàn tất rồi nghen cô chú.');
       }
     }
   };
@@ -357,7 +357,7 @@ export default function BrockStringStep({
             {isVoiceEnabled ? '🔊 Âm thanh BẬT' : '🔇 Âm thanh TẮT'}
           </button>
         </div>
-        <AudioButton text="Đưa khuôn mặt vào đúng vị trí. Sau đó nhìn vào chấm tròn." onActivate={() => { if (!isVoiceEnabled) toggleSound?.(); }} />
+        <AudioButton text="Dạ, cô chú ngồi gần màn hình khoảng hai mươi đến hai mươi lăm xăng ti mét nghen. Sau đó nhìn chăm chú vào chấm tròn ở giữa nha." onActivate={() => { if (!isVoiceEnabled) toggleSound?.(); }} />
       </div>
 
       <div className="cover-running-layout">
@@ -377,7 +377,7 @@ export default function BrockStringStep({
         {/* Right Column: Guidance & Instructions */}
         <div className="instruction-column">
           <div className="cover-state-machine-box">
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', color: 'var(--text-main)' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', color: 'var(--color-deep-teal)' }}>
               Hướng dẫn thực hiện Brock String
             </h3>
             <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '14px' }}>
@@ -385,24 +385,24 @@ export default function BrockStringStep({
             </p>
 
             <div className="intro-steps-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '10px' }}>
                 <span style={{ fontSize: '1.4rem' }}>📏</span>
                 <div style={{ fontSize: '0.88rem' }}>
-                  <strong>Giữ khoảng cách 20–25 cm</strong>
+                  <strong style={{ color: 'var(--color-deep-teal)' }}>Giữ khoảng cách 20–25 cm</strong>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Ngồi thẳng người, nhìn trực diện vào webcam.</div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '10px' }}>
                 <span style={{ fontSize: '1.4rem' }}>🎯</span>
                 <div style={{ fontSize: '0.88rem' }}>
-                  <strong>Chỉ nhìn một chấm duy nhất ở giữa màn hình</strong>
+                  <strong style={{ color: 'var(--color-deep-teal)' }}>Chỉ nhìn một chấm duy nhất ở giữa màn hình</strong>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Chấm tròn sẽ thu nhỏ kích thước tương ứng từ gần ra xa.</div>
                 </div>
               </div>
             </div>
 
-            <div className="checklist-safety-note" style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '10px 14px', borderRadius: '8px', marginBottom: '8px' }}>
+            <div className="checklist-safety-note" style={{ background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '8px', marginBottom: '8px' }}>
               <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
                 💡 <strong>Lưu ý lâm sàng (Section 42):</strong> Kích thước chấm trên màn hình là mô phỏng thị giác số để định hướng định thị, không tương đương vật lý chính xác với cự ly thực tế.
               </p>

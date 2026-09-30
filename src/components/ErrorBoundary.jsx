@@ -40,21 +40,21 @@ export default class ErrorBoundary extends React.Component {
         >
           <div
             style={{
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: 'rgba(242, 140, 123, 0.12)',
+              border: '1px solid var(--color-warm-coral)',
               borderRadius: '16px',
               padding: '32px',
               maxWidth: '520px',
-              backdropFilter: 'blur(12px)',
+              boxShadow: 'var(--shadow-md)',
             }}
           >
             <span style={{ fontSize: '3rem', display: 'block', marginBottom: '12px' }} aria-hidden="true">
               ⚠️
             </span>
-            <h2 style={{ fontSize: '1.4rem', marginBottom: '8px', color: '#fca5a5' }}>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: '8px', color: '#8a1f12' }}>
               Đã xảy ra sự cố hiển thị
             </h2>
-            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', marginBottom: '20px', lineHeight: '1.5' }}>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', marginBottom: '20px', lineHeight: '1.5' }}>
               {this.state.error?.message || 'Không thể render giao diện do lỗi runtime.'}
             </p>
             <button
@@ -62,7 +62,7 @@ export default class ErrorBoundary extends React.Component {
               className="btn btn-primary"
               onClick={this.handleReload}
               style={{
-                background: '#06b6d4',
+                background: 'var(--color-mint)',
                 color: '#ffffff',
                 border: 'none',
                 padding: '10px 24px',

@@ -130,7 +130,7 @@ export default function BinocularVisionScreening() {
 
     setCurrentStep('COVER');
     if (speak) {
-      speak('Vị trí đã sẵn sàng. Chuyển sang bài kiểm tra Cover Test.');
+      speak('Dạ, vị trí đã sẵn sàng nghen. Mình chuyển sang bài kiểm tra che mắt nha cô chú.');
     }
   }, [session, positionReport, speak]);
 
@@ -150,7 +150,7 @@ export default function BinocularVisionScreening() {
       setCurrentStep('BROCK_POSITION');
 
       if (speak) {
-        speak('Cover Test hoàn tất. Hãy điều chỉnh khoảng cách cho bài kiểm tra Brock String.');
+        speak('Dạ, bài che mắt đã xong rồi nghen. Bây giờ cô chú ngồi gần lại một chút để kiểm tra Brock String nha.');
       }
     },
     [session, speak]
@@ -168,7 +168,7 @@ export default function BinocularVisionScreening() {
 
     setCurrentStep('BROCK');
     if (speak) {
-      speak('Vị trí đã sẵn sàng. Bắt đầu bài kiểm tra Brock String.');
+      speak('Dạ, vị trí rất tốt rồi nghen. Mình bắt đầu bài kiểm tra nhìn chấm tròn nha cô chú.');
     }
   }, [session, positionReport, speak]);
 
@@ -202,7 +202,7 @@ export default function BinocularVisionScreening() {
       setCurrentStep('SUMMARY');
 
       if (speak) {
-        speak('Hoàn tất toàn bộ quy trình sàng lọc. Đang hiển thị kết quả.');
+        speak('Dạ, đã hoàn tất toàn bộ quy trình sàng lọc rồi nghen cô chú. Kết quả đang hiển thị trên màn hình nha.');
       }
     },
     [session, smoothedPrediction, speak]

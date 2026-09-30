@@ -1,5 +1,17 @@
 import { AUDIO_CONFIG, AUDIO_MESSAGES, AUDIO_STATES } from '../constants/audioConfig.js';
 
+/**
+ * AudioService - RemiCare Text-To-Speech (TTS)
+ * Implements a gentle, patient, natural Southern Vietnamese female voice
+ * (Nữ miền Tây / Đồng bằng sông Cửu Long).
+ *
+ * Features:
+ * - Prioritized Southern Vietnamese female voice selection (Microsoft An, Phuong, Google tiếng Việt, Linh, Mai, Chi)
+ * - Calibrated speech rate (0.88x) & pitch (1.0)
+ * - Intelligent sentence pause cadence (350-450ms between sentences, 500-800ms before warnings)
+ * - SSML tag parsing & <break time="..." /> pause translation
+ * - Full audio state management with reactive snapshot listener
+ */
 export class AudioService {
   constructor(browserWindow = typeof window !== 'undefined' ? window : null) {
     this.window = browserWindow;
@@ -14,9 +26,11 @@ export class AudioService {
     this.errorMessage = '';
     this.listeners = new Set();
     this.requestId = 0;
+    this.activeTimer = null;
     this.unlocked = true;
     this.initialized = false;
     this.handleVoicesChanged = this.loadVoices.bind(this);
+
     if (this.isSupported()) {
       this.initializeVoices();
       if (this.window && typeof this.window.addEventListener === 'function') {
@@ -28,35 +42,112 @@ export class AudioService {
     }
   }
 
-  isSupported() { return Boolean(this.synth && this.Utterance); }
-  getVoices() { return [...this.voices]; }
-  getSnapshot() { return { supported: this.isSupported(), state: this.state, voice: this.selectedVoice ? { name: this.selectedVoice.name, lang: this.selectedVoice.lang } : null, text: this.currentText, errorCount: this.errorCount, errorMessage: this.errorMessage, unlocked: this.unlocked }; }
-  subscribe(listener) { this.listeners.add(listener); listener(this.getSnapshot()); return () => this.listeners.delete(listener); }
-  emit() { const snapshot = this.getSnapshot(); this.listeners.forEach((listener) => listener(snapshot)); }
+  isSupported() {
+    return Boolean(this.synth && this.Utterance);
+  }
+
+  getVoices() {
+    return [...this.voices];
+  }
+
+  getSnapshot() {
+    return {
+      supported: this.isSupported(),
+      state: this.state,
+      voice: this.selectedVoice ? { name: this.selectedVoice.name, lang: this.selectedVoice.lang } : null,
+      text: this.currentText,
+      errorCount: this.errorCount,
+      errorMessage: this.errorMessage,
+      unlocked: this.unlocked,
+    };
+  }
+
+  subscribe(listener) {
+    this.listeners.add(listener);
+    listener(this.getSnapshot());
+    return () => this.listeners.delete(listener);
+  }
+
+  emit() {
+    const snapshot = this.getSnapshot();
+    this.listeners.forEach((listener) => listener(snapshot));
+  }
 
   initializeVoices() {
     if (this.initialized || !this.isSupported()) return;
     this.initialized = true;
     this.loadVoices();
-    if (typeof this.synth.addEventListener === 'function') this.synth.addEventListener('voiceschanged', this.handleVoicesChanged);
-    else this.synth.onvoiceschanged = this.handleVoicesChanged;
+    if (typeof this.synth.addEventListener === 'function') {
+      this.synth.addEventListener('voiceschanged', this.handleVoicesChanged);
+    } else {
+      this.synth.onvoiceschanged = this.handleVoicesChanged;
+    }
   }
 
   loadVoices() {
     this.voices = this.synth?.getVoices?.() || [];
     this.selectedVoice = this.selectVietnameseVoice(this.voices);
-    if (this.selectedVoice) console.info('Selected voice:', this.selectedVoice.name, this.selectedVoice.lang);
+    if (this.selectedVoice) {
+      console.info('[AudioService] Selected RemiCare voice:', this.selectedVoice.name, this.selectedVoice.lang);
+    }
     this.emit();
     return this.voices;
   }
 
+  /**
+   * Intelligently selects the best Southern Vietnamese female voice.
+   * Priority:
+   * 1. Southern Female (Microsoft An, Phuong, South, Nam Bộ, Miền Tây)
+   * 2. Natural Female Vietnamese (Google tiếng Việt, Apple Linh/Mai/Chi)
+   * 3. Any standard Vietnamese female voice
+   * 4. Exclude or penalize explicit male voices (NamMinh, male)
+   */
   selectVietnameseVoice(voices = this.voices) {
-    return voices.find((voice) => voice.lang?.toLowerCase().replace('_', '-') === 'vi-vn')
-      || voices.find((voice) => voice.lang?.toLowerCase().startsWith('vi'))
-      || voices.find((voice) => /vietnam/i.test(voice.name || ''))
-      || voices.find((voice) => voice.default)
-      || voices[0]
-      || null;
+    if (!voices || !voices.length) return null;
+
+    // Filter Vietnamese voices first
+    const viVoices = voices.filter((v) => {
+      const lang = (v.lang || '').toLowerCase().replace('_', '-');
+      return lang === 'vi-vn' || lang.startsWith('vi') || /vietnam/i.test(v.name || '');
+    });
+
+    if (viVoices.length > 0) {
+      // Score each Vietnamese voice based on Southern & Female indicators
+      let bestVoice = viVoices[0];
+      let bestScore = -Infinity;
+
+      for (const voice of viVoices) {
+        let score = 100; // Base score for being Vietnamese
+        const name = (voice.name || '').toLowerCase();
+
+        // Check for Southern / Female priority patterns
+        for (const { pattern, score: bonus } of AUDIO_CONFIG.voicePriorityKeywords) {
+          if (pattern.test(name)) {
+            score += bonus;
+          }
+        }
+
+        // Penalize male voices heavily to ensure female voice
+        if (/(namminh|male|man\b|nam\s*online)/i.test(name) && !/(vietnam|nam\s*bộ)/i.test(name)) {
+          score -= 300;
+        }
+
+        // Prefer default voice slightly if tied
+        if (voice.default) {
+          score += 10;
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestVoice = voice;
+        }
+      }
+
+      return bestVoice;
+    }
+
+    // Fallback if no specific vi voice is installed: check default or first voice
+    return voices.find((v) => v.default) || voices[0] || null;
   }
 
   waitForVoices(timeoutMs = AUDIO_CONFIG.voiceLoadTimeoutMs) {
@@ -66,8 +157,16 @@ export class AudioService {
       let finished = false;
       let timer;
       let unsubscribe = () => {};
-      const finish = () => { if (finished) return; finished = true; clearTimeout(timer); unsubscribe(); resolve(this.getVoices()); };
-      unsubscribe = this.subscribe((snapshot) => { if (snapshot.voice || this.voices.length) finish(); });
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+        unsubscribe();
+        resolve(this.getVoices());
+      };
+      unsubscribe = this.subscribe((snapshot) => {
+        if (snapshot.voice || this.voices.length) finish();
+      });
       timer = setTimeout(finish, timeoutMs);
     });
   }
@@ -75,60 +174,250 @@ export class AudioService {
   unlock() {
     this.unlocked = true;
     this.initializeVoices();
-    try { this.synth?.resume?.(); } catch {}
+    try {
+      this.synth?.resume?.();
+    } catch {}
     this.emit();
     return this.isSupported();
   }
 
+  /**
+   * Parses text into speech segments, honoring SSML <break time="..." />,
+   * ellipsis (...), and sentence boundaries with appropriate pause timings.
+   *
+   * @param {string} rawText
+   * @param {Object} options
+   * @returns {Array<{ text: string, pauseAfterMs: number }>}
+   */
+  parseSpeechSegments(rawText, options = {}) {
+    if (!rawText || typeof rawText !== 'string') return [];
+
+    let text = rawText.trim();
+
+    // Check for SSML tags: <break time="(\d+)ms"/>
+    const breakRegex = /<break\s+time=["']?(\d+)ms["']?\s*\/?>/gi;
+    const partsWithBreaks = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = breakRegex.exec(text)) !== null) {
+      const preText = text.substring(lastIndex, match.index);
+      const pauseDuration = parseInt(match[1], 10) || AUDIO_CONFIG.pauseNormalSentenceMs;
+      if (preText.trim()) {
+        partsWithBreaks.push({ raw: preText.trim(), pause: pauseDuration });
+      }
+      lastIndex = match.index + match[0].length;
+    }
+
+    const remainingText = text.substring(lastIndex).trim();
+    if (remainingText) {
+      partsWithBreaks.push({ raw: remainingText, pause: AUDIO_CONFIG.pauseNormalSentenceMs });
+    }
+
+    // Strip any remaining XML/SSML tags like <speak>, </speak>, <prosody...>, <emphasis>
+    const stripXml = (str) => str.replace(/<[^>]+>/g, '').trim();
+
+    const segments = [];
+
+    for (const item of partsWithBreaks) {
+      const cleanPart = stripXml(item.raw);
+      if (!cleanPart) continue;
+
+      // Split into individual sentences or clauses by sentence-terminating punctuation or ellipsis
+      // Keeps pauses natural and solves Chrome 15-second speech synthesis cutoff bug
+      const rawSentences = cleanPart.split(/(?<=[.!?…])\s+|\n+/).filter(Boolean);
+
+      for (let i = 0; i < rawSentences.length; i++) {
+        const sentence = rawSentences[i].trim();
+        if (!sentence) continue;
+
+        const isLastSentenceInItem = i === rawSentences.length - 1;
+        let pause = isLastSentenceInItem ? item.pause : AUDIO_CONFIG.pauseNormalSentenceMs;
+
+        // Check if next part is an important warning or emergency
+        const isWarning = /cảnh\s*báo|lưu\s*ý|nếu|nguy\s*hiểm|ngay|không\s*được|chú\s*ý/i.test(sentence);
+        const isEmergency = /cấp\s*cứu|hóa\s*chất|vòi\s*nước/i.test(sentence);
+
+        if (options.type === 'EMERGENCY' || isEmergency) {
+          pause = Math.max(pause, AUDIO_CONFIG.pauseEmergencyMs);
+        } else if (options.type === 'WARNING' || isWarning) {
+          pause = Math.max(pause, AUDIO_CONFIG.pauseWarningMs);
+        }
+
+        segments.push({
+          text: sentence,
+          pauseAfterMs: pause,
+        });
+      }
+    }
+
+    return segments.length > 0 ? segments : [{ text: stripXml(text), pauseAfterMs: AUDIO_CONFIG.pauseNormalSentenceMs }];
+  }
+
+  /**
+   * Speaks the given text using gentle Southern Vietnamese female speech parameters.
+   *
+   * @param {string} text - Plain text or text with natural pauses / SSML
+   * @param {Object} options - { rate, pitch, volume, voice, type, userGesture }
+   * @returns {Promise<boolean>}
+   */
   async speak(text, options = {}) {
     const cleanText = typeof text === 'string' ? text.trim() : '';
     if (!cleanText) return false;
-    if (!this.isSupported()) { this.fail(AUDIO_MESSAGES.unsupported); return false; }
-    if (!this.unlocked || options.userGesture) this.unlock();
-    if (this.currentText === cleanText && [AUDIO_STATES.SPEAKING, AUDIO_STATES.PAUSED].includes(this.state)) return true;
 
+    if (!this.isSupported()) {
+      this.fail(AUDIO_MESSAGES.unsupported);
+      return false;
+    }
+
+    if (!this.unlocked || options.userGesture) {
+      this.unlock();
+    }
+
+    // Stop ongoing speech & clear timers
     this.stop(false);
+
     const requestId = ++this.requestId;
     await this.waitForVoices(options.voiceLoadTimeoutMs);
     if (requestId !== this.requestId) return false;
 
+    const voice = options.voice || this.selectedVoice;
+    const rate = options.rate ?? AUDIO_CONFIG.rate;     // 0.88x
+    const pitch = options.pitch ?? AUDIO_CONFIG.pitch;   // 1.0
+    const volume = options.volume ?? AUDIO_CONFIG.volume; // 1.0
+
+    const segments = this.parseSpeechSegments(cleanText, options);
+    if (!segments.length) return false;
+
+    this.currentText = cleanText;
+    this.state = AUDIO_STATES.SPEAKING;
+    this.errorMessage = '';
+    this.emit();
+
     try {
-      const utterance = new this.Utterance(cleanText);
-      utterance.lang = options.lang || AUDIO_CONFIG.lang;
-      utterance.rate = options.rate ?? AUDIO_CONFIG.rate;
-      utterance.pitch = options.pitch ?? AUDIO_CONFIG.pitch;
-      utterance.volume = options.volume ?? AUDIO_CONFIG.volume;
-      const voice = options.voice || this.selectedVoice;
-      if (voice) utterance.voice = voice;
-      utterance.onstart = () => { if (this.currentUtterance !== utterance) return; this.state = AUDIO_STATES.SPEAKING; this.errorMessage = ''; this.emit(); };
-      utterance.onend = () => { if (this.currentUtterance !== utterance) return; this.clearCurrent(AUDIO_STATES.IDLE); };
-      utterance.onerror = (event) => { if (this.currentUtterance !== utterance) return; console.error('TTS playback error:', event.error || event); this.fail(AUDIO_MESSAGES.failed); };
-      utterance.onpause = () => { if (this.currentUtterance === utterance) { this.state = AUDIO_STATES.PAUSED; this.emit(); } };
-      utterance.onresume = () => { if (this.currentUtterance === utterance) { this.state = AUDIO_STATES.SPEAKING; this.emit(); } };
-      this.currentUtterance = utterance;
-      this.currentText = cleanText;
-      this.state = AUDIO_STATES.SPEAKING;
-      this.errorMessage = '';
-      this.emit();
-      this.synth.speak(utterance);
+      for (let i = 0; i < segments.length; i++) {
+        if (requestId !== this.requestId) return false;
+
+        const segment = segments[i];
+
+        await new Promise((resolve, reject) => {
+          if (requestId !== this.requestId) {
+            resolve();
+            return;
+          }
+
+          const utterance = new this.Utterance(segment.text);
+          utterance.lang = options.lang || AUDIO_CONFIG.lang;
+          utterance.rate = rate;
+          utterance.pitch = pitch;
+          utterance.volume = volume;
+          if (voice) utterance.voice = voice;
+
+          utterance.onstart = () => {
+            if (this.requestId !== requestId) return;
+            this.state = AUDIO_STATES.SPEAKING;
+            this.errorMessage = '';
+            this.emit();
+          };
+
+          utterance.onend = () => {
+            if (this.requestId !== requestId) {
+              resolve();
+              return;
+            }
+            this.currentUtterance = null;
+            resolve();
+          };
+
+          utterance.onerror = (event) => {
+            if (this.requestId !== requestId) {
+              resolve();
+              return;
+            }
+            // Ignore canceled errors triggered by user stop
+            if (event.error === 'canceled' || event.error === 'interrupted') {
+              resolve();
+              return;
+            }
+            console.error('[AudioService] Utterance error:', event.error || event);
+            reject(event);
+          };
+
+          this.currentUtterance = utterance;
+          this.synth.speak(utterance);
+        });
+
+        // Insert calibrated pause between sentences
+        if (i < segments.length - 1 && requestId === this.requestId) {
+          const pauseMs = segment.pauseAfterMs || AUDIO_CONFIG.pauseNormalSentenceMs;
+          await new Promise((res) => {
+            this.activeTimer = setTimeout(res, pauseMs);
+          });
+        }
+      }
+
+      if (requestId === this.requestId) {
+        this.clearCurrent(AUDIO_STATES.IDLE);
+      }
       return true;
     } catch (error) {
-      console.error('TTS startup error:', error);
-      this.fail(AUDIO_MESSAGES.failed);
+      if (requestId === this.requestId) {
+        console.error('[AudioService] Playback error:', error);
+        this.fail(AUDIO_MESSAGES.failed);
+      }
       return false;
     }
   }
 
   stop(emit = true) {
     this.requestId += 1;
-    try { this.synth?.cancel(); } catch (error) { console.error('TTS stop error:', error); }
-    this.currentUtterance = null; this.currentText = ''; this.state = AUDIO_STATES.IDLE; this.errorMessage = '';
+    if (this.activeTimer) {
+      clearTimeout(this.activeTimer);
+      this.activeTimer = null;
+    }
+    try {
+      this.synth?.cancel();
+    } catch (error) {
+      console.error('[AudioService] Stop error:', error);
+    }
+    this.currentUtterance = null;
+    this.currentText = '';
+    this.state = AUDIO_STATES.IDLE;
+    this.errorMessage = '';
     if (emit) this.emit();
   }
-  pause() { if (this.state === AUDIO_STATES.SPEAKING) { this.synth?.pause(); this.state = AUDIO_STATES.PAUSED; this.emit(); } }
-  resume() { if (this.state === AUDIO_STATES.PAUSED) { this.synth?.resume(); this.state = AUDIO_STATES.SPEAKING; this.emit(); } }
-  clearCurrent(state) { this.currentUtterance = null; this.currentText = ''; this.state = state; this.emit(); }
-  fail(message) { this.currentUtterance = null; this.currentText = ''; this.state = AUDIO_STATES.ERROR; this.errorMessage = message; this.errorCount += 1; this.emit(); }
+
+  pause() {
+    if (this.state === AUDIO_STATES.SPEAKING) {
+      this.synth?.pause();
+      this.state = AUDIO_STATES.PAUSED;
+      this.emit();
+    }
+  }
+
+  resume() {
+    if (this.state === AUDIO_STATES.PAUSED) {
+      this.synth?.resume();
+      this.state = AUDIO_STATES.SPEAKING;
+      this.emit();
+    }
+  }
+
+  clearCurrent(state) {
+    this.currentUtterance = null;
+    this.currentText = '';
+    this.state = state;
+    this.emit();
+  }
+
+  fail(message) {
+    this.currentUtterance = null;
+    this.currentText = '';
+    this.state = AUDIO_STATES.ERROR;
+    this.errorMessage = message;
+    this.errorCount += 1;
+    this.emit();
+  }
 }
 
 const audioService = new AudioService();

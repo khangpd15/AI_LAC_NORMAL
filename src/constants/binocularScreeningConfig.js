@@ -134,7 +134,7 @@ export const FIXATION_TARGET_CONFIG = {
   type: 'DOT',
   position: 'CENTER',
   sizePx: 38, // Large, high-visibility circular fixation dot for children
-  color: '#ef4444', // Prominent red target
+  color: '#F28C7B', // Warm Coral accent target
   pulseSpeedMs: 1400,
 };
 
@@ -148,7 +148,7 @@ export const BROCK_STRING_TARGET_CONFIG = {
     distanceCm: 20,
     sizeName: 'LARGE',
     sizePx: 84, // Largest dot for nearest simulated vergence target
-    color: '#06b6d4', // Cyan
+    color: '#00AB9B', // Mint
     label: 'Hạt gần (20 cm)',
     instruction: 'Nhìn vào chấm tròn ở giữa.',
     durationMs: 4000,
@@ -158,7 +158,7 @@ export const BROCK_STRING_TARGET_CONFIG = {
     distanceCm: 50,
     sizeName: 'MEDIUM',
     sizePx: 52, // Medium dot for mid simulated vergence target
-    color: '#3b82f6', // Blue
+    color: '#267A78', // Deep Green
     label: 'Hạt giữa (50 cm)',
     instruction: 'Tiếp tục nhìn vào chấm tròn.',
     durationMs: 4000,
@@ -168,7 +168,7 @@ export const BROCK_STRING_TARGET_CONFIG = {
     distanceCm: 100,
     sizeName: 'SMALL',
     sizePx: 26, // Smallest dot for far simulated vergence target
-    color: '#8b5cf6', // Purple
+    color: '#00545D', // Deep Teal
     label: 'Hạt xa (100 cm)',
     instruction: 'Tiếp tục nhìn vào chấm tròn.',
     durationMs: 4000,
