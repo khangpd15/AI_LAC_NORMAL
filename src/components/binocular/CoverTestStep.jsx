@@ -1091,13 +1091,6 @@ export default function CoverTestStep({
               const cleanVersion = modelResult.model?.version || 'remicare-transfer-10to15fps-candidate-v1.1.0';
               const cleanProfile = modelResult.samplingProfile || 'Korean recordings augmented across fixed and variable 10–15 FPS with simulated frame drops';
 
-              // B2 model data
-              const b2Label = koreanB2?.label || 'Korean B2 (60 Hz source)';
-              const b2Prediction = koreanB2?.prediction || 'INCONCLUSIVE';
-              const b2Probabilities = koreanB2?.classProbability || { NORMAL: 0, STRABISMUS: 0 };
-              const b2Version = koreanB2?.model?.version || 'remicare-transfer-b2-v1.0.0';
-              const b2Profile = koreanB2?.samplingProfile || 'Korean source approximately 60 Hz; B2 coordinate-rescaled transfer';
-
               const cardStyle = {
                 background: 'rgba(255, 255, 255, 0.03)',
                 padding: '14px 16px',
@@ -1108,32 +1101,6 @@ export default function CoverTestStep({
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.86rem' }}>
 
-                  {/* Card 1: Korean B2 (60 Hz source) */}
-                  {koreanB2 && (
-                    <div style={cardStyle}>
-                      <div style={{ color: '#93c5fa', fontSize: '0.88rem', fontWeight: 700, marginBottom: '8px' }}>
-                        {b2Label}
-                      </div>
-                      <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
-                        Model Prediction
-                      </div>
-                      <div style={{ fontSize: '1.15rem', fontWeight: 800, color: b2Prediction === 'NORMAL' ? '#34d399' : '#fbbf24', marginBottom: '8px' }}>
-                        {b2Prediction}
-                      </div>
-                      <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
-                        Model class probability
-                      </div>
-                      <div style={{ fontSize: '0.84rem', fontWeight: 600 }}>
-                        NORMAL: <span style={{ color: '#34d399' }}>{((b2Probabilities.NORMAL ?? 0) * 100).toFixed(1)}%</span>
-                        {' | '}
-                        STRABISMUS: <span style={{ color: '#fbbf24' }}>{((b2Probabilities.STRABISMUS ?? 0) * 100).toFixed(1)}%</span>
-                      </div>
-                      <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', lineHeight: 1.4, marginTop: '8px' }}>
-                        {b2Version}<br />
-                        {b2Profile}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Card 2: Korean 10-15 FPS candidate */}
                   <div style={cardStyle}>
