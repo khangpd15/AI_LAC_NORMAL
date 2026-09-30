@@ -1063,7 +1063,11 @@ export default function CoverTestStep({
 
             {aiTransferState.status === 'success' && aiTransferState.result && (() => {
               const res = aiTransferState.result;
-              // Strictly select the 10–15 FPS transfer research model, never the 60 Hz baseline
+
+              // Extract Korean B2 (60 Hz source) comparison model
+              const koreanB2 = res.comparisonModels?.find((m) => m.key === 'korean_b2');
+
+              // Extract Korean 10-15 FPS candidate model
               const candidate15 = res.comparisonModels?.find(
                 (m) =>
                   m.key === 'korean_15fps_candidate' ||
@@ -1071,33 +1075,70 @@ export default function CoverTestStep({
               ) || (res.comparisonModels && res.comparisonModels.length > 0 && res.comparisonModels[0].key !== 'korean_b2' ? res.comparisonModels[0] : null);
 
               const modelResult = candidate15 || {
-                label: 'Korean 10–15 FPS Transfer Research Model',
+                label: res.label || 'Korean 10–15 FPS candidate',
                 prediction: res.prediction,
                 classProbability: res.classProbability || res.classProbabilities,
-                model: {
-                  name: 'Korean 10–15 FPS Transfer Research Model',
+                model: res.model || {
+                  name: 'Korean 10-15 FPS robust transfer candidate',
                   version: 'remicare-transfer-10to15fps-candidate-v1.1.0',
                 },
-                samplingProfile: '10–15 FPS research pipeline',
+                samplingProfile: res.samplingProfile || 'Korean recordings augmented across fixed and variable 10–15 FPS with simulated frame drops',
               };
 
+              const cleanLabel = modelResult.label || 'Korean 10–15 FPS candidate';
               const cleanPrediction = modelResult.prediction || 'INCONCLUSIVE';
               const cleanProbabilities = modelResult.classProbability || modelResult.classProbabilities || { NORMAL: 0, STRABISMUS: 0 };
               const cleanVersion = modelResult.model?.version || 'remicare-transfer-10to15fps-candidate-v1.1.0';
-              const cleanProfile = '10–15 FPS research pipeline';
+              const cleanProfile = modelResult.samplingProfile || 'Korean recordings augmented across fixed and variable 10–15 FPS with simulated frame drops';
+
+              // B2 model data
+              const b2Label = koreanB2?.label || 'Korean B2 (60 Hz source)';
+              const b2Prediction = koreanB2?.prediction || 'INCONCLUSIVE';
+              const b2Probabilities = koreanB2?.classProbability || { NORMAL: 0, STRABISMUS: 0 };
+              const b2Version = koreanB2?.model?.version || 'remicare-transfer-b2-v1.0.0';
+              const b2Profile = koreanB2?.samplingProfile || 'Korean source approximately 60 Hz; B2 coordinate-rescaled transfer';
+
+              const cardStyle = {
+                background: 'rgba(255, 255, 255, 0.03)',
+                padding: '14px 16px',
+                borderRadius: '8px',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+              };
 
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.86rem' }}>
-                  <div
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      padding: '14px 16px',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
-                    }}
-                  >
+
+                  {/* Card 1: Korean B2 (60 Hz source) */}
+                  {koreanB2 && (
+                    <div style={cardStyle}>
+                      <div style={{ color: '#93c5fa', fontSize: '0.88rem', fontWeight: 700, marginBottom: '8px' }}>
+                        {b2Label}
+                      </div>
+                      <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
+                        Model Prediction
+                      </div>
+                      <div style={{ fontSize: '1.15rem', fontWeight: 800, color: b2Prediction === 'NORMAL' ? '#34d399' : '#fbbf24', marginBottom: '8px' }}>
+                        {b2Prediction}
+                      </div>
+                      <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
+                        Model class probability
+                      </div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 600 }}>
+                        NORMAL: <span style={{ color: '#34d399' }}>{((b2Probabilities.NORMAL ?? 0) * 100).toFixed(1)}%</span>
+                        {' | '}
+                        STRABISMUS: <span style={{ color: '#fbbf24' }}>{((b2Probabilities.STRABISMUS ?? 0) * 100).toFixed(1)}%</span>
+                      </div>
+                      <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', lineHeight: 1.4, marginTop: '8px' }}>
+                        {b2Version}<br />
+                        {b2Profile}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Card 2: Korean 10-15 FPS candidate */}
+                  <div style={cardStyle}>
                     <div style={{ color: '#93c5fa', fontSize: '0.88rem', fontWeight: 700, marginBottom: '8px' }}>
-                      Korean 10–15 FPS Transfer Research Model
+                      {cleanLabel}
                     </div>
                     <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
                       Model Prediction
@@ -1119,13 +1160,11 @@ export default function CoverTestStep({
                     </div>
                   </div>
 
+                  {/* Metadata section */}
                   <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-dim)', lineHeight: '1.6' }}>
-                    <div>• <strong>Mô hình:</strong> Korean 10–15 FPS Transfer Research Model</div>
-                    <div>• <strong>Model ID:</strong> remicare-transfer-10to15fps-candidate-v1.1.0</div>
-                    <div>• <strong>Đặc trưng:</strong> 30 technical features</div>
-                    <div>• <strong>Domain shift:</strong> <span style={{ color: '#f59e0b', fontWeight: 600 }}>WARNING</span></div>
-                    <div>• Dữ liệu nghiên cứu → RemiCare webcam 10–15 FPS</div>
-                    <div>• <strong>Ý nghĩa lâm sàng:</strong> None</div>
+                    <div>• <strong>Mô hình:</strong> {koreanB2 ? `${b2Label} (${b2Version}, 30 đặc trưng kỹ thuật)` : cleanLabel}</div>
+                    <div>• <strong>Domain shift:</strong> <span style={{ color: '#f59e0b', fontWeight: 600 }}>WARNING</span> (Korean IR Eye-tracker 60Hz → RemiCare Webcam 15Hz)</div>
+                    <div>• <strong>Ý nghĩa lâm sàng:</strong> None (Clinical meaning: null)</div>
                     <div>• <strong>Research-only output:</strong> Probability is model output and has not been clinically validated for RemiCare webcam data.</div>
                   </div>
                 </div>
