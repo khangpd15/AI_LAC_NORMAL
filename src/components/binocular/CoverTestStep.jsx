@@ -1064,9 +1064,6 @@ export default function CoverTestStep({
             {aiTransferState.status === 'success' && aiTransferState.result && (() => {
               const res = aiTransferState.result;
 
-              // Extract Korean B2 (60 Hz source) comparison model
-              const koreanB2 = res.comparisonModels?.find((m) => m.key === 'korean_b2');
-
               // Extract Korean 10-15 FPS candidate model
               const candidate15 = res.comparisonModels?.find(
                 (m) =>
@@ -1100,9 +1097,7 @@ export default function CoverTestStep({
 
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.86rem' }}>
-
-
-                  {/* Card 2: Korean 10-15 FPS candidate */}
+                  {/* Card: Korean 10-15 FPS candidate */}
                   <div style={cardStyle}>
                     <div style={{ color: '#93c5fa', fontSize: '0.88rem', fontWeight: 700, marginBottom: '8px' }}>
                       {cleanLabel}
@@ -1129,7 +1124,7 @@ export default function CoverTestStep({
 
                   {/* Metadata section */}
                   <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-dim)', lineHeight: '1.6' }}>
-                    <div>• <strong>Mô hình:</strong> {koreanB2 ? `${b2Label} (${b2Version}, 30 đặc trưng kỹ thuật)` : cleanLabel}</div>
+                    <div>• <strong>Mô hình:</strong> {cleanLabel} ({cleanVersion}, 14 đặc trưng kỹ thuật)</div>
                     <div>• <strong>Domain shift:</strong> <span style={{ color: '#f59e0b', fontWeight: 600 }}>WARNING</span> (Korean IR Eye-tracker 60Hz → RemiCare Webcam 15Hz)</div>
                     <div>• <strong>Ý nghĩa lâm sàng:</strong> None (Clinical meaning: null)</div>
                     <div>• <strong>Research-only output:</strong> Probability is model output and has not been clinically validated for RemiCare webcam data.</div>
