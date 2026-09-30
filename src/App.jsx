@@ -1,17 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import BinocularVisionScreening from './components/binocular/BinocularVisionScreening';
 import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
-  const [theme, setTheme] = useState('light');
-
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
+    document.documentElement.setAttribute('data-theme', 'light');
+  }, []);
 
   return (
     <div className="app-layout">
@@ -42,17 +36,6 @@ export default function App() {
                 Sàng lọc hai mắt
               </button>
             </nav>
-
-            {/* Dark / Light Mode Toggle */}
-            <button
-              type="button"
-              className="theme-toggle-btn"
-              onClick={toggleTheme}
-              title={`Chuyển sang giao diện ${theme === 'dark' ? 'sáng' : 'tối'}`}
-              aria-label="Đổi giao diện sáng/tối"
-            >
-              {theme === 'dark' ? '☀️ Sáng' : '🌙 Tối'}
-            </button>
           </div>
         </div>
       </header>
