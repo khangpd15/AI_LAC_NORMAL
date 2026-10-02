@@ -320,19 +320,20 @@ export function validateScreeningData(session) {
 
   // ---- Position checks ----
   const coverPos = session.coverPositionCheck;
-  const brockPos = session.brockPositionCheck;
+  const gazePos = session.gazePositionCheck;
 
   const coverPosOk =
     coverPos?.headPoseValid === true &&
     coverPos?.irisDetected === true &&
     coverPos?.bothEyesDetected === true;
 
-  const brockPosOk =
-    brockPos?.headPoseValid === true &&
-    brockPos?.irisDetected === true &&
-    brockPos?.bothEyesDetected === true;
+  const gazePosOk = gazePos
+    ? gazePos?.headPoseValid === true &&
+      gazePos?.irisDetected === true &&
+      gazePos?.bothEyesDetected === true
+    : true;
 
-  const positionsValid = coverPosOk && brockPosOk;
+  const positionsValid = coverPosOk && gazePosOk;
 
   if (!coverPosOk) {
     if (!coverPos) {
@@ -346,16 +347,6 @@ export function validateScreeningData(session) {
     }
   }
 
-  if (!brockPosOk) {
-    if (!brockPos) {
-      warnings.push('brock_position_check_not_performed');
-    } else {
-      warnings.push(
-        `brock_position_issue:head=${brockPos.headPoseValid},iris=${brockPos.irisDetected},eyes=${brockPos.bothEyesDetected}`
-      );
-    }
-  }
-
   // ---- Cover Test gate (primary signal) ----
   const coverResult = validateCoverTestData(session.coverTest);
   if (!coverResult.valid) {
@@ -363,18 +354,12 @@ export function validateScreeningData(session) {
   }
   warnings.push(...coverResult.warnings.map((w) => `cover:${w}`));
 
-  // ---- Brock String gate (supporting signal — not required for CLEAR) ----
-  const brockResult = validateBrockStringData(session.brockString);
-  // Brock issues only generate warnings, not blocking reasons
-  warnings.push(...brockResult.reasons.map((r) => `brock:${r}`));
-  warnings.push(...brockResult.warnings.map((w) => `brock:${w}`));
-
   const valid = reasons.length === 0;
 
   return {
     valid,
     coverTestValid: coverResult.valid,
-    brockStringValid: brockResult.valid,
+    brockStringValid: true,
     positionsValid,
     reasons,
     warnings,

@@ -31,12 +31,6 @@ const STATUS_PRESENTATION = {
   },
 };
 
-const BROCK_TARGETS = [
-  { key: 'near20cm', label: 'NEAR (20 cm)' },
-  { key: 'mid50cm', label: 'MID (50 cm)' },
-  { key: 'far100cm', label: 'FAR (100 cm)' },
-];
-
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -47,22 +41,30 @@ function CoverTestSummaryRow({ coverTest }) {
   const totalCycles = 3;
 
   return (
-    <div className="final-screening-section">
-      <h3 className="final-screening-section-title">Cover Test</h3>
+    <div className="final-screening-section cover-test-summary-section">
+      <div className="section-header-flex">
+        <h3 className="final-screening-section-title">Nghiệm pháp Che mắt (Cover Test)</h3>
+        <span className={`badge ${isValid ? 'badge-clear' : 'badge-inconclusive'}`}>
+          {isValid ? '✓ Đạt chất lượng' : 'Chưa đủ chu kỳ'}
+        </span>
+      </div>
+      <p className="section-subtext" style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '12px' }}>
+        Đánh giá cử động mắt theo dõi khi che và mở luân phiên từng mắt ở cự ly 33–40 cm.
+      </p>
       <div className="final-screening-info-row">
-        <span>Trạng thái</span>
+        <span>Trạng thái đánh giá</span>
         <strong className={isValid ? 'text-valid' : 'text-inconclusive'}>
-          {isValid ? 'Có dữ liệu' : 'Chưa đủ dữ liệu'}
+          {isValid ? 'Có dữ liệu hợp lệ' : 'Chưa đủ dữ liệu'}
         </strong>
       </div>
       <div className="final-screening-info-row">
-        <span>Số chu kỳ hợp lệ</span>
+        <span>Số chu kỳ đạt chuẩn (33–40 cm)</span>
         <strong>
-          {validCycles} / {totalCycles}
+          {validCycles} / {totalCycles} chu kỳ
         </strong>
       </div>
       <div className="final-screening-info-row">
-        <span>Tín hiệu tái định thị</span>
+        <span>Tín hiệu chuyển động tái định thị</span>
         <strong>
           {coverTest?.status === COVER_TEST_VERDICTS.REFIXATION_DETECTED
             ? 'Ghi nhận tín hiệu nhất quán'
@@ -71,40 +73,6 @@ function CoverTestSummaryRow({ coverTest }) {
             : 'Chưa đủ dữ liệu'}
         </strong>
       </div>
-    </div>
-  );
-}
-
-function BrockStringSummarySection({ brockString }) {
-  const targets = brockString?.targets || {};
-  const hasValidTargets = Object.values(targets).some((t) => t?.dataQuality?.isValid === true);
-
-  return (
-    <div className="final-screening-section">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <h3 className="final-screening-section-title" style={{ margin: 0 }}>Brock String</h3>
-        <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontSize: '0.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 999, border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-          ⚙️ Đang cải tiến
-        </span>
-      </div>
-      {hasValidTargets ? (
-        BROCK_TARGETS.map(({ key, label }) => {
-          const t = targets[key];
-          const isTargetValid = t?.dataQuality?.isValid === true;
-          return (
-            <div className="final-screening-info-row" key={key}>
-              <span>{label}</span>
-              <strong className={isTargetValid ? 'text-valid' : 'text-inconclusive'}>
-                {isTargetValid ? 'VALID' : 'Chưa đủ dữ liệu'}
-              </strong>
-            </div>
-          );
-        })
-      ) : (
-        <p style={{ fontSize: '0.84rem', color: '#94a3b8', margin: '4px 0 0', lineHeight: 1.45 }}>
-          Tính năng đo lường dây Brock String đang được bảo trì nâng cấp để tối ưu hóa độ chính xác y khoa.
-        </p>
-      )}
     </div>
   );
 }
@@ -276,7 +244,7 @@ function StrabismusAIScreeningSection({ strabismusResult }) {
   );
 }
 
-function TechnicalDetails({ coverTest, brockString, quality, gazeTracking, strabismusResult }) {
+function TechnicalDetails({ coverTest, quality, gazeTracking, strabismusResult }) {
   const metricOrNull = (v, digits = 4) =>
     typeof v === 'number' && Number.isFinite(v) ? v.toFixed(digits) : 'null';
 
@@ -334,41 +302,6 @@ function TechnicalDetails({ coverTest, brockString, quality, gazeTracking, strab
       </div>
       <p className="technical-calibration-note">
         Độ lăng kính (Prism Diopters): null — Hệ thống chưa có dữ liệu hiệu chuẩn lâm sàng phù hợp.
-      </p>
-
-      {/* Brock String technical */}
-      <h4>Brock String — Dữ liệu kỹ thuật</h4>
-      <div className="table-responsive">
-        <table className="metrics-table">
-          <thead>
-            <tr>
-              <th>Mục tiêu</th>
-              <th>Cự ly</th>
-              <th>Số mẫu</th>
-              <th>Tỷ lệ quy tụ</th>
-              <th>IQR ổn định</th>
-              <th>Chất lượng</th>
-            </tr>
-          </thead>
-          <tbody>
-            {BROCK_TARGETS.map(({ key, label }) => {
-              const t = brockString?.targets?.[key];
-              return (
-                <tr key={key}>
-                  <td>{label.split(' ')[0]}</td>
-                  <td>{t?.targetDistanceCm ?? '--'} cm</td>
-                  <td>{t?.sampleCount ?? 0}</td>
-                  <td>{metricOrNull(t?.medianVergenceRatio)}</td>
-                  <td>{metricOrNull(t?.fixationStabilityIqr)}</td>
-                  <td>{t?.dataQuality?.isValid ? 'Đạt' : 'Không đạt'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <p className="technical-calibration-note">
-        Góc quy tụ lâm sàng: null — Hệ thống chưa có dữ liệu hiệu chuẩn với synoptophore hoặc lăng kính.
       </p>
 
       {/* Gaze 4 Directions technical */}
@@ -496,7 +429,6 @@ export default function FinalScreeningResult({ sessionData, onRestart }) {
   const summary = sessionData?.summary || {};
   const strabismusResult = sessionData?.strabismusResult || sessionData?.gazeTracking?.strabismusResult;
   const coverTest = sessionData?.coverTest || {};
-  const brockString = sessionData?.brockString || {};
   const quality = summary.quality || {};
 
   const screeningStatus =
@@ -545,15 +477,12 @@ export default function FinalScreeningResult({ sessionData, onRestart }) {
         <StrabismusAIScreeningSection strabismusResult={strabismusResult} />
       )}
 
-      {/* ── Cover Test & Brock String & Gaze info ── */}
+      {/* ── Gaze 4 Directions & Cover Test Results ── */}
       <section className="final-screening-details-section" aria-label="Thông tin chi tiết sàng lọc">
         {sessionData?.gazeTracking && (
           <Gaze4DirectionsSummarySection gazeTracking={sessionData.gazeTracking} />
         )}
-        <div className="final-screening-two-col">
-          <CoverTestSummaryRow coverTest={coverTest} />
-          <BrockStringSummarySection brockString={brockString} />
-        </div>
+        <CoverTestSummaryRow coverTest={coverTest} />
       </section>
 
       {/* ── Separator and disclaimer ── */}
@@ -589,7 +518,6 @@ export default function FinalScreeningResult({ sessionData, onRestart }) {
         <div id="technical-details-panel" aria-label="Chi tiết kỹ thuật">
           <TechnicalDetails
             coverTest={coverTest}
-            brockString={brockString}
             quality={quality}
             gazeTracking={sessionData?.gazeTracking}
             strabismusResult={strabismusResult}

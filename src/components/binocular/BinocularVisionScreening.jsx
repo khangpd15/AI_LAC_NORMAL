@@ -63,10 +63,9 @@ export default function BinocularVisionScreening() {
       // Evaluate distance with the active test's independent configuration
       const isGazePos = currentStep === 'GAZE_POSITION' || currentStep === 'GAZE_4_DIRECTIONS';
       const isCoverPos = currentStep === 'COVER_POSITION' || currentStep === 'POSITION';
-      const isBrockPos = currentStep === 'BROCK_POSITION';
 
-      if (isGazePos || isCoverPos || isBrockPos) {
-        const testType = isGazePos ? 'GAZE_4_DIRECTIONS' : isBrockPos ? 'BROCK_STRING' : 'COVER_TEST';
+      if (isGazePos || isCoverPos) {
+        const testType = isGazePos ? 'GAZE_4_DIRECTIONS' : 'COVER_TEST';
         if (distanceTrackerRef.current.testType !== testType) {
           distanceTrackerRef.current.reset(testType);
         }
@@ -115,8 +114,7 @@ export default function BinocularVisionScreening() {
   // Reset distance tracker when retrying position check
   const handlePositionRetry = useCallback(() => {
     const isGazePos = currentStep === 'GAZE_POSITION';
-    const isBrockPos = currentStep === 'BROCK_POSITION';
-    const testType = isGazePos ? 'GAZE_4_DIRECTIONS' : isBrockPos ? 'BROCK_STRING' : 'COVER_TEST';
+    const testType = isGazePos ? 'GAZE_4_DIRECTIONS' : 'COVER_TEST';
     distanceTrackerRef.current.reset(testType);
     setPositionReport(null);
   }, [currentStep]);
@@ -169,7 +167,7 @@ export default function BinocularVisionScreening() {
     setCurrentStep('COVER');
   }, [session, positionReport]);
 
-  // Handler: Complete Step 2 (Cover Test) -> Brock String is temporarily closed for improvement -> Go to Summary
+  // Handler: Complete Step 2 (Cover Test) -> Proceed to Summary with both Gaze 4 Directions and Cover Test results
   const handleCoverTestComplete = useCallback(
     (coverResult) => {
       if (!session) return;
@@ -191,7 +189,8 @@ export default function BinocularVisionScreening() {
       finalizeScreeningSample(finalSession);
       setSession({
         ...finalSession,
-        strabismusResult: session.strabismusResult || session.gazeTracking?.strabismusResult,
+        gazeTracking: finalSession?.gazeTracking || session.gazeTracking,
+        strabismusResult: finalSession?.strabismusResult || session.strabismusResult || session.gazeTracking?.strabismusResult,
       });
       setCurrentStep('SUMMARY');
     },
@@ -298,34 +297,6 @@ export default function BinocularVisionScreening() {
             positionReport={positionReport}
             onImageCaptured={handleCoverImageCaptured}
           />
-        )}
-
-        {(currentStep === 'BROCK_POSITION' || currentStep === 'BROCK') && (
-          <div className="card stage-card-main" style={{ maxWidth: 640, margin: '40px auto', textAlign: 'center', padding: '36px 24px', background: 'var(--bg-surface, #0f172a)', borderRadius: 20, border: '1.5px solid rgba(245, 158, 11, 0.4)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: 12 }}>⚙️</div>
-            <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 800, padding: '4px 14px', borderRadius: 999 }}>
-              TÍNH NĂNG ĐANG CẢI TIẾN
-            </span>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '16px 0 10px', color: '#ffffff' }}>
-              Brock String đang được nâng cấp
-            </h2>
-            <p style={{ color: '#94a3b8', fontSize: '0.94rem', lineHeight: 1.55, marginBottom: 26 }}>
-              Hệ thống đang bảo trì và tinh chỉnh thuật toán mô phỏng 3D dây Brock String để đạt tiêu chuẩn y khoa cao nhất. Quý phụ huynh vui lòng bấm nút bên dưới để xem kết quả kiểm tra Che mắt (Cover Test).
-            </p>
-            <button
-              type="button"
-              className="btn btn-primary btn-large"
-              style={{ width: '100%', maxWidth: 360, margin: '0 auto' }}
-              onClick={() => {
-                const finalSession = generateScreeningSummary(session.sessionId, null);
-                finalizeScreeningSample(finalSession);
-                setSession({ ...finalSession });
-                setCurrentStep('SUMMARY');
-              }}
-            >
-              Xem kết quả sàng lọc Cover Test ➜
-            </button>
-          </div>
         )}
 
         {currentStep === 'SUMMARY' && (

@@ -212,6 +212,9 @@ export function updateGazeTrackingData(sessionId, gazeData) {
   const session = sessionsMap.get(sessionId);
   if (!session) return;
   session.gazeTracking = gazeData;
+  if (gazeData?.strabismusResult) {
+    session.strabismusResult = gazeData.strabismusResult;
+  }
   logScreeningEvent(sessionId, 'GAZE_4_DIRECTIONS_COMPLETE', {
     distanceCm: gazeData.distanceCm,
     directions: Object.keys(gazeData.captures || {}),
@@ -460,8 +463,9 @@ export function generateScreeningSummary(sessionId, aiSignal = null) {
   const result = evaluateFinalScreening(session);
 
   session.summary = {
-    coverTestStatus: session.coverTest.status,
-    brockStringStatus: session.brockString.status,
+    coverTestStatus: session.coverTest?.status,
+    gazeTracking: session.gazeTracking || null,
+    strabismusResult: session.strabismusResult || null,
     overallDataQuality: result.overallDataQuality,
     screeningStatus: result.status,
     title: result.title,
@@ -471,7 +475,6 @@ export function generateScreeningSummary(sessionId, aiSignal = null) {
     quality: result.quality || { valid: true, reasons: [], warnings: [] },
     screening: result.screening,
     coverTest: result.coverTest,
-    brockString: result.brockString,
     clinical: result.clinical,
   };
 
