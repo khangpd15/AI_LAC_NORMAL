@@ -172,43 +172,41 @@ function StrabismusAIScreeningSection({ strabismusResult }) {
     quality_score,
   } = strabismusResult;
 
-  // Strict clinical mapping adhering to non-diagnostic protocol:
-  // NORMAL -> kết quả sàng lọc hiện tại không cho thấy dấu hiệu bất thường rõ ràng
-  // SUSPICIOUS -> kết quả sàng lọc có dấu hiệu cần được kiểm tra thêm
-  // INCONCLUSIVE -> hình ảnh chưa đủ chất lượng để đánh giá
-  let statusText = 'hình ảnh chưa đủ chất lượng để đánh giá';
+  let statusText = 'Hình ảnh chưa đủ chất lượng để đánh giá.';
   let badgeClass = 'badge-inconclusive';
   let bannerClass = 'strabismus-banner strabismus-banner--inconclusive';
   let emoji = '⚪';
   let statusTitle = 'CHƯA ĐỦ ĐIỀU KIỆN ĐÁNH GIÁ';
 
   if (status === 'NORMAL') {
-    statusText = 'kết quả sàng lọc hiện tại không cho thấy dấu hiệu bất thường rõ ràng';
+    statusText = 'Chưa ghi nhận tín hiệu bất thường đối xứng trục nhãn cầu qua ảnh chụp.';
     badgeClass = 'badge-clear';
     bannerClass = 'strabismus-banner strabismus-banner--normal';
     emoji = '🟢';
-    statusTitle = 'BÌNH THƯỜNG (NORMAL)';
+    statusTitle = 'BÌNH THƯỜNG';
   } else if (status === 'SUSPICIOUS') {
-    statusText = 'kết quả sàng lọc có dấu hiệu cần được kiểm tra thêm';
+    statusText = 'Có tín hiệu hình ảnh cần xem xét thêm (không phải chẩn đoán mắc bệnh).';
     badgeClass = 'badge-attention';
     bannerClass = 'strabismus-banner strabismus-banner--suspicious';
     emoji = '🟡';
-    statusTitle = 'CẦN KIỂM TRA THÊM (SUSPICIOUS)';
+    statusTitle = 'CÓ TÍN HIỆU CẦN XEM XÉT';
   } else if (status === 'INCONCLUSIVE') {
-    statusText = 'hình ảnh chưa đủ chất lượng để đánh giá';
+    statusText = 'Chưa đủ điều kiện chất lượng ảnh hoặc chưa trích xuất được vùng hai mắt hợp lệ.';
     badgeClass = 'badge-inconclusive';
     bannerClass = 'strabismus-banner strabismus-banner--inconclusive';
     emoji = '⚪';
     statusTitle = 'CHƯA ĐỦ ĐIỀU KIỆN ĐÁNH GIÁ';
   }
 
+  const confidencePct = confidence != null ? Math.round(confidence * 100) : null;
+  const qualityPct = quality_score != null ? Math.round(quality_score * 100) : null;
+
   return (
-    <section className="final-screening-section strabismus-ai-card" aria-label="Sàng lọc hình ảnh mắt thẳng bằng AI">
-      <div className="strabismus-ai-header">
+    <div className="final-screening-section strabismus-ai-card" aria-label="Phân tích hình ảnh hai mắt bằng AI">
+      <div className="section-header-flex">
         <div className="strabismus-ai-title-wrap">
-          <span className="badge badge-primary">AI DEEP LEARNING</span>
-          <h3 className="final-screening-section-title" style={{ margin: '4px 0 0' }}>
-            Sàng Lọc Hình Ảnh Hai Mắt (Primary Gaze)
+          <h3 className="final-screening-section-title" style={{ margin: 0 }}>
+            👁️ Phân tích hình ảnh AI (Góc nhìn thẳng)
           </h3>
         </div>
         <span className={`badge ${badgeClass} strabismus-status-badge`}>
@@ -216,31 +214,37 @@ function StrabismusAIScreeningSection({ strabismusResult }) {
         </span>
       </div>
 
+      <p className="section-subtext" style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '12px' }}>
+        Trích xuất vùng hai mắt (Bilateral Eye ROI) và phân tích tính đối xứng trục nhãn cầu bằng mô hình thị giác máy tính.
+      </p>
+
       <div className={bannerClass}>
-        <p className="strabismus-summary-text">
+        <p className="strabismus-summary-text" style={{ margin: 0, fontSize: '0.9rem' }}>
           {statusText}
         </p>
       </div>
 
-      <div className="strabismus-metrics-grid">
-        {confidence != null && (
+      <div className="strabismus-metrics-grid" style={{ marginTop: '12px' }}>
+        {confidencePct != null && (
           <div className="final-screening-info-row">
-            <span>Độ tin cậy nhận diện (Confidence)</span>
-            <strong>{Math.round(confidence * 100)}%</strong>
+            <span>Độ tự tin của mô hình (Confidence)</span>
+            <strong>{confidencePct}%</strong>
           </div>
         )}
-        {quality_score != null && (
+        {qualityPct != null && (
           <div className="final-screening-info-row">
-            <span>Chất lượng hình ảnh (Quality Gate)</span>
-            <strong>{Math.round(quality_score * 100)}%</strong>
+            <span>Chất lượng vùng chụp (Quality Gate)</span>
+            <strong>{qualityPct}%</strong>
           </div>
         )}
       </div>
 
-      <p className="strabismus-mandatory-disclaimer">
-        ℹ️ <strong>Lưu ý:</strong> Đây là công cụ sàng lọc hỗ trợ, không thay thế chẩn đoán của bác sĩ mắt.
-      </p>
-    </section>
+      <div className="final-screening-disclaimer-box" style={{ marginTop: '12px', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.8rem', color: '#475569', lineHeight: 1.5 }}>
+        <p style={{ margin: 0 }}>
+          ⓘ <strong>Về chỉ số Độ tự tin ({confidencePct != null ? `${confidencePct}%` : '--'}):</strong> Con số này thể hiện mức độ tự tin toán học của thuật toán phân lớp nơ-ron đối với mẫu ảnh đã chụp, <strong>hoàn toàn không phải là xác suất mắc bệnh</strong>. Kết quả AI chỉ là tín hiệu tính toán hỗ trợ sàng lọc và không tự quyết định kết quả chẩn đoán lâm sàng.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -351,7 +355,7 @@ function TechnicalDetails({ coverTest, quality, gazeTracking, strabismusResult }
       {/* Strabismus Deep Learning technical */}
       {strabismusResult && (
         <>
-          <h4>Mô hình AI Sàng lọc Lác (ONNX ResNet-18)</h4>
+          <h4>Mô hình AI Sàng lọc (ONNX ResNet-18) — Chỉ số kỹ thuật</h4>
           <div className="table-responsive">
             <table className="metrics-table">
               <thead>
@@ -360,7 +364,7 @@ function TechnicalDetails({ coverTest, quality, gazeTracking, strabismusResult }
                   <th>Ngưỡng quyết định (Threshold)</th>
                   <th>Thời gian xử lý (Latency)</th>
                   <th>Điểm chất lượng (Quality Gate)</th>
-                  <th>Xác suất lác (Raw Probability)</th>
+                  <th>Độ tự tin Softmax (Confidence)</th>
                 </tr>
               </thead>
               <tbody>
@@ -369,13 +373,13 @@ function TechnicalDetails({ coverTest, quality, gazeTracking, strabismusResult }
                   <td>{strabismusResult.threshold != null ? strabismusResult.threshold : '0.20'}</td>
                   <td>{strabismusResult.inference_latency_ms ? `${strabismusResult.inference_latency_ms} ms` : '--'}</td>
                   <td>{strabismusResult.quality_score != null ? strabismusResult.quality_score : '--'}</td>
-                  <td>{strabismusResult.strabismus_probability != null ? strabismusResult.strabismus_probability : '--'}</td>
+                  <td>{strabismusResult.confidence != null ? `${Math.round(strabismusResult.confidence * 100)}%` : '--'}</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <p className="technical-calibration-note">
-            Ngưỡng cố định 0.20 được tối ưu hóa cho độ nhạy sàng lọc cao (Sensitivity 100%, Specificity 81.82%).
+            Độ tự tin Softmax phản ánh mức độ kích hoạt phân lớp nơ-ron đối với đặc trưng ảnh đầu vào, không đại diện cho nguy cơ mắc bệnh lâm sàng.
           </p>
         </>
       )}
@@ -455,7 +459,7 @@ export default function FinalScreeningResult({ sessionData, onRestart }) {
         </p>
       </div>
 
-      {/* ── Main result banner ── */}
+      {/* ── LEVEL 1: KẾT QUẢ SÀNG LỌC (Single Source of Truth) ── */}
       <section
         className={presentation.className}
         aria-live="polite"
@@ -472,17 +476,29 @@ export default function FinalScreeningResult({ sessionData, onRestart }) {
         </p>
       </section>
 
-      {/* ── Strabismus Deep Learning Screening Section ── */}
-      {strabismusResult && (
-        <StrabismusAIScreeningSection strabismusResult={strabismusResult} />
-      )}
+      {/* ── LEVEL 2: CÁC PHÉP KIỂM TRA ĐÃ THỰC HIỆN ── */}
+      <section className="final-screening-details-section" aria-label="Các kiểm tra đã thực hiện">
+        <div className="evidence-section-header" style={{ margin: '16px 0 12px' }}>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
+            CÁC KIỂM TRA ĐÃ THỰC HIỆN
+          </h3>
+          <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '4px 0 0' }}>
+            Kết quả của từng thành phần trong phiên sàng lọc thị giác hai mắt:
+          </p>
+        </div>
 
-      {/* ── Gaze 4 Directions & Cover Test Results ── */}
-      <section className="final-screening-details-section" aria-label="Thông tin chi tiết sàng lọc">
+        {/* 1. Nghiệm pháp Che mắt (Cover Test) */}
+        <CoverTestSummaryRow coverTest={coverTest} />
+
+        {/* 2. Chụp 4 hướng mắt (Motility) */}
         {sessionData?.gazeTracking && (
           <Gaze4DirectionsSummarySection gazeTracking={sessionData.gazeTracking} />
         )}
-        <CoverTestSummaryRow coverTest={coverTest} />
+
+        {/* 3. Phân tích hình ảnh AI (Bilateral Eye ROI) */}
+        {strabismusResult && (
+          <StrabismusAIScreeningSection strabismusResult={strabismusResult} />
+        )}
       </section>
 
       {/* ── Separator and disclaimer ── */}

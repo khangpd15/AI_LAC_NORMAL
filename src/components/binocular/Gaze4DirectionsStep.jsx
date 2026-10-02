@@ -3,6 +3,7 @@ import { GAZE_DIRECTIONS_CONFIG } from '../../constants/binocularScreeningConfig
 import {
   Gaze4DirectionsQualityGate,
   captureGazeFrameDataUrl,
+  captureBilateralEyeRoi,
 } from '../../services/cv/gaze4DirectionsQualityGate.js';
 import CameraView from '../CameraView';
 import AudioButton from '../audio/AudioButton';
@@ -143,9 +144,9 @@ export default function Gaze4DirectionsStep({
       // All 4 directions completed!
       // On STRAIGHT gaze (final step), trigger Strabismus Deep Learning screening
       let strabismusResult = null;
-      const straightImage = newCaptureRecord?.image || updatedCaptures.straight?.image;
+      const straightRoiImage = newCaptureRecord?.eyeRoi || updatedCaptures.straight?.eyeRoi;
 
-      if (straightImage) {
+      if (straightRoiImage) {
         try {
           setIsAnalyzing(true);
           isAnalyzingRef.current = true;
@@ -154,7 +155,8 @@ export default function Gaze4DirectionsStep({
           const controller = new AbortController();
           abortControllerRef.current = controller;
 
-          strabismusResult = await predictStrabismusImage(straightImage, {
+          // Dispatch the Bilateral Eye ROI directly to the AI service
+          strabismusResult = await predictStrabismusImage(straightRoiImage, {
             signal: controller.signal,
             timeoutMs: 15000,
           });
@@ -167,7 +169,11 @@ export default function Gaze4DirectionsStep({
           // Graceful fallback so clinical flow is never blocked
           strabismusResult = {
             status: 'INCONCLUSIVE',
+            prediction: 'INCONCLUSIVE',
             confidence: null,
+            confidence_type: 'MODEL_SOFTMAX',
+            screening_status: 'AI_SIGNAL',
+            quality: 'FAIL_NETWORK',
             quality_score: newCaptureRecord?.qualityScore || 0.85,
             message: err.userMessage || 'Không thể kết nối đến máy chủ AI (sử dụng kết quả lâm sàng)',
           };
@@ -175,6 +181,19 @@ export default function Gaze4DirectionsStep({
           setIsAnalyzing(false);
           isAnalyzingRef.current = false;
         }
+      } else {
+        // Defensive: If no valid Bilateral Eye ROI was extracted, do NOT send full face!
+        console.warn('[Gaze4DirectionsStep] Bilateral Eye ROI unavailable at straight capture. AI inference skipped defensively.');
+        strabismusResult = {
+          status: 'INCONCLUSIVE',
+          prediction: 'INCONCLUSIVE',
+          confidence: null,
+          confidence_type: 'MODEL_SOFTMAX',
+          screening_status: 'AI_SIGNAL',
+          quality: 'FAIL_ROI_LANDMARKS',
+          quality_score: newCaptureRecord?.qualityScore || 0.70,
+          message: 'Không trích xuất được vùng hai mắt hợp lệ để sàng lọc AI (mắt chưa nhìn thẳng hoặc thiếu landmarks).',
+        };
       }
 
       setStepStatus('COMPLETED');
@@ -251,11 +270,23 @@ export default function Gaze4DirectionsStep({
 
       const capturedDataUrl = captureGazeFrameDataUrl(videoRef.current);
 
+      let eyeRoiDataUrl = null;
+      let eyeRoiBox = null;
+      if (activeConfig.id === 'straight' || activeConfig.id === 'center') {
+        const roiRes = captureBilateralEyeRoi(videoRef.current, landmarks);
+        if (roiRes?.bothEyesDetected && roiRes?.dataUrl) {
+          eyeRoiDataUrl = roiRes.dataUrl;
+          eyeRoiBox = roiRes.roiBox;
+        }
+      }
+
       const captureRecord = {
         direction: activeConfig.id,
         directionName: activeConfig.name,
         timestamp: new Date().toISOString(),
         image: capturedDataUrl,
+        eyeRoi: eyeRoiDataUrl,
+        roiBox: eyeRoiBox,
         landmarks: landmarks ? landmarks.slice(0, 478).map((p) => ({ x: Number(p.x.toFixed(3)), y: Number(p.y.toFixed(3)) })) : null,
         qualityScore: res.qualityScore,
         distanceCm: estimatedDistanceCm,
@@ -293,11 +324,23 @@ export default function Gaze4DirectionsStep({
 
     const capturedDataUrl = captureGazeFrameDataUrl(videoRef.current);
 
+    let eyeRoiDataUrl = null;
+    let eyeRoiBox = null;
+    if (activeConfig.id === 'straight' || activeConfig.id === 'center') {
+      const roiRes = captureBilateralEyeRoi(videoRef.current, landmarks);
+      if (roiRes?.bothEyesDetected && roiRes?.dataUrl) {
+        eyeRoiDataUrl = roiRes.dataUrl;
+        eyeRoiBox = roiRes.roiBox;
+      }
+    }
+
     const captureRecord = {
       direction: activeConfig.id,
       directionName: activeConfig.name,
       timestamp: new Date().toISOString(),
       image: capturedDataUrl,
+      eyeRoi: eyeRoiDataUrl,
+      roiBox: eyeRoiBox,
       landmarks: landmarks ? landmarks.slice(0, 478).map((p) => ({ x: Number(p.x.toFixed(3)), y: Number(p.y.toFixed(3)) })) : null,
       qualityScore: 0.95,
       distanceCm: estimatedDistanceCm,

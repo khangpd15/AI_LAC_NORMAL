@@ -338,6 +338,18 @@ export function evaluateFinalScreening(session) {
   // Step 1: Run data quality gate
   const gateResult = validateScreeningData(session);
 
+  // Step 2: Assemble structured screening evidence (Single Source of Truth)
+  const coverTestEvidence = session?.coverTest || {};
+  const fourDirectionsEvidence = session?.gazeTracking || {};
+  const aiImageEvidence = session?.strabismusResult || session?.gazeTracking?.strabismusResult || null;
+
+  const screeningEvidence = {
+    coverTest: coverTestEvidence,
+    fourDirections: fourDirectionsEvidence,
+    aiImageAnalysis: aiImageEvidence,
+    quality: gateResult,
+  };
+
   let status;
   let title;
   let label;
@@ -345,42 +357,77 @@ export function evaluateFinalScreening(session) {
   let disclaimer;
   let overallDataQuality;
 
-  // Step 2: If Cover Test data is not valid → INCONCLUSIVE regardless of Brock String
+  // RULE 1: Quality Gate Check (Technical acquisition failure)
   if (!gateResult.coverTestValid) {
     status = OVERALL_SCREENING_STATUS.SCREENING_INCONCLUSIVE;
     label = 'Chưa đủ dữ liệu ổn định để đánh giá.';
     title = 'Chưa đủ dữ liệu ổn định để đánh giá';
     description =
-      'Dữ liệu Cover Test trong lần kiểm tra này chưa đủ ổn định. Bạn có thể thực hiện lại bài sàng lọc.';
+      'Dữ liệu thu nhận trong lần kiểm tra này chưa đủ ổn định. Bạn có thể thực hiện lại bài sàng lọc ở môi trường đủ sáng và đúng khoảng cách.';
     disclaimer =
       'Kết quả này chỉ mang tính chất sàng lọc và không thay thế việc khám mắt chuyên khoa.';
     overallDataQuality = DATA_QUALITY_STATUS.INCONCLUSIVE;
   } else {
-    // Step 3: Cover Test signal evaluation (primary signal)
-    const coverVerdict = session.coverTest?.status;
-    const coverValidCycles = session.coverTest?.validCycles ?? 0;
+    // Primary Clinical Evidence: Cover Test (alternating occlusion dynamics)
+    const coverVerdict = coverTestEvidence?.status;
+    const coverValidCycles = coverTestEvidence?.validCycles ?? 0;
+    const isCoverSuspicious = coverVerdict === COVER_TEST_VERDICTS.REFIXATION_DETECTED && coverValidCycles >= 2;
 
-    if (coverVerdict === COVER_TEST_VERDICTS.REFIXATION_DETECTED && coverValidCycles >= 2) {
+    // Secondary Functional Evidence: 4 Directions Motility
+    const captures = fourDirectionsEvidence?.captures || {};
+    const totalCapturedDirections = Object.values(captures).filter((c) => !!c?.image).length;
+    const isMotilityComplete = totalCapturedDirections >= 4;
+
+    // Supporting Computational Evidence: AI Deep Learning Image Analysis
+    const aiStatus = aiImageEvidence?.status; // 'NORMAL' | 'SUSPICIOUS' | 'INCONCLUSIVE' | null
+    const isAiSuspicious = aiStatus === 'SUSPICIOUS';
+
+    // RULE 2: Cover Test Suspicious (Strongest clinical signal)
+    if (isCoverSuspicious) {
       status = OVERALL_SCREENING_STATUS.SCREENING_ATTENTION;
-      label = 'Hệ thống ghi nhận một số dấu hiệu cần được đánh giá thêm.';
-      title = 'Hệ thống ghi nhận một số dấu hiệu cần được đánh giá thêm';
+      label = 'Hệ thống ghi nhận dấu hiệu cần được kiểm tra thêm.';
+      title = 'Hệ thống ghi nhận dấu hiệu cần được kiểm tra thêm';
       description =
-        'Trong lần sàng lọc này, hệ thống ghi nhận tín hiệu tái định thị nhất quán ở nhiều chu kỳ. ' +
-        'Kết quả này không phải là chẩn đoán. Bạn nên được đánh giá bởi bác sĩ hoặc chuyên gia mắt.';
+        'Nghiệm pháp che mắt ghi nhận chuyển động bù trừ trục nhãn cầu nhất quán qua nhiều chu kỳ. ' +
+        'Kết quả này là tín hiệu gợi ý sàng lọc, không phải chẩn đoán. Bạn nên được kiểm tra bởi bác sĩ chuyên khoa mắt.';
       disclaimer =
-        'Kết quả này là kết quả sàng lọc, không phải là chẩn đoán y khoa.';
+        'Kết quả này là kết quả sàng lọc sơ bộ, không thay thế khám lâm sàng chuyên khoa.';
       overallDataQuality = DATA_QUALITY_STATUS.GOOD;
-    } else {
-      // Step 4: No consistent refixation signal found → SCREENING_CLEAR
+    }
+    // RULE 3: Cover Test Normal, but AI Image Signal or Motility requires attention
+    else if (isAiSuspicious) {
+      status = OVERALL_SCREENING_STATUS.SCREENING_ATTENTION;
+      label = 'Có tín hiệu cần theo dõi thêm.';
+      title = 'Có tín hiệu cần kiểm tra thêm';
+      description =
+        'Nghiệm pháp che mắt không ghi nhận bất thường vận nhãn đáng kể, tuy nhiên phép phân tích hình ảnh AI ghi nhận tín hiệu cần xem xét thêm. ' +
+        'Bạn có thể thực hiện lại bài test hoặc trao đổi với chuyên viên nhãn khoa nếu có lo lắng về thị lực.';
+      disclaimer =
+        'Độ tự tin của mô hình thể hiện tính nhất quán toán học với mẫu ảnh, không phải xác suất mắc bệnh.';
+      overallDataQuality = DATA_QUALITY_STATUS.GOOD;
+    }
+    // RULE 4: No notable abnormality detected across all tests
+    else {
       status = OVERALL_SCREENING_STATUS.SCREENING_CLEAR;
       label = 'Chưa ghi nhận dấu hiệu bất thường đáng chú ý trong lần sàng lọc này.';
       title = 'Chưa ghi nhận dấu hiệu bất thường đáng chú ý';
       description =
-        'Trong lần sàng lọc này, hệ thống chưa ghi nhận dấu hiệu bất thường đáng chú ý.';
+        'Trong lần sàng lọc này, hệ thống chưa ghi nhận dấu hiệu bất thường đáng chú ý ở cả nghiệm pháp che mắt và hình ảnh hai mắt.';
       disclaimer =
-        'Kết quả này chỉ phản ánh lần sàng lọc hiện tại và không thay thế việc khám mắt chuyên khoa.';
+        'Kết quả này chỉ phản ánh lần sàng lọc hiện tại và không thay thế việc khám mắt định kỳ.';
       overallDataQuality = DATA_QUALITY_STATUS.GOOD;
     }
+  }
+
+  // Structured Development Logging (Phase 13 Compliance: zero PII, zero base64)
+  if (typeof window !== 'undefined' && import.meta.env?.DEV) {
+    console.log(
+      `[SYNTHESIS] Cover: ${coverTestEvidence?.status || 'N/A'} | ` +
+      `Four Directions: ${Object.values(fourDirectionsEvidence?.captures || {}).filter((c) => !!c?.image).length}/4 | ` +
+      `AI: ${aiImageEvidence?.status || 'N/A'} | ` +
+      `Quality: ${gateResult?.coverTestValid ? 'PASS' : 'FAIL'} | ` +
+      `Final: ${status}`
+    );
   }
 
   // Section 22 Data Model Final
@@ -391,11 +438,11 @@ export function evaluateFinalScreening(session) {
   };
 
   const coverTest = {
-    status: session?.coverTest?.status || COVER_TEST_VERDICTS.INCONCLUSIVE,
+    status: coverTestEvidence?.status || COVER_TEST_VERDICTS.INCONCLUSIVE,
     valid: gateResult.coverTestValid,
-    validCycles: session?.coverTest?.validCycles ?? 0,
-    totalCycles: session?.coverTest?.cycles?.length ?? 3,
-    cycles: session?.coverTest?.cycles || [],
+    validCycles: coverTestEvidence?.validCycles ?? 0,
+    totalCycles: coverTestEvidence?.cycles?.length ?? 3,
+    cycles: coverTestEvidence?.cycles || [],
   };
 
   const brockTargets = session?.brockString?.targets || {};
@@ -435,6 +482,7 @@ export function evaluateFinalScreening(session) {
     brockString,
     clinical,
     qualitySection: quality,
+    evidence: screeningEvidence,
   };
 }
 

@@ -349,3 +349,134 @@ export function captureGazeFrameDataUrl(video) {
     return null;
   }
 }
+
+/**
+ * Anatomical landmark indices defining the bilateral eye and supra/infra-orbital region.
+ * Covers both eyes, inner/outer canthi, eyebrows, upper nasal bridge, and infraorbital margin.
+ * Excludes forehead, hair, lower nose, mouth, chin, and ambient background.
+ */
+const BILATERAL_EYE_LANDMARKS = Object.freeze([
+  // Right eye & brow (anatomical right, camera left):
+  33, 133, 159, 145, 70, 63, 105, 66, 107, 55, 111, 117,
+  // Left eye & brow (anatomical left, camera right):
+  362, 263, 386, 374, 300, 293, 334, 296, 336, 285, 340, 346,
+  // Sellion & upper nasal bridge:
+  6, 168, 197,
+]);
+
+/**
+ * Extracts a normalized 224x224 Bilateral Eye ROI matching the model training distribution.
+ * 
+ * @param {HTMLVideoElement} video
+ * @param {Array<Object>} landmarks - MediaPipe FaceMesh landmarks (468/478 items with normalized x, y)
+ * @param {Object} [options]
+ * @param {number} [options.targetWidth=224]
+ * @param {number} [options.targetHeight=224]
+ * @returns {{
+ *   dataUrl: string|null,
+ *   roiBox: { x: number, y: number, width: number, height: number }|null,
+ *   aspectRatio: number,
+ *   bothEyesDetected: boolean,
+ *   reason?: string
+ * }}
+ */
+export function captureBilateralEyeRoi(video, landmarks, options = {}) {
+  if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) {
+    return { dataUrl: null, roiBox: null, aspectRatio: 0, bothEyesDetected: false, reason: 'VIDEO_NOT_READY' };
+  }
+
+  if (!landmarks || !Array.isArray(landmarks) || landmarks.length < 468) {
+    return { dataUrl: null, roiBox: null, aspectRatio: 0, bothEyesDetected: false, reason: 'LANDMARKS_UNAVAILABLE' };
+  }
+
+  const vWidth = video.videoWidth;
+  const vHeight = video.videoHeight;
+  const targetW = options.targetWidth || 224;
+  const targetH = options.targetHeight || 224;
+
+  try {
+    // Collect coordinates of orbital landmarks
+    const xs = [];
+    const ys = [];
+
+    for (const idx of BILATERAL_EYE_LANDMARKS) {
+      const pt = landmarks[idx];
+      if (pt && typeof pt.x === 'number' && typeof pt.y === 'number') {
+        xs.push(pt.x * vWidth);
+        ys.push(pt.y * vHeight);
+      }
+    }
+
+    if (xs.length < 15) {
+      return { dataUrl: null, roiBox: null, aspectRatio: 0, bothEyesDetected: false, reason: 'INSUFFICIENT_EYE_LANDMARKS' };
+    }
+
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
+    const eyeSpanW = maxX - minX;
+    const eyeSpanH = maxY - minY;
+
+    // Safety margins:
+    // +15% on lateral sides so outer canthi are fully included with natural context
+    // +15% on top to retain eyelid/eyebrow structure without including hair
+    // +25% on bottom to cover infraorbital margin, excluding mouth/chin
+    const padX = eyeSpanW * 0.15;
+    const padTop = eyeSpanH * 0.15;
+    const padBottom = eyeSpanH * 0.25;
+
+    const cropX1 = Math.max(0, Math.round(minX - padX));
+    const cropX2 = Math.min(vWidth, Math.round(maxX + padX));
+    const cropY1 = Math.max(0, Math.round(minY - padTop));
+    const cropY2 = Math.min(vHeight, Math.round(maxY + padBottom));
+
+    const cropW = cropX2 - cropX1;
+    const cropH = cropY2 - cropY1;
+
+    if (cropW < 60 || cropH < 30) {
+      return { dataUrl: null, roiBox: null, aspectRatio: 0, bothEyesDetected: false, reason: 'ROI_TOO_SMALL' };
+    }
+
+    const rawAspectRatio = Number((cropW / Math.max(1, cropH)).toFixed(2));
+
+    // Render cropped sub-rectangle directly to target 224x224 canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return { dataUrl: null, roiBox: null, aspectRatio: rawAspectRatio, bothEyesDetected: false, reason: 'CANVAS_CONTEXT_FAILED' };
+    }
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(video, cropX1, cropY1, cropW, cropH, 0, 0, targetW, targetH);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+    const roiBox = { x: cropX1, y: cropY1, width: cropW, height: cropH };
+
+    // Development inspection hook (transient in-memory, never persisted to production DB)
+    if (typeof window !== 'undefined' && import.meta.env?.DEV) {
+      window.__REMICARE_DEBUG_ROI__ = {
+        timestamp: Date.now(),
+        roiBox,
+        aspectRatio: rawAspectRatio,
+        targetDimensions: { width: targetW, height: targetH },
+      };
+      console.log(`[SCREENING] Bilateral Eye ROI extracted: ${cropW}x${cropH} (aspect ratio ${rawAspectRatio}) -> Resampled ${targetW}x${targetH}`);
+    }
+
+    return {
+      dataUrl,
+      roiBox,
+      aspectRatio: rawAspectRatio,
+      bothEyesDetected: true,
+    };
+  } catch (err) {
+    console.error('[Gaze4DirectionsQualityGate] Extract Bilateral Eye ROI error:', err);
+    return { dataUrl: null, roiBox: null, aspectRatio: 0, bothEyesDetected: false, reason: 'EXCEPTION' };
+  }
+}
+
