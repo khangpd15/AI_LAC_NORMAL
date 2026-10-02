@@ -6,6 +6,7 @@ import {
 } from '../../services/cv/gaze4DirectionsQualityGate.js';
 import CameraView from '../CameraView';
 import AudioButton from '../audio/AudioButton';
+import { predictStrabismusImage } from '../../api/strabismusApi.js';
 
 /**
  * Gaze4DirectionsStep Component
@@ -44,6 +45,21 @@ export default function Gaze4DirectionsStep({
 
   // Captured images store
   const [captures, setCaptures] = useState({});
+
+  // Strabismus Deep Learning screening state for STRAIGHT gaze
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState(null);
+  const isAnalyzingRef = useRef(false);
+  const abortControllerRef = useRef(null);
+
+  // Abort in-flight requests on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Quality gate instance (2100ms stable hold for 1... 2... Chụp!)
   const gateRef = useRef(new Gaze4DirectionsQualityGate({ requiredStableMs: 2100 }));
@@ -170,38 +186,14 @@ export default function Gaze4DirectionsStep({
       gate.reset();
 
       setTimeout(() => {
-        if (directionIndex < GAZE_DIRECTIONS_CONFIG.length - 1) {
-          setDirectionIndex((idx) => idx + 1);
-          setStepStatus('OBSERVING');
-          setProgressRatio(0);
-          setCountdownPhase(null);
-        } else {
-          // All 4 directions completed!
-          setStepStatus('COMPLETED');
-          if (isVoiceEnabled && speak) {
-            speak('Giờ mình lùi ra xa một chút nghen.');
-          }
-
-          const fullGazeTrackingData = {
-            distanceCm: '15-20',
-            completedAt: new Date().toISOString(),
-            captures: {
-              ...captures,
-              [activeConfig.id]: captureRecord,
-            },
-          };
-
-          if (onComplete) {
-            onComplete(fullGazeTrackingData);
-          }
-        }
+        handleFinalizeGazeStep(captureRecord, captures);
       }, 1200);
     }
   }, [landmarks, stepStatus, isOrienting, activeConfig, estimatedDistanceCm, directionIndex, videoRef, captures, isVoiceEnabled, speak, onComplete]);
 
   // Click-to-snap handler: allows instant capture on clicking the target
   const handleManualSnap = () => {
-    if (stepStatus !== 'OBSERVING') return;
+    if (isAnalyzing || stepStatus !== 'OBSERVING') return;
     setStepStatus('CAPTURING');
     setShowShutterFlash(true);
 
@@ -234,30 +226,7 @@ export default function Gaze4DirectionsStep({
     gateRef.current.reset();
 
     setTimeout(() => {
-      if (directionIndex < GAZE_DIRECTIONS_CONFIG.length - 1) {
-        setDirectionIndex((idx) => idx + 1);
-        setStepStatus('OBSERVING');
-        setProgressRatio(0);
-        setCountdownPhase(null);
-      } else {
-        setStepStatus('COMPLETED');
-        if (isVoiceEnabled && speak) {
-          speak('Giờ mình lùi ra xa một chút nghen.');
-        }
-
-        const fullGazeTrackingData = {
-          distanceCm: '15-20',
-          completedAt: new Date().toISOString(),
-          captures: {
-            ...captures,
-            [activeConfig.id]: captureRecord,
-          },
-        };
-
-        if (onComplete) {
-          onComplete(fullGazeTrackingData);
-        }
-      }
+      handleFinalizeGazeStep(captureRecord, captures);
     }, 1000);
   };
 
@@ -270,6 +239,34 @@ export default function Gaze4DirectionsStep({
     <div className="card stage-card-main gaze-4-directions-card">
       {/* Shutter flash overlay */}
       {showShutterFlash && <div className="gaze-shutter-flash" />}
+
+      {/* Deep Learning Analyzing Overlay */}
+      {isAnalyzing && (
+        <div className="gaze-analyzing-overlay fade-in">
+          <div className="analyzing-pill-box">
+            <div className="analyzing-spinner" />
+            <div className="analyzing-text-block">
+              <strong>Đang phân tích hình ảnh...</strong>
+              <small>Hệ thống AI RemiCare đang sàng lọc thị giác hai mắt</small>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Analysis Error / Inconclusive Notice */}
+      {analysisError && !isAnalyzing && (
+        <div className="gaze-error-banner fade-in">
+          <span className="error-icon">⚠️</span>
+          <span className="error-text">{analysisError}</span>
+          <button
+            type="button"
+            className="btn btn-sm btn-retry-error"
+            onClick={() => setAnalysisError(null)}
+          >
+            Chụp lại
+          </button>
+        </div>
+      )}
 
       {/* Header bar with direction and step counter */}
       <div className="gaze-step-header">

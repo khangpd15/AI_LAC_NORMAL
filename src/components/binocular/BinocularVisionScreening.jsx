@@ -140,6 +140,12 @@ export default function BinocularVisionScreening() {
 
     updateGazeTrackingData(session.sessionId, gazeData);
 
+    setSession((prev) => ({
+      ...prev,
+      gazeTracking: gazeData,
+      strabismusResult: gazeData.strabismusResult || prev?.strabismusResult,
+    }));
+
     // Switch tracker to Cover Test target range (33–40 cm)
     distanceTrackerRef.current.reset('COVER_TEST');
     setPositionReport(null);
@@ -183,7 +189,10 @@ export default function BinocularVisionScreening() {
 
       const finalSession = generateScreeningSummary(session.sessionId, aiSignal);
       finalizeScreeningSample(finalSession);
-      setSession({ ...finalSession });
+      setSession({
+        ...finalSession,
+        strabismusResult: session.strabismusResult || session.gazeTracking?.strabismusResult,
+      });
       setCurrentStep('SUMMARY');
     },
     [session, smoothedPrediction]

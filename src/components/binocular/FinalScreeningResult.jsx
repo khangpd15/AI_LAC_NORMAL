@@ -190,7 +190,93 @@ function QualityWarnings({ quality }) {
   );
 }
 
-function TechnicalDetails({ coverTest, brockString, quality, gazeTracking }) {
+
+// ---------------------------------------------------------------------------
+// Strabismus Deep Learning AI Screening Section
+// ---------------------------------------------------------------------------
+
+function StrabismusAIScreeningSection({ strabismusResult }) {
+  if (!strabismusResult) return null;
+
+  const {
+    status,
+    confidence,
+    quality_score,
+  } = strabismusResult;
+
+  // Strict clinical mapping adhering to non-diagnostic protocol:
+  // NORMAL -> kết quả sàng lọc hiện tại không cho thấy dấu hiệu bất thường rõ ràng
+  // SUSPICIOUS -> kết quả sàng lọc có dấu hiệu cần được kiểm tra thêm
+  // INCONCLUSIVE -> hình ảnh chưa đủ chất lượng để đánh giá
+  let statusText = 'hình ảnh chưa đủ chất lượng để đánh giá';
+  let badgeClass = 'badge-inconclusive';
+  let bannerClass = 'strabismus-banner strabismus-banner--inconclusive';
+  let emoji = '⚪';
+  let statusTitle = 'CHƯA ĐỦ ĐIỀU KIỆN ĐÁNH GIÁ';
+
+  if (status === 'NORMAL') {
+    statusText = 'kết quả sàng lọc hiện tại không cho thấy dấu hiệu bất thường rõ ràng';
+    badgeClass = 'badge-clear';
+    bannerClass = 'strabismus-banner strabismus-banner--normal';
+    emoji = '🟢';
+    statusTitle = 'BÌNH THƯỜNG (NORMAL)';
+  } else if (status === 'SUSPICIOUS') {
+    statusText = 'kết quả sàng lọc có dấu hiệu cần được kiểm tra thêm';
+    badgeClass = 'badge-attention';
+    bannerClass = 'strabismus-banner strabismus-banner--suspicious';
+    emoji = '🟡';
+    statusTitle = 'CẦN KIỂM TRA THÊM (SUSPICIOUS)';
+  } else if (status === 'INCONCLUSIVE') {
+    statusText = 'hình ảnh chưa đủ chất lượng để đánh giá';
+    badgeClass = 'badge-inconclusive';
+    bannerClass = 'strabismus-banner strabismus-banner--inconclusive';
+    emoji = '⚪';
+    statusTitle = 'CHƯA ĐỦ ĐIỀU KIỆN ĐÁNH GIÁ';
+  }
+
+  return (
+    <section className="final-screening-section strabismus-ai-card" aria-label="Sàng lọc hình ảnh mắt thẳng bằng AI">
+      <div className="strabismus-ai-header">
+        <div className="strabismus-ai-title-wrap">
+          <span className="badge badge-primary">AI DEEP LEARNING</span>
+          <h3 className="final-screening-section-title" style={{ margin: '4px 0 0' }}>
+            Sàng Lọc Hình Ảnh Hai Mắt (Primary Gaze)
+          </h3>
+        </div>
+        <span className={`badge ${badgeClass} strabismus-status-badge`}>
+          {emoji} {statusTitle}
+        </span>
+      </div>
+
+      <div className={bannerClass}>
+        <p className="strabismus-summary-text">
+          {statusText}
+        </p>
+      </div>
+
+      <div className="strabismus-metrics-grid">
+        {confidence != null && (
+          <div className="final-screening-info-row">
+            <span>Độ tin cậy nhận diện (Confidence)</span>
+            <strong>{Math.round(confidence * 100)}%</strong>
+          </div>
+        )}
+        {quality_score != null && (
+          <div className="final-screening-info-row">
+            <span>Chất lượng hình ảnh (Quality Gate)</span>
+            <strong>{Math.round(quality_score * 100)}%</strong>
+          </div>
+        )}
+      </div>
+
+      <p className="strabismus-mandatory-disclaimer">
+        ℹ️ <strong>Lưu ý:</strong> Đây là công cụ sàng lọc hỗ trợ, không thay thế chẩn đoán của bác sĩ mắt.
+      </p>
+    </section>
+  );
+}
+
+function TechnicalDetails({ coverTest, brockString, quality, gazeTracking, strabismusResult }) {
   const metricOrNull = (v, digits = 4) =>
     typeof v === 'number' && Number.isFinite(v) ? v.toFixed(digits) : 'null';
 
@@ -329,6 +415,38 @@ function TechnicalDetails({ coverTest, brockString, quality, gazeTracking }) {
         </>
       )}
 
+      {/* Strabismus Deep Learning technical */}
+      {strabismusResult && (
+        <>
+          <h4>Mô hình AI Sàng lọc Lác (ONNX ResNet-18)</h4>
+          <div className="table-responsive">
+            <table className="metrics-table">
+              <thead>
+                <tr>
+                  <th>Phiên bản mô hình</th>
+                  <th>Ngưỡng quyết định (Threshold)</th>
+                  <th>Thời gian xử lý (Latency)</th>
+                  <th>Điểm chất lượng (Quality Gate)</th>
+                  <th>Xác suất lác (Raw Probability)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{strabismusResult.model_version || 'remicare-bilateral-resnet18-v1'}</td>
+                  <td>{strabismusResult.threshold != null ? strabismusResult.threshold : '0.20'}</td>
+                  <td>{strabismusResult.inference_latency_ms ? `${strabismusResult.inference_latency_ms} ms` : '--'}</td>
+                  <td>{strabismusResult.quality_score != null ? strabismusResult.quality_score : '--'}</td>
+                  <td>{strabismusResult.strabismus_probability != null ? strabismusResult.strabismus_probability : '--'}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="technical-calibration-note">
+            Ngưỡng cố định 0.20 được tối ưu hóa cho độ nhạy sàng lọc cao (Sensitivity 100%, Specificity 81.82%).
+          </p>
+        </>
+      )}
+
       {/* Quality gate details */}
       <h4>Quality Gate</h4>
       <QualityWarnings quality={quality} />
@@ -376,6 +494,7 @@ export default function FinalScreeningResult({ sessionData, onRestart }) {
   const [showTechnical, setShowTechnical] = useState(false);
 
   const summary = sessionData?.summary || {};
+  const strabismusResult = sessionData?.strabismusResult || sessionData?.gazeTracking?.strabismusResult;
   const coverTest = sessionData?.coverTest || {};
   const brockString = sessionData?.brockString || {};
   const quality = summary.quality || {};
@@ -420,6 +539,11 @@ export default function FinalScreeningResult({ sessionData, onRestart }) {
           {disclaimer}
         </p>
       </section>
+
+      {/* ── Strabismus Deep Learning Screening Section ── */}
+      {strabismusResult && (
+        <StrabismusAIScreeningSection strabismusResult={strabismusResult} />
+      )}
 
       {/* ── Cover Test & Brock String & Gaze info ── */}
       <section className="final-screening-details-section" aria-label="Thông tin chi tiết sàng lọc">
@@ -468,6 +592,7 @@ export default function FinalScreeningResult({ sessionData, onRestart }) {
             brockString={brockString}
             quality={quality}
             gazeTracking={sessionData?.gazeTracking}
+            strabismusResult={strabismusResult}
           />
         </div>
       )}
