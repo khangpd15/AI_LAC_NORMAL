@@ -4,8 +4,8 @@ import ExperienceVisionPage from './components/ExperienceVision/ExperienceVision
 import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
-  // Navigation tabs: 'experience' (Trải nghiệm góc nhìn camera fullscreen) | 'screening' (Sàng lọc hai mắt)
-  const [activeTab, setActiveTab] = useState('experience');
+  // Navigation tabs: 'screening' (Sàng lọc hai mắt - mặc định) | 'experience' (Trải nghiệm góc nhìn camera fullscreen)
+  const [activeTab, setActiveTab] = useState('screening');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', 'light');

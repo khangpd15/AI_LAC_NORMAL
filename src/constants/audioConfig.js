@@ -1,110 +1,93 @@
 /**
  * AUDIO & TEXT-TO-SPEECH (TTS) CONFIGURATION - REMICARE
- * Hỗ trợ 3 phương ngữ: Miền Nam, Miền Trung, Miền Bắc.
+ * Giọng Nữ Việt Nam ấm áp, nhẹ nhàng, truyền cảm theo hơi hướng miền Tây Nam Bộ.
  *
- * Speech characteristics:
- * - Tone: Bình tĩnh, ân cần, nhẹ nhàng (phù hợp bệnh nhân người lớn tuổi)
- * - Rate: 0.88x mặc định | Đọc chậm: 0.90x | Rất chậm: 0.85x
- * - Pitch: 1.0 (giọng nữ tự nhiên, không kim loại)
- * - Pause: 350-450ms giữa câu hướng dẫn; 500-800ms trước cảnh báo quan trọng
- *
- * Phương ngữ được hỗ trợ (dialect option):
- * - 'south'   → Miền Nam / Miền Tây (mặc định)
- * - 'central' → Miền Trung
- * - 'north'   → Miền Bắc
+ * Tiêu chí thiết kế âm học:
+ * - Tốc độ (Rate): 0.95x — Chậm vừa phải, phát âm tròn vành rõ chữ, không nuốt âm cuối,
+ *   tối ưu khả năng tiếp thu của trẻ em và phụ huynh/người cao tuổi.
+ * - Cao độ (Pitch): 1.02 — Giọng nữ tự nhiên, ấm áp, thân thiện, không kim loại / robotic.
+ * - Khoảng nghỉ (Cadence): 120ms giữa các câu (giảm từ 380ms để liền mạch, ngắt nghỉ
+ *   tự nhiên như bác sĩ trò chuyện trực tiếp, tránh cảm giác đứt quãng, chậm chạp).
+ * - Ưu tiên tuyệt đối: Giọng Nữ (Google Tiếng Việt, Microsoft HoaiMy Online Natural, Apple Linh/Mai/Chi).
+ *   Loại bỏ triệt để giọng Nam cục bộ (Microsoft An, NamMinh).
  */
 
-export const AUDIO_CONFIG = Object.freeze({
-  lang: 'vi-VN',
-  rate: 0.88,               // Tốc độ vừa phải (0.85-0.95x), rõ chữ, không nuốt âm cuối
-  pitch: 1.0,               // Cao độ nữ tự nhiên, ấm áp, gần gũi
-  volume: 1.0,
-  voiceLoadTimeoutMs: 2500,
-
-  // Khoảng nghỉ tự nhiên (Natural Speech Timing)
-  pauseNormalSentenceMs: 380, // Khoảng nghỉ giữa các câu hướng dẫn thông thường (300-500ms)
-  pauseWarningMs: 650,        // Khoảng nghỉ trước câu cảnh báo quan trọng (500-800ms)
-  pauseEmergencyMs: 500,      // Khoảng nghỉ trước câu cấp cứu
-
-  // Danh sách ưu tiên giọng mặc định (Miền Nam — tương thích ngược)
-  // Dùng DIALECT_VOICE_PRIORITY để chọn giọng theo miền.
-  voicePriorityKeywords: [
-    { pattern: /an\s*online/i,      score: 250, label: 'Microsoft An Online (Nam Bộ Female)' },
-    { pattern: /phuong\s*online/i,  score: 240, label: 'Microsoft Phuong Online (Nam Bộ Female)' },
-    { pattern: /(south|nam\s*bộ|miền\s*tây)/i, score: 230, label: 'Explicit Southern Vietnamese' },
-    { pattern: /google\s*tiếng\s*việt/i, score: 200, label: 'Google Tiếng Việt (Female)' },
-    { pattern: /linh/i,             score: 180, label: 'Linh (Apple Vietnamese Female)' },
-    { pattern: /mai/i,              score: 170, label: 'Mai (Vietnamese Female)' },
-    { pattern: /chi/i,              score: 160, label: 'Chi (Vietnamese Female)' },
-    { pattern: /hoaimy/i,           score: 120, label: 'Microsoft HoaiMy (Fallback)' },
-  ],
-});
-
 /**
- * Preset tốc độ đọc (Speech Rate Presets)
- * Truyền vào options.rate khi gọi audioService.speak(text, { rate: SPEECH_RATE_PRESETS.SLOW })
- */
-export const SPEECH_RATE_PRESETS = Object.freeze({
-  NORMAL:    0.88,  // Tốc độ bình thường — rõ ràng, tự nhiên
-  SLOW:      0.90,  // Đọc chậm nhẹ — dễ theo dõi hơn
-  VERY_SLOW: 0.85,  // Đọc rất chậm — phù hợp người cao tuổi, thị lực yếu
-});
-
-/**
- * Cấu hình giọng theo 3 miền (Dialect Voice Priority)
- *
- * Mỗi miền có danh sách ưu tiên giọng riêng.
- * Nếu không tìm thấy giọng của miền đó, sẽ fallback sang giọng tiếng Việt bất kỳ.
- *
- * Sử dụng: audioService.speak(text, { dialect: 'north' })
- * Giá trị hợp lệ: 'south' | 'central' | 'north'
+ * Cấu hình ưu tiên giọng Nữ Việt Nam theo từng phương ngữ.
+ * Mặc định: Giọng Nữ ấm áp miền Tây / Nam Bộ.
  */
 export const DIALECT_VOICE_PRIORITY = Object.freeze({
   /**
-   * Miền Nam / Miền Tây — Giọng nữ ấm áp, nhẹ nhàng
-   * Microsoft An Online > Microsoft Phuong Online > Google tiếng Việt > Apple Linh/Mai/Chi
+   * Miền Tây Nam Bộ / Miền Nam — Giọng nữ ấm áp, thân thiện, ân cần ("Dạ", "nghen", "nha")
+   * 1. Google tiếng Việt (Chrome/Android): Giọng nữ trong trẻo, tự nhiên, cực kỳ rõ lời
+   * 2. Microsoft HoaiMy Online (Natural) (Edge): Giọng nữ AI Neural ấm áp, không robotic
+   * 3. Microsoft Phuong Online (Natural): Giọng nữ Nam Bộ
+   * 4. Apple Linh / Mai / Chi (iOS/macOS): Giọng nữ Siri tiếng Việt nhẹ nhàng
    */
   south: [
-    { pattern: /an\s*online/i,      score: 250, label: 'Microsoft An Online (Nam Bộ Female)' },
-    { pattern: /phuong\s*online/i,  score: 240, label: 'Microsoft Phuong Online (Nam Bộ Female)' },
-    { pattern: /(south|nam\s*bộ|miền\s*tây)/i, score: 230, label: 'Explicit Southern Vietnamese' },
-    { pattern: /google\s*tiếng\s*việt/i, score: 200, label: 'Google Tiếng Việt (Female)' },
-    { pattern: /linh/i,             score: 180, label: 'Linh (Apple Vietnamese Female)' },
-    { pattern: /mai/i,              score: 170, label: 'Mai (Vietnamese Female)' },
-    { pattern: /chi/i,              score: 160, label: 'Chi (Vietnamese Female)' },
-    { pattern: /hoaimy/i,           score: 100, label: 'HoaiMy (Fallback)' },
+    { pattern: /google\s*tiếng\s*việt/i,            score: 320, label: 'Google Tiếng Việt (Female Natural)' },
+    { pattern: /hoaimy.*online.*natural/i,          score: 300, label: 'Microsoft HoaiMy Online Natural (Female)' },
+    { pattern: /hoaimy/i,                           score: 280, label: 'Microsoft HoaiMy (Female)' },
+    { pattern: /phuong\s*online/i,                  score: 270, label: 'Microsoft Phuong Online (Nam Bộ Female)' },
+    { pattern: /(south|nam\s*bộ|miền\s*tây)/i,      score: 260, label: 'Explicit Southern Vietnamese' },
+    { pattern: /linh/i,                             score: 250, label: 'Linh (Apple Siri Female)' },
+    { pattern: /mai/i,                              score: 240, label: 'Mai (Apple Vietnamese Female)' },
+    { pattern: /chi/i,                              score: 230, label: 'Chi (Apple Vietnamese Female)' },
   ],
 
   /**
-   * Miền Trung — Giọng nữ nhẹ nhàng, trầm ấm
-   * HoaiMy (Huế/Đà Nẵng) > Dao > Google tiếng Việt > fallback
+   * Miền Trung — Giọng nữ truyền cảm, trầm ấm
    */
   central: [
-    { pattern: /hoaimy/i,           score: 250, label: 'Microsoft HoaiMy (Central Female)' },
-    { pattern: /dao/i,              score: 230, label: 'Dao (Central Vietnamese Female)' },
-    { pattern: /(trung|central|hue|da\s*nang)/i, score: 220, label: 'Explicit Central Vietnamese' },
-    { pattern: /google\s*tiếng\s*việt/i, score: 190, label: 'Google Tiếng Việt (Female)' },
-    { pattern: /linh/i,             score: 160, label: 'Linh (Apple Vietnamese Female)' },
-    { pattern: /mai/i,              score: 150, label: 'Mai (Vietnamese Female)' },
-    { pattern: /an\s*online/i,      score: 100, label: 'Microsoft An (Fallback)' },
-    { pattern: /phuong\s*online/i,  score: 100, label: 'Microsoft Phuong (Fallback)' },
+    { pattern: /hoaimy.*online.*natural/i,          score: 310, label: 'Microsoft HoaiMy Online Natural' },
+    { pattern: /hoaimy/i,                           score: 290, label: 'Microsoft HoaiMy (Central Female)' },
+    { pattern: /google\s*tiếng\s*việt/i,            score: 280, label: 'Google Tiếng Việt (Female)' },
+    { pattern: /dao/i,                              score: 260, label: 'Dao (Central Female)' },
+    { pattern: /(trung|central|hue|da\s*nang)/i,    score: 250, label: 'Explicit Central Vietnamese' },
+    { pattern: /linh/i,                             score: 220, label: 'Linh (Apple Female)' },
   ],
 
   /**
    * Miền Bắc — Giọng nữ chuẩn phổ thông, rõ chữ
-   * Ngoc / Hoa (Hà Nội) > Google tiếng Việt > HoaiMy > fallback
-   * Lưu ý: NamMinh là giọng nam → bị loại trong selectVietnameseVoice
    */
   north: [
-    { pattern: /ngoc/i,             score: 260, label: 'Ngoc (North Vietnamese Female)' },
-    { pattern: /hoa\b/i,            score: 250, label: 'Hoa (North Vietnamese Female)' },
-    { pattern: /(north|hà\s*nội|hanoi|bắc)/i, score: 230, label: 'Explicit Northern Vietnamese' },
-    { pattern: /google\s*tiếng\s*việt/i, score: 200, label: 'Google Tiếng Việt (Female)' },
-    { pattern: /hoaimy/i,           score: 180, label: 'Microsoft HoaiMy (Female)' },
-    { pattern: /linh/i,             score: 160, label: 'Linh (Apple Vietnamese Female)' },
-    { pattern: /an\s*online/i,      score: 100, label: 'Microsoft An (Fallback)' },
-    { pattern: /phuong\s*online/i,  score: 100, label: 'Microsoft Phuong (Fallback)' },
+    { pattern: /google\s*tiếng\s*việt/i,            score: 310, label: 'Google Tiếng Việt (Female Natural)' },
+    { pattern: /ngoc/i,                             score: 290, label: 'Ngoc (North Vietnamese Female)' },
+    { pattern: /hoa\b/i,                            score: 280, label: 'Hoa (North Vietnamese Female)' },
+    { pattern: /hoaimy.*online.*natural/i,          score: 270, label: 'Microsoft HoaiMy Online Natural' },
+    { pattern: /(north|hà\s*nội|hanoi|bắc)/i,       score: 260, label: 'Explicit Northern Vietnamese' },
+    { pattern: /linh/i,                             score: 230, label: 'Linh (Apple Female)' },
   ],
+});
+
+// Giọng mặc định: Ưu tiên Miền Tây Nam Bộ ấm áp, thân thiện
+export const AUDIO_CONFIG_VOICE_PRIORITY = DIALECT_VOICE_PRIORITY.south;
+
+export const AUDIO_CONFIG = Object.freeze({
+  lang: 'vi-VN',
+  rate: 0.95,               // Tốc độ chuẩn 0.95x: rõ từng từ, chậm vừa phải, tự nhiên
+  pitch: 1.02,              // Cao độ nữ ấm áp, gần gũi, truyền cảm
+  volume: 1.0,
+  voiceLoadTimeoutMs: 2500,
+
+  // Khoảng nghỉ tự nhiên (Natural Speech Timing)
+  pauseNormalSentenceMs: 120, // 120ms: nhịp thở tự nhiên giữa các câu, liền mạch, không bị đơ giật
+  pauseWarningMs: 240,        // 240ms: khoảng nhấn nhẹ trước lưu ý quan trọng
+  pauseEmergencyMs: 200,      // 200ms: khẩn cấp, dứt khoát
+
+  // Danh sách ưu tiên giọng mặc định (tương thích ngược)
+  voicePriorityKeywords: AUDIO_CONFIG_VOICE_PRIORITY,
+});
+
+/**
+ * Preset tốc độ đọc (Speech Rate Presets)
+ */
+export const SPEECH_RATE_PRESETS = Object.freeze({
+  DEFAULT:   0.95,  // Tốc độ chuẩn yêu cầu: 0.95x — rõ ràng, ân cần, tự nhiên
+  NORMAL:    0.95,  // 0.95x
+  GENTLE:    0.92,  // 0.92x — nhẹ nhàng thư thả
+  SLOW:      0.88,  // 0.88x — khi cần lắng nghe kỹ
+  VERY_SLOW: 0.85,  // 0.85x — cho người già hoặc thị lực kém
 });
 
 export const AUDIO_STATES = Object.freeze({

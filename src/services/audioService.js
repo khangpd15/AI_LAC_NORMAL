@@ -96,7 +96,8 @@ export class AudioService {
 
   /**
    * Chọn giọng tiếng Việt tốt nhất theo danh sách ưu tiên.
-   * Giọng nam (NamMinh, male) bị loại để đảm bảo luôn dùng giọng nữ.
+   * Ưu tiên tuyệt đối: Giọng Nữ ấm áp (Google Tiếng Việt, Microsoft HoaiMy Online Natural, Apple Linh/Mai/Chi).
+   * Loại bỏ giọng Nam (Microsoft An, NamMinh, male).
    *
    * @param {SpeechSynthesisVoice[]} voices
    * @param {string[]|Object[]} priorityKeywords - mảng {pattern, score}
@@ -104,7 +105,7 @@ export class AudioService {
   selectVietnameseVoice(voices = this.voices, priorityKeywords = AUDIO_CONFIG.voicePriorityKeywords) {
     if (!voices || !voices.length) return null;
 
-    // Lọc giọng tiếng Việt
+    // Lọc tất cả giọng tiếng Việt
     const viVoices = voices.filter((v) => {
       const lang = (v.lang || '').toLowerCase().replace('_', '-');
       return lang === 'vi-vn' || lang.startsWith('vi') || /vietnam/i.test(v.name || '');
@@ -124,9 +125,20 @@ export class AudioService {
           }
         }
 
-        // Loại giọng nam (NamMinh, male) trừ khi tên có "nam bộ" (miền nam)
-        if (/(namminh|male|man\b|nam\s*online)/i.test(name) && !/(vietnam|nam\s*bộ)/i.test(name)) {
-          score -= 300;
+        // Tăng ưu tiên cho giọng Online / Natural của Edge/Chrome
+        if (/online.*natural|natural.*online/i.test(name)) {
+          score += 50;
+        }
+
+        // Loại bỏ giọng NAM (Microsoft An trên Windows là giọng nam, NamMinh là giọng nam)
+        const isMale = (
+          /\bmicrosoft\s+an\b/i.test(name) ||
+          /namminh/i.test(name) ||
+          (/\b(male|man)\b/i.test(name) && !/vietnam/i.test(name) && !/nam\s*bộ/i.test(name))
+        );
+
+        if (isMale) {
+          score -= 500;
         }
 
         if (voice.default) score += 10;
@@ -232,15 +244,31 @@ export class AudioService {
       const cleanPart = stripXml(item.raw);
       if (!cleanPart) continue;
 
-      // Split into individual sentences or clauses by sentence-terminating punctuation or ellipsis
-      // Keeps pauses natural and solves Chrome 15-second speech synthesis cutoff bug
-      const rawSentences = cleanPart.split(/(?<=[.!?…])\s+|\n+/).filter(Boolean);
+      // Split into sentences, then merge very short fragments (< 35 chars)
+      // to keep speech smooth, natural, and avoid fragmented robot pauses
+      const rawSentences = cleanPart.split(/(?<=[.!?…])\s+|\n+/).map((s) => s.trim()).filter(Boolean);
+      const mergedSentences = [];
+      let tempBuffer = '';
 
-      for (let i = 0; i < rawSentences.length; i++) {
-        const sentence = rawSentences[i].trim();
+      for (const s of rawSentences) {
+        if (!tempBuffer) {
+          tempBuffer = s;
+        } else if (tempBuffer.length < 35 && !/[!?]/.test(tempBuffer)) {
+          tempBuffer = `${tempBuffer} ${s}`;
+        } else {
+          mergedSentences.push(tempBuffer);
+          tempBuffer = s;
+        }
+      }
+      if (tempBuffer) {
+        mergedSentences.push(tempBuffer);
+      }
+
+      for (let i = 0; i < mergedSentences.length; i++) {
+        const sentence = mergedSentences[i].trim();
         if (!sentence) continue;
 
-        const isLastSentenceInItem = i === rawSentences.length - 1;
+        const isLastSentenceInItem = i === mergedSentences.length - 1;
         let pause = isLastSentenceInItem ? item.pause : AUDIO_CONFIG.pauseNormalSentenceMs;
 
         // Check if next part is an important warning or emergency
@@ -294,15 +322,13 @@ export class AudioService {
     const voice = options.voice ||
       (options.dialect ? this.selectVoiceByDialect(options.dialect) : this.selectedVoice);
 
-    // Tốc độ đọc: options.rate > SPEECH_RATE_PRESETS[options.ratePreset] > mặc định 0.88x
+    // Tốc độ đọc: options.rate > SPEECH_RATE_PRESETS[options.ratePreset] > mặc định 0.95x
     const rate = options.rate ??
       (options.ratePreset ? (SPEECH_RATE_PRESETS[options.ratePreset] ?? AUDIO_CONFIG.rate) : AUDIO_CONFIG.rate);
-    const pitch = options.pitch ?? AUDIO_CONFIG.pitch;   // 1.0
+    const pitch = options.pitch ?? AUDIO_CONFIG.pitch;   // 1.02
     const volume = options.volume ?? AUDIO_CONFIG.volume; // 1.0
 
-    if (options.dialect) {
-      console.info(`[AudioService] Dialect: ${options.dialect} | Rate: ${rate}x | Voice: ${voice?.name ?? 'default'}`);
-    }
+    console.info(`[AudioService] Giọng đọc: "${voice?.name || 'Mặc định'}" | Tốc độ: ${rate}x | Cao độ: ${pitch}`);
 
     const segments = this.parseSpeechSegments(cleanText, options);
     if (!segments.length) return false;
