@@ -802,33 +802,189 @@
   border: 1px solid rgba(245, 158, 11, 0.6);
 }
 
+.hud-question-hint {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin: -4px 0 2px 0;
+  line-height: 1.4;
+}
+
+.btn-option-top-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.option-badge-tag {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tag-correct {
+  background: rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+.tag-insight {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fde68a;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+}
+
 .option-text {
   font-size: 0.94rem;
   font-weight: 700;
   line-height: 1.35;
 }
 
-.hud-answer-feedback {
+/* KHUNG GIẢI THÍCH Y KHOA TƯỜNG TẬN */
+.hud-explanation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  animation: fadeInUpEffect 0.3s ease forwards;
+  backdrop-filter: blur(12px);
+  margin-top: 4px;
+}
+
+.explanation-correct {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.4) 0%, rgba(4, 47, 46, 0.65) 100%);
+  border: 1.5px solid #10b981;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+}
+
+.explanation-insight {
+  background: linear-gradient(135deg, rgba(120, 53, 15, 0.4) 0%, rgba(69, 26, 3, 0.65) 100%);
+  border: 1.5px solid #f59e0b;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2);
+}
+
+.explanation-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.explanation-icon {
+  font-size: 1.7rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.explanation-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.explanation-badge-pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  width: fit-content;
+}
+
+.explanation-correct .explanation-badge-pill {
+  background: rgba(16, 185, 129, 0.25);
+  color: #a7f3d0;
+  border: 1px solid rgba(16, 185, 129, 0.6);
+}
+
+.explanation-insight .explanation-badge-pill {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fde68a;
+  border: 1px solid rgba(245, 158, 11, 0.6);
+}
+
+.explanation-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.4;
+  color: #ffffff;
+  margin: 0;
+}
+
+.explanation-detail {
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.55;
+  color: #e2e8f0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 10px 14px;
+  border-radius: 10px;
+  border-left: 3px solid currentColor;
+}
+
+.explanation-correct .explanation-detail {
+  border-left-color: #10b981;
+}
+
+.explanation-insight .explanation-detail {
+  border-left-color: #f59e0b;
+}
+
+.explanation-footer {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
-  padding: 10px 16px;
-  border-radius: 12px;
-  font-size: 0.88rem;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.btn-replay-explanation {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
   font-weight: 700;
-  animation: fadeInEffect 0.3s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
 }
 
-.feedback-correct {
-  background: rgba(16, 185, 129, 0.2);
-  border: 1.5px solid #10b981;
-  color: #6ee7b7;
+.btn-replay-explanation:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
 }
 
-.feedback-caution {
-  background: rgba(245, 158, 11, 0.2);
-  border: 1.5px solid #f59e0b;
-  color: #fde68a;
+.btn-confirm-understood {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: none;
+  color: #ffffff;
+  padding: 7px 18px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  transition: all 0.2s ease;
+}
+
+.btn-confirm-understood:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.55);
 }
 
 /* --------------------------------------------------------------------------

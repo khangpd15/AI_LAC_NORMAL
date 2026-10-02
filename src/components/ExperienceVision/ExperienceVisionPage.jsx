@@ -17,9 +17,12 @@ function InteractiveCheckQuestion({
   userAnswer,
   onSelectOption,
   onClose,
+  onReplayVoice,
   isVoiceActive,
 }) {
   if (!question) return null;
+
+  const selectedOpt = question.options.find((opt) => opt.id === userAnswer?.optionId);
 
   return (
     <div className="hud-question-card fade-in-up">
@@ -29,7 +32,7 @@ function InteractiveCheckQuestion({
           {isVoiceActive && (
             <span className="speaking-indicator">
               <span className="live-dot-pulse" />
-              AI đang đọc…
+              AI đang đọc giải thích…
             </span>
           )}
           {onClose && (
@@ -46,6 +49,9 @@ function InteractiveCheckQuestion({
       </div>
 
       <h4 className="hud-question-text">{question.text}</h4>
+      <p className="hud-question-hint">
+        💡 Hãy bấm vào từng phương án để lắng nghe bác sĩ giải thích chi tiết cho từng trường hợp:
+      </p>
 
       <div className="hud-options-grid">
         {question.options.map((opt) => {
@@ -58,23 +64,55 @@ function InteractiveCheckQuestion({
               className={`btn-check-option btn-${opt.color} ${isSelected ? 'selected' : ''}`}
               onClick={() => onSelectOption(opt)}
             >
-              <span className="option-color-chip">
-                {isGreen ? '🟢 NÚT MÀU XANH LÁ' : '🟠 NÚT MÀU CAM'}
-              </span>
+              <div className="btn-option-top-row">
+                <span className="option-color-chip">
+                  {isGreen ? '🟢 LỰA CHỌN' : '🟠 LỰA CHỌN'}
+                </span>
+                {opt.badge && (
+                  <span className={`option-badge-tag ${isGreen ? 'tag-correct' : 'tag-insight'}`}>
+                    {opt.badge}
+                  </span>
+                )}
+              </div>
               <span className="option-text">{opt.text}</span>
             </button>
           );
         })}
       </div>
 
-      {userAnswer && (
-        <div className={`hud-answer-feedback ${userAnswer.isCorrect ? 'feedback-correct' : 'feedback-caution'}`}>
-          <span className="feedback-icon">{userAnswer.isCorrect ? '🎉' : '💡'}</span>
-          <span className="feedback-text">
-            {userAnswer.isCorrect
-              ? 'Rất chính xác! Câu hỏi sẽ tự ẩn ngay để ba mẹ thoải mái trải nghiệm camera.'
-              : 'Ghi nhớ y khoa: Ba mẹ hãy bấm nút màu xanh ở góc dưới để tiếp tục.'}
-          </span>
+      {/* KHUNG GIẢI THÍCH Y KHOA TƯỜNG TẬN RIÊNG BIỆT CHO TỪNG LỰA CHỌN */}
+      {selectedOpt && (
+        <div className={`hud-explanation-card ${selectedOpt.isCorrect ? 'explanation-correct' : 'explanation-insight'} fade-in-up`}>
+          <div className="explanation-header">
+            <span className="explanation-icon">{selectedOpt.isCorrect ? '🩺' : '💡'}</span>
+            <div className="explanation-meta">
+              <span className="explanation-badge-pill">
+                {selectedOpt.isCorrect ? 'Góc nhìn Y khoa chuẩn xác' : 'Hiểu lầm thường gặp ở phụ huynh'}
+              </span>
+              <h5 className="explanation-title">{selectedOpt.explanationTitle}</h5>
+            </div>
+          </div>
+
+          <p className="explanation-detail">{selectedOpt.explanationDetail}</p>
+
+          <div className="explanation-footer">
+            <button
+              type="button"
+              className="btn-replay-explanation"
+              onClick={() => onReplayVoice?.(selectedOpt.feedbackVoice)}
+              title="Nghe lại giọng đọc giải thích"
+            >
+              🔊 Nghe lại giải thích
+            </button>
+            <button
+              type="button"
+              className="btn-confirm-understood"
+              onClick={onClose}
+              title="Đã hiểu rõ lời giải thích, tiếp tục trải nghiệm"
+            >
+              ✓ Tôi đã hiểu — Tiếp tục camera
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -203,13 +241,6 @@ export default function ExperienceVisionPage({
     // AI reads feedback voice
     if (option.feedbackVoice) {
       setSpeakingText(option.feedbackVoice);
-    }
-
-    // Khi người dùng chọn đáp án đúng: tự động ẩn câu hỏi sau 2 giây để trả lại không gian camera cho trải nghiệm
-    if (isCorrect) {
-      setTimeout(() => {
-        setShowQuestion(false);
-      }, 2000);
     }
   }, []);
 
@@ -417,6 +448,7 @@ export default function ExperienceVisionPage({
                 userAnswer={userAnswers[activeStage.id]}
                 onSelectOption={handleSelectOption}
                 onClose={() => setShowQuestion(false)}
+                onReplayVoice={(voice) => setSpeakingText(voice)}
                 isVoiceActive={Boolean(speakingText)}
               />
             )}
