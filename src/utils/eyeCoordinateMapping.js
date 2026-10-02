@@ -119,13 +119,13 @@ export function getCoverInstruction(coveredEye) {
       title: 'Che mắt trái',
       text: 'Dùng tay che kín mắt trái của bạn.',
       subtext: 'Mắt phải tiếp tục nhìn thẳng vào chấm tròn đỏ ở giữa.',
-      speechText: 'Dạ, mình lấy tay che mắt trái lại nghen.',
+      speechText: 'Che mắt trái nghen.',
     };
   }
   return {
     title: 'Che mắt phải',
     text: 'Dùng tay che kín mắt phải của bạn.',
     subtext: 'Mắt trái tiếp tục nhìn thẳng vào chấm tròn đỏ ở giữa.',
-    speechText: 'Dạ, mình đổi bên che mắt phải lại nghen.',
+    speechText: 'Che mắt phải nghen.',
   };
 }

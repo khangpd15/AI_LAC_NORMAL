@@ -77,22 +77,34 @@ function CoverTestSummaryRow({ coverTest }) {
 
 function BrockStringSummarySection({ brockString }) {
   const targets = brockString?.targets || {};
+  const hasValidTargets = Object.values(targets).some((t) => t?.dataQuality?.isValid === true);
 
   return (
     <div className="final-screening-section">
-      <h3 className="final-screening-section-title">Brock String</h3>
-      {BROCK_TARGETS.map(({ key, label }) => {
-        const t = targets[key];
-        const isTargetValid = t?.dataQuality?.isValid === true;
-        return (
-          <div className="final-screening-info-row" key={key}>
-            <span>{label}</span>
-            <strong className={isTargetValid ? 'text-valid' : 'text-inconclusive'}>
-              {isTargetValid ? 'VALID' : 'Chưa đủ dữ liệu'}
-            </strong>
-          </div>
-        );
-      })}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <h3 className="final-screening-section-title" style={{ margin: 0 }}>Brock String</h3>
+        <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontSize: '0.74rem', fontWeight: 800, padding: '2px 8px', borderRadius: 999, border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+          ⚙️ Đang cải tiến
+        </span>
+      </div>
+      {hasValidTargets ? (
+        BROCK_TARGETS.map(({ key, label }) => {
+          const t = targets[key];
+          const isTargetValid = t?.dataQuality?.isValid === true;
+          return (
+            <div className="final-screening-info-row" key={key}>
+              <span>{label}</span>
+              <strong className={isTargetValid ? 'text-valid' : 'text-inconclusive'}>
+                {isTargetValid ? 'VALID' : 'Chưa đủ dữ liệu'}
+              </strong>
+            </div>
+          );
+        })
+      ) : (
+        <p style={{ fontSize: '0.84rem', color: '#94a3b8', margin: '4px 0 0', lineHeight: 1.45 }}>
+          Tính năng đo lường dây Brock String đang được bảo trì nâng cấp để tối ưu hóa độ chính xác y khoa.
+        </p>
+      )}
     </div>
   );
 }

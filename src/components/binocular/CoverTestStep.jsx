@@ -570,7 +570,7 @@ export default function CoverTestStep({
       text: 'Ngồi thẳng và nhìn vào chấm tròn ở giữa.',
       subtext: 'Chu kỳ 1 sẽ bắt đầu trong giây lát...',
       durationMs: 3000,
-      speechText: 'Dạ, mình chuẩn bị bắt đầu nghen. Cô chú nhìn thẳng vào chấm tròn ở giữa nha.',
+      speechText: 'Chuẩn bị, nhìn vào chấm tròn nghen.',
       cycleNum: 1,
     });
 
@@ -593,7 +593,7 @@ export default function CoverTestStep({
         coverEye: null,
         trackEye: null,
         durationMs: 4000,
-        speechText: 'Dạ, cô chú nhìn vào chấm tròn ở giữa nghen.',
+        speechText: c === 1 ? null : 'Nhìn vào chấm tròn nghen.',
         cycleNum: c,
       });
 
@@ -615,7 +615,7 @@ export default function CoverTestStep({
         setCompletedCyclesList([...accumulatedCycles]);
         transitionToState('CYCLE_COMPLETE', c);
         if (c < SCREENING_CONFIG.CYCLES) {
-          await executePhase({ state: 'NEXT_CYCLE', title: 'Chuẩn bị lần tiếp theo', text: 'Dữ liệu chưa ổn định. Hãy giữ đầu yên và thử chu kỳ tiếp theo.', subtext: `Chu kỳ ${c + 1} sẽ bắt đầu sau ít giây.`, durationMs: 2500, speechText: 'Dạ, mình giữ đầu yên nghen. Chuẩn bị cho lần tiếp theo nha.', cycleNum: c });
+          await executePhase({ state: 'NEXT_CYCLE', title: 'Chuẩn bị lần tiếp theo', text: 'Dữ liệu chưa ổn định. Hãy giữ đầu yên và thử chu kỳ tiếp theo.', subtext: `Chu kỳ ${c + 1} sẽ bắt đầu sau ít giây.`, durationMs: 2500, speechText: 'Giữ đầu yên, chuẩn bị lần tiếp theo nghen.', cycleNum: c });
         }
         continue;
       }
@@ -643,7 +643,7 @@ export default function CoverTestStep({
 
       if (!runIsCurrent()) return;
 
-      // Phase 3a: Brief Uncover notice (0.8s)
+      // Phase 3a: Brief Uncover notice with Blinking pause (1.8s)
       // Protocol-Triggered Image Capture: LEFT eye crop
       captureEyeRegionCrop(videoRef.current, latestFeaturesRef?.current?.raw?.landmarks || landmarks, 'LEFT').then((crop) => {
         if (crop?.blob) {
@@ -654,13 +654,13 @@ export default function CoverTestStep({
 
       await executePhase({
         state: 'UNCOVER',
-        title: 'Bỏ che mắt',
-        text: 'Bỏ tay ra khỏi mắt trái.',
-        subtext: 'Tiếp tục nhìn vào chấm tròn.',
+        title: 'Bỏ tay • Chớp mắt',
+        text: 'Bỏ tay ra, chớp mắt nhẹ nhàng và nhìn vào chấm đỏ.',
+        subtext: 'Khoảng nghỉ chớp mắt để mắt nghỉ ngơi...',
         coverEye: null,
         trackEye: 'right',
-        durationMs: 800,
-        speechText: 'Dạ, mình bỏ tay ra và tiếp tục nhìn thẳng nha.',
+        durationMs: 1800,
+        speechText: 'Bỏ tay, chớp mắt nghen.',
         cycleNum: c,
       });
 
@@ -697,7 +697,7 @@ export default function CoverTestStep({
 
       if (!runIsCurrent()) return;
 
-      // Phase 5a: Brief Uncover notice (0.8s)
+      // Phase 5a: Brief Uncover notice with Blinking pause (1.8s)
       // Protocol-Triggered Image Capture: RIGHT eye crop
       captureEyeRegionCrop(videoRef.current, latestFeaturesRef?.current?.raw?.landmarks || landmarks, 'RIGHT').then((crop) => {
         if (crop?.blob) {
@@ -708,13 +708,13 @@ export default function CoverTestStep({
 
       await executePhase({
         state: 'UNCOVER',
-        title: 'Bỏ che mắt',
-        text: 'Bỏ tay ra khỏi mắt phải.',
-        subtext: 'Tiếp tục nhìn vào chấm tròn.',
+        title: 'Bỏ tay • Chớp mắt',
+        text: 'Bỏ tay ra, chớp mắt nhẹ nhàng và nhìn vào chấm đỏ.',
+        subtext: 'Khoảng nghỉ chớp mắt để mắt nghỉ ngơi...',
         coverEye: null,
         trackEye: 'left',
-        durationMs: 800,
-        speechText: 'Dạ, mình bỏ tay ra và tiếp tục nhìn thẳng nha.',
+        durationMs: 1800,
+        speechText: 'Bỏ tay, chớp mắt nghen.',
         cycleNum: c,
       });
 
@@ -798,7 +798,7 @@ export default function CoverTestStep({
       setCoverSummary(summaryPayload);
       transitionToState('FINISHED', 3);
       if (speak) {
-        speak('Dạ, bài kiểm tra che mắt đã hoàn tất rồi nghen cô chú.');
+        speak('Hoàn tất bài kiểm tra che mắt nghen.');
       }
 
       // Automatically persist raw sampling dataset to backend storage.
@@ -1211,7 +1211,7 @@ export default function CoverTestStep({
               style={{ flex: 2 }}
               onClick={() => onComplete?.(coverSummary)}
             >
-              SANG BROCK STRING ➜
+              XEM KẾT QUẢ SÀNG LỌC ➜
             </button>
           </div>
         </div>

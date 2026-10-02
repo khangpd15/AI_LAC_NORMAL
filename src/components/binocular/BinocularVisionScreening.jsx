@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ScreeningProgress from './ScreeningProgress';
 import PositionCheck from './PositionCheck';
 import CoverTestStep from './CoverTestStep';
-import BrockStringStep from './BrockStringStep';
 import ScreeningSummary from './ScreeningSummary';
 import { useCamera } from '../../hooks/useCamera.js';
 import { useFaceMesh } from '../../hooks/useFaceMesh.js';
@@ -16,9 +15,7 @@ import {
 import {
   createBinocularSession,
   updateCoverPositionCheckData,
-  updateBrockPositionCheckData,
   updateCoverTestData,
-  updateBrockStringData,
   generateScreeningSummary,
   logScreeningEvent,
 } from '../../services/binocularScreeningService.js';
@@ -129,12 +126,9 @@ export default function BinocularVisionScreening() {
     });
 
     setCurrentStep('COVER');
-    if (speak) {
-      speak('Dạ, vị trí đã sẵn sàng nghen. Mình chuyển sang bài kiểm tra che mắt nha cô chú.');
-    }
-  }, [session, positionReport, speak]);
+  }, [session, positionReport]);
 
-  // Handler: Complete Step 2 (Cover Test) and proceed to Step 3 (Brock String Position Check)
+  // Handler: Complete Step 2 (Cover Test) -> Brock String is temporarily closed for improvement -> Go to Summary
   const handleCoverTestComplete = useCallback(
     (coverResult) => {
       if (!session) return;
@@ -144,52 +138,8 @@ export default function BinocularVisionScreening() {
         validCycles: coverResult.validCycles,
       });
 
-      // Clear Cover Test distance state and switch tracker to Brock String target (20–25 cm)
-      distanceTrackerRef.current.reset('BROCK_STRING');
-      setPositionReport(null);
-      setCurrentStep('BROCK_POSITION');
-
-      if (speak) {
-        speak('Dạ, bài che mắt đã xong rồi nghen. Bây giờ cô chú ngồi gần lại một chút để kiểm tra Brock String nha.');
-      }
-    },
-    [session, speak]
-  );
-
-  // Handler: Proceed from Brock String Position Check to Brock String
-  const handleBrockPositionProceed = useCallback(() => {
-    if (!session || !positionReport || positionReport.status !== 'READY') return;
-
-    updateBrockPositionCheckData(session.sessionId, positionReport);
-    logScreeningEvent(session.sessionId, SCREENING_EVENTS.BROCK_STRING_START, {
-      estimatedDistanceCm: positionReport.estimatedDistanceCm,
-      stableDistanceCm: positionReport.stableDistanceCm,
-    });
-
-    setCurrentStep('BROCK');
-    if (speak) {
-      speak('Dạ, vị trí rất tốt rồi nghen. Mình bắt đầu bài kiểm tra nhìn chấm tròn nha cô chú.');
-    }
-  }, [session, positionReport, speak]);
-
-  const handleCoverImageCaptured = useCallback((artifact) => {
-    if (session) setScreeningImage(session.sampleId, 'cover', artifact);
-  }, [session]);
-
-  const handleBrockImageCaptured = useCallback((artifact) => {
-    if (session) setScreeningImage(session.sampleId, 'brock', artifact);
-  }, [session]);
-
-  // Handler: Complete Step 4 (Brock String) and proceed to Step 5 (Summary)
-  const handleBrockStringComplete = useCallback(
-    (brockResult) => {
-      if (!session) return;
-
-      updateBrockStringData(session.sessionId, brockResult);
-
       const aiSignal = smoothedPrediction
         ? {
-            // BUG-02 FIX: correct field names from useStrabismusAI hook
             normalScore: smoothedPrediction.normalScore,
             strabismusScore: smoothedPrediction.strabismusScore,
             confidence: smoothedPrediction.confidence,
@@ -200,13 +150,13 @@ export default function BinocularVisionScreening() {
       finalizeScreeningSample(finalSession);
       setSession({ ...finalSession });
       setCurrentStep('SUMMARY');
-
-      if (speak) {
-        speak('Dạ, đã hoàn tất toàn bộ quy trình sàng lọc rồi nghen cô chú. Kết quả đang hiển thị trên màn hình nha.');
-      }
     },
-    [session, smoothedPrediction, speak]
+    [session, smoothedPrediction]
   );
+
+  const handleCoverImageCaptured = useCallback((artifact) => {
+    if (session) setScreeningImage(session.sampleId, 'cover', artifact);
+  }, [session]);
 
   // Handler: Restart entire screening flow
   const handleRestart = useCallback(() => {
@@ -273,39 +223,32 @@ export default function BinocularVisionScreening() {
           />
         )}
 
-        {currentStep === 'BROCK_POSITION' && (
-          <PositionCheck
-            testType="BROCK_STRING"
-            videoRef={videoRef}
-            stream={stream}
-            landmarks={rawLandmarks}
-            features={features}
-            positionReport={positionReport}
-            onProceed={handleBrockPositionProceed}
-            onRetry={handlePositionRetry}
-            isActive={isActive}
-            isLoading={isCamLoading}
-            error={camError}
-            onVideoReady={initCamera}
-            speak={speak}
-            isVoiceEnabled={isVoiceEnabled}
-          />
-        )}
-
-        {currentStep === 'BROCK' && (
-          <BrockStringStep
-            videoRef={videoRef}
-            stream={stream}
-            landmarks={rawLandmarks}
-            quality={quality}
-            positionReport={positionReport}
-            onImageCaptured={handleBrockImageCaptured}
-            onComplete={handleBrockStringComplete}
-            speak={speak}
-            isVoiceEnabled={isVoiceEnabled}
-            toggleSound={toggleSound}
-            onVideoReady={initCamera}
-          />
+        {(currentStep === 'BROCK_POSITION' || currentStep === 'BROCK') && (
+          <div className="card stage-card-main" style={{ maxWidth: 640, margin: '40px auto', textAlign: 'center', padding: '36px 24px', background: 'var(--bg-surface, #0f172a)', borderRadius: 20, border: '1.5px solid rgba(245, 158, 11, 0.4)' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 12 }}>⚙️</div>
+            <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 800, padding: '4px 14px', borderRadius: 999 }}>
+              TÍNH NĂNG ĐANG CẢI TIẾN
+            </span>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '16px 0 10px', color: '#ffffff' }}>
+              Brock String đang được nâng cấp
+            </h2>
+            <p style={{ color: '#94a3b8', fontSize: '0.94rem', lineHeight: 1.55, marginBottom: 26 }}>
+              Hệ thống đang bảo trì và tinh chỉnh thuật toán mô phỏng 3D dây Brock String để đạt tiêu chuẩn y khoa cao nhất. Quý phụ huynh vui lòng bấm nút bên dưới để xem kết quả kiểm tra Che mắt (Cover Test).
+            </p>
+            <button
+              type="button"
+              className="btn btn-primary btn-large"
+              style={{ width: '100%', maxWidth: 360, margin: '0 auto' }}
+              onClick={() => {
+                const finalSession = generateScreeningSummary(session.sessionId, null);
+                finalizeScreeningSample(finalSession);
+                setSession({ ...finalSession });
+                setCurrentStep('SUMMARY');
+              }}
+            >
+              Xem kết quả sàng lọc Cover Test ➜
+            </button>
+          </div>
         )}
 
         {currentStep === 'SUMMARY' && (

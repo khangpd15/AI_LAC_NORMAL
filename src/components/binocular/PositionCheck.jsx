@@ -43,15 +43,15 @@ export default function PositionCheck({
   React.useEffect(() => {
     if (isVoiceEnabled && speak && !spokenIntroRef.current) {
       spokenIntroRef.current = true;
-      speak(`Dạ, cô chú ${config.instruction.toLowerCase()} nghen. Mình giữ đầu thẳng và nhìn vào camera nha.`);
+      speak('Ngồi cách camera ba mươi đến bốn mươi xăng-ti-mét, giữ đầu thẳng nghen.');
     }
-  }, [isVoiceEnabled, speak, config.instruction]);
+  }, [isVoiceEnabled, speak]);
 
   const spokenReadyRef = React.useRef(false);
   React.useEffect(() => {
     if (isReady && isVoiceEnabled && speak && !spokenReadyRef.current) {
       spokenReadyRef.current = true;
-      speak('Dạ, vị trí đã rất tốt rồi nghen. Cô chú bấm nút bắt đầu nha.');
+      speak('Vị trí tốt, bấm bắt đầu nghen.');
     }
   }, [isReady, isVoiceEnabled, speak]);
 
