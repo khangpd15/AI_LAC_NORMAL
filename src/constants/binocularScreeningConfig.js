@@ -140,14 +140,14 @@ export const GAZE_DIRECTIONS_CONFIG = [
     arrowHint: '↑ Nhìn lên trên',
   },
   {
-    id: 'down',
-    direction: 'down',
-    name: 'DOWN',
-    label: 'XUỐNG DƯỚI',
+    id: 'straight',
+    direction: 'straight',
+    name: 'STRAIGHT',
+    label: 'THẲNG',
     stepNumber: '4/4',
-    voiceText: 'Nhìn thẳng xuống dưới nghen.',
-    targetPosition: { bottom: '45px', left: '50%', transform: 'translateX(-50%)' },
-    arrowHint: '↓ Nhìn xuống dưới',
+    voiceText: 'Nhìn thẳng vào giữa màn hình nghen.',
+    targetPosition: { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
+    arrowHint: '⦿ Nhìn thẳng vào giữa',
   },
 ];
 

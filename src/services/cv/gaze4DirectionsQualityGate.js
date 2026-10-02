@@ -4,7 +4,7 @@
  * Evaluates real-time frame quality, anatomical landmark visibility,
  * vector gaze orientation, and temporal fixation stability (1.0–1.5s)
  * before triggering automatic capture for the 4 gaze directions:
- * LEFT, RIGHT, UP, DOWN.
+ * LEFT, RIGHT, UP, STRAIGHT.
  */
 
 import { LANDMARKS } from '../../constants/screeningConfig.js';
@@ -54,7 +54,7 @@ export class Gaze4DirectionsQualityGate {
    * 
    * @param {Object} params
    * @param {Array<Object>} params.landmarks - 468/478 MediaPipe face landmarks
-   * @param {string} params.targetDirection - 'left' | 'right' | 'up' | 'down'
+   * @param {string} params.targetDirection - 'left' | 'right' | 'up' | 'straight' | 'down'
    * @param {number|null} params.distanceCm - Current estimated distance in cm
    * @param {number} [params.timestampMs=performance.now()]
    * @returns {{
@@ -229,8 +229,14 @@ export class Gaze4DirectionsQualityGate {
         isDirectionCorrect = meanDy < -(thresh * 0.85);
         directionHint = 'Nhìn thẳng lên trên nghen.';
         break;
+      case 'straight':
+      case 'center':
+        // Looking STRAIGHT: both meanDx and meanDy stay near center with minimal deviation
+        isDirectionCorrect = Math.abs(meanDx) <= (thresh * 0.85) && Math.abs(meanDy) <= (thresh * 0.90);
+        directionHint = 'Nhìn thẳng vào giữa màn hình nghen.';
+        break;
       case 'down':
-        // Looking DOWN: meanDy > +0.055
+        // Looking DOWN: meanDy > +0.055 (Fallback)
         isDirectionCorrect = meanDy > (thresh * 1.1);
         directionHint = 'Nhìn thẳng xuống dưới nghen.';
         break;

@@ -115,7 +115,7 @@ function Gaze4DirectionsSummarySection({ gazeTracking }) {
     { key: 'left', label: 'Trái', icon: '←' },
     { key: 'right', label: 'Phải', icon: '→' },
     { key: 'up', label: 'Lên', icon: '↑' },
-    { key: 'down', label: 'Xuống', icon: '↓' },
+    { key: 'straight', label: 'Thẳng', icon: '⦿', fallbackKey: 'down' },
   ];
 
   const totalCaptured = Object.values(captures).filter((c) => !!c?.image).length;
@@ -133,8 +133,8 @@ function Gaze4DirectionsSummarySection({ gazeTracking }) {
       </p>
 
       <div className="gaze-photos-grid">
-        {directions.map(({ key, label, icon }) => {
-          const cap = captures[key];
+        {directions.map(({ key, label, icon, fallbackKey }) => {
+          const cap = captures[key] || (fallbackKey ? captures[fallbackKey] : null);
           return (
             <div key={key} className="gaze-photo-card">
               <div className="gaze-photo-badge">
@@ -306,9 +306,9 @@ function TechnicalDetails({ coverTest, brockString, quality, gazeTracking }) {
                   { key: 'left', label: 'Trái (Left)' },
                   { key: 'right', label: 'Phải (Right)' },
                   { key: 'up', label: 'Lên (Up)' },
-                  { key: 'down', label: 'Xuống (Down)' },
-                ].map(({ key, label }) => {
-                  const cap = gazeTracking?.captures?.[key];
+                  { key: 'straight', label: 'Thẳng (Straight)', fallbackKey: 'down' },
+                ].map(({ key, label, fallbackKey }) => {
+                  const cap = gazeTracking?.captures?.[key] || (fallbackKey ? gazeTracking?.captures?.[fallbackKey] : null);
                   return (
                     <tr key={key}>
                       <td>{label}</td>

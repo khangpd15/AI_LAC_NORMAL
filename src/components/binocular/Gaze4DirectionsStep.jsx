@@ -9,7 +9,7 @@ import AudioButton from '../audio/AudioButton';
 
 /**
  * Gaze4DirectionsStep Component
- * Captures 4 gaze directions (LEFT, RIGHT, UP, DOWN) with fixed non-moving targets
+ * Captures 4 gaze directions (LEFT, RIGHT, UP, STRAIGHT) with fixed non-moving targets
  * at close distance (15–20 cm) prior to Cover Test.
  * 
  * Auto-captures with a distinct rhythm:
@@ -29,7 +29,7 @@ export default function Gaze4DirectionsStep({
   toggleSound,
   onVideoReady,
 }) {
-  // Current direction index: 0 (LEFT), 1 (RIGHT), 2 (UP), 3 (DOWN)
+  // Current direction index: 0 (LEFT), 1 (RIGHT), 2 (UP), 3 (STRAIGHT)
   const [directionIndex, setDirectionIndex] = useState(0);
 
   // Status state: 'OBSERVING' | 'CAPTURING' | 'SUCCESS_TRANSITION' | 'COMPLETED'
@@ -93,7 +93,10 @@ export default function Gaze4DirectionsStep({
     if (stepStatus !== 'OBSERVING') return;
 
     if (isOrienting) {
-      setFeedbackMessage(`Đang hướng dẫn... Cô chú nhìn thẳng vào mục tiêu bên ${activeConfig.label.toLowerCase()} nghen.`);
+      const targetHint = activeConfig.id === 'straight' || activeConfig.id === 'center'
+        ? 'ở giữa màn hình'
+        : `bên ${activeConfig.label.toLowerCase()}`;
+      setFeedbackMessage(`Đang hướng dẫn... Cô chú nhìn thẳng vào mục tiêu ${targetHint} nghen.`);
       return;
     }
 
@@ -357,7 +360,7 @@ export default function Gaze4DirectionsStep({
                   <img src={cap.image} alt={dir.label} className="gaze-strip-img" />
                 ) : (
                   <span className="gaze-strip-placeholder">
-                    {dir.id === 'left' ? '←' : dir.id === 'right' ? '→' : dir.id === 'up' ? '↑' : '↓'}
+                    {dir.id === 'left' ? '←' : dir.id === 'right' ? '→' : dir.id === 'up' ? '↑' : '⦿'}
                   </span>
                 )}
               </div>
