@@ -418,26 +418,42 @@ export class AudioService {
       }
 
       const encoded = encodeURIComponent(clean);
-      const primaryUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=tw-ob`;
-      const fallbackUrl = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=vi&q=${encoded}`;
+      const urls = [
+        // Priority 1: Same-origin API endpoint (/api/tts) hosted on Vercel or Vite dev server
+        `/api/tts?text=${encoded}`,
+        // Priority 2: Direct Google Translate TTS with no-referrer
+        `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=tw-ob`,
+        // Priority 3: Google translate API endpoint
+        `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=vi&q=${encoded}`,
+      ];
 
-      const playWithUrl = (url, isFallback = false) => {
-        if (this.requestId !== requestId) {
+      let urlIndex = 0;
+      let resolved = false;
+
+      const finish = () => {
+        if (!resolved) {
+          resolved = true;
+          this.currentAudio = null;
           resolve();
+        }
+      };
+
+      const tryNextUrl = () => {
+        if (this.requestId !== requestId) {
+          finish();
           return;
         }
 
-        let resolved = false;
-        const finish = () => {
-          if (!resolved) {
-            resolved = true;
-            this.currentAudio = null;
-            resolve();
-          }
-        };
+        if (urlIndex >= urls.length) {
+          console.warn('[AudioService] All TTS stream URLs exhausted for chunk:', clean.slice(0, 30));
+          finish();
+          return;
+        }
 
+        const url = urls[urlIndex++];
         const audio = new Audio();
         this.currentAudio = audio;
+        audio.referrerPolicy = 'no-referrer';
         audio.playbackRate = Math.max(0.75, Math.min(1.25, rate));
         audio.volume = Math.max(0, Math.min(1, volume));
 
@@ -455,29 +471,22 @@ export class AudioService {
           finish();
         };
 
-        audio.onerror = () => {
-          if (!isFallback && this.requestId === requestId) {
-            playWithUrl(fallbackUrl, true);
-          } else {
-            finish();
-          }
+        audio.onerror = (e) => {
+          console.warn(`[AudioService] Audio stream URL failed (${url}):`, e);
+          tryNextUrl();
         };
 
         audio.src = url;
         const playPromise = audio.play();
         if (playPromise !== undefined) {
           playPromise.catch((err) => {
-            console.warn('[AudioService] HTML5 Audio play notice:', err?.message || err);
-            if (!isFallback && this.requestId === requestId) {
-              playWithUrl(fallbackUrl, true);
-            } else {
-              finish();
-            }
+            console.warn(`[AudioService] Audio play error for URL (${url}):`, err?.message || err);
+            tryNextUrl();
           });
         }
       };
 
-      playWithUrl(primaryUrl, false);
+      tryNextUrl();
     });
   }
 
