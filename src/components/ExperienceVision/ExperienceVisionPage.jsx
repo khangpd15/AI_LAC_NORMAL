@@ -49,9 +49,6 @@ function InteractiveCheckQuestion({
       </div>
 
       <h4 className="hud-question-text">{question.text}</h4>
-      <p className="hud-question-hint">
-        💡 Hãy bấm vào từng phương án để lắng nghe bác sĩ giải thích chi tiết cho từng trường hợp:
-      </p>
 
       <div className="hud-options-grid">
         {question.options.map((opt) => {
@@ -64,16 +61,9 @@ function InteractiveCheckQuestion({
               className={`btn-check-option btn-${opt.color} ${isSelected ? 'selected' : ''}`}
               onClick={() => onSelectOption(opt)}
             >
-              <div className="btn-option-top-row">
-                <span className="option-color-chip">
-                  {isGreen ? '🟢 LỰA CHỌN' : '🟠 LỰA CHỌN'}
-                </span>
-                {opt.badge && (
-                  <span className={`option-badge-tag ${isGreen ? 'tag-correct' : 'tag-insight'}`}>
-                    {opt.badge}
-                  </span>
-                )}
-              </div>
+              <span className="option-color-chip">
+                {isGreen ? '🟢 LỰA CHỌN' : '🟠 LỰA CHỌN'}
+              </span>
               <span className="option-text">{opt.text}</span>
             </button>
           );
@@ -87,7 +77,7 @@ function InteractiveCheckQuestion({
             <span className="explanation-icon">{selectedOpt.isCorrect ? '🩺' : '💡'}</span>
             <div className="explanation-meta">
               <span className="explanation-badge-pill">
-                {selectedOpt.isCorrect ? 'Góc nhìn Y khoa chuẩn xác' : 'Hiểu lầm thường gặp ở phụ huynh'}
+                {selectedOpt.isCorrect ? 'Góc nhìn Y khoa chuẩn xác' : 'Bác sĩ nhãn khoa chia sẻ thực tế'}
               </span>
               <h5 className="explanation-title">{selectedOpt.explanationTitle}</h5>
             </div>
@@ -100,17 +90,17 @@ function InteractiveCheckQuestion({
               type="button"
               className="btn-replay-explanation"
               onClick={() => onReplayVoice?.(selectedOpt.feedbackVoice)}
-              title="Nghe lại giọng đọc giải thích"
+              title="Nghe lại giọng đọc giải thích của bác sĩ"
             >
-              🔊 Nghe lại giải thích
+              🔊 Nghe lại giọng đọc
             </button>
             <button
               type="button"
               className="btn-confirm-understood"
               onClick={onClose}
-              title="Đã hiểu rõ lời giải thích, tiếp tục trải nghiệm"
+              title="Đóng câu hỏi để trải nghiệm camera"
             >
-              ✓ Tôi đã hiểu — Tiếp tục camera
+              ✕ Thu gọn câu hỏi
             </button>
           </div>
         </div>
