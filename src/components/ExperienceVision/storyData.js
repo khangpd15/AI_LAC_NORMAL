@@ -126,7 +126,8 @@ export const EXPERIENCE_STAGES = [
     subtitle: 'Mô phỏng góc nhìn mắt nhược thị',
     effect: 'severeAmblyopia',
     promptText: 'Hãy dùng tay che mắt khỏe (Trái hoặc Phải) để cảm nhận góc nhìn của mắt bị ảnh hưởng.',
-    voiceText: 'Bây giờ, hãy tưởng tượng một bên mắt là mắt khỏe, còn bên kia là mắt bị nhược thị nặng. Hãy dùng tay che mắt khỏe của bạn lại — bạn có thể che mắt trái hoặc mắt phải. Khi mắt khỏe bị che, bạn sẽ cảm nhận hình ảnh phía trước trở nên rất tối, mờ và khó nhận biết chi tiết. Đây là hiệu ứng mô phỏng giáo dục để ba mẹ thấu hiểu cảm giác của con. Sau khi che mắt trải nghiệm xong, ba mẹ hãy bấm nút Tiếp theo màu xanh ở góc dưới.',
+    voiceText: 'Bây giờ, ba mẹ hãy dùng một bàn tay che mắt khỏe của mình lại — có thể che mắt trái hoặc mắt phải — để thử trải nghiệm góc nhìn của mắt bị nhược thị nghen.',
+    coverVoiceText: 'Dạ, khi che mắt khỏe lại, ba mẹ có thể thấy hình ảnh qua mắt nhược thị trở nên rất tối, mờ và mất nét. Não bộ của trẻ nhỏ bị nhược thị phải nhìn thế giới mờ ảo như thế này suốt mỗi ngày. Trải nghiệm xong, ba mẹ hãy bấm nút Tiếp theo màu xanh ở góc dưới nghen.',
     question: null,
   },
   {

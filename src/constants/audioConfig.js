@@ -65,16 +65,15 @@ export const AUDIO_CONFIG_VOICE_PRIORITY = DIALECT_VOICE_PRIORITY.south;
 
 export const AUDIO_CONFIG = Object.freeze({
   lang: 'vi-VN',
-  rate: 0.95,               // Tốc độ chuẩn 0.95x: rõ từng từ, chậm vừa phải, tự nhiên
+  rate: 1.02,               // Tốc độ chuẩn 1.02x: lưu loát, dứt khoát, tự nhiên, không bị chậm chạp
   pitch: 1.02,              // Cao độ nữ ấm áp, gần gũi, truyền cảm
   volume: 1.0,
   voiceLoadTimeoutMs: 2500,
 
   // Khoảng nghỉ tự nhiên (Natural Speech Timing)
-  pauseNormalSentenceMs: 120, // 120ms: nhịp thở tự nhiên giữa các câu, liền mạch, không bị đơ giật
-  pauseWarningMs: 240,        // 240ms: khoảng nhấn nhẹ trước lưu ý quan trọng
-  pauseEmergencyMs: 200,      // 200ms: khẩn cấp, dứt khoát
-
+  pauseNormalSentenceMs: 40,  // 40ms: chuyển tiếp câu nhanh gọn, tức thì, không bị khựng đợi lâu
+  pauseWarningMs: 100,        // 100ms: khoảng nhấn nhẹ trước lưu ý quan trọng
+  pauseEmergencyMs: 80,       // 80ms: dứt khoát
   // Danh sách ưu tiên giọng mặc định (tương thích ngược)
   voicePriorityKeywords: AUDIO_CONFIG_VOICE_PRIORITY,
 });
@@ -83,11 +82,11 @@ export const AUDIO_CONFIG = Object.freeze({
  * Preset tốc độ đọc (Speech Rate Presets)
  */
 export const SPEECH_RATE_PRESETS = Object.freeze({
-  DEFAULT:   0.95,  // Tốc độ chuẩn yêu cầu: 0.95x — rõ ràng, ân cần, tự nhiên
-  NORMAL:    0.95,  // 0.95x
-  GENTLE:    0.92,  // 0.92x — nhẹ nhàng thư thả
-  SLOW:      0.88,  // 0.88x — khi cần lắng nghe kỹ
-  VERY_SLOW: 0.85,  // 0.85x — cho người già hoặc thị lực kém
+  DEFAULT:   1.02,  // 1.02x — lưu loát, ân cần, tự nhiên, không bị chậm
+  NORMAL:    1.02,  // 1.02x
+  GENTLE:    0.98,  // 0.98x — nhẹ nhàng thư thả
+  SLOW:      0.92,  // 0.92x — khi cần lắng nghe kỹ
+  VERY_SLOW: 0.88,  // 0.88x — cho người già hoặc thị lực kém
 });
 
 export const AUDIO_STATES = Object.freeze({

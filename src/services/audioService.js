@@ -315,7 +315,7 @@ export class AudioService {
       for (const s of rawSentences) {
         if (!tempBuffer) {
           tempBuffer = s;
-        } else if (tempBuffer.length < 35 && !/[!?]/.test(tempBuffer)) {
+        } else if ((tempBuffer.length + s.length) < 140 && !/[!?]/.test(tempBuffer)) {
           tempBuffer = `${tempBuffer} ${s}`;
         } else {
           mergedSentences.push(tempBuffer);
@@ -356,7 +356,7 @@ export class AudioService {
    * Chia nhỏ đoạn văn bản thành các câu con <= maxChars để tương thích hoàn hảo
    * với API phát âm Google TTS mà không làm ngắt cụm từ.
    */
-  splitIntoSmallChunks(text, maxChars = 140) {
+  splitIntoSmallChunks(text, maxChars = 180) {
     if (!text || text.length <= maxChars) return [text];
 
     const chunks = [];
@@ -404,7 +404,7 @@ export class AudioService {
   /**
    * Phát một đoạn âm thanh ngắn qua HTML5 Audio sử dụng giọng nữ tiếng Việt chuẩn Google TTS.
    */
-  playSingleAudioChunk(text, rate = 0.95, volume = 1.0, requestId) {
+  playSingleAudioChunk(text, rate = 1.02, volume = 1.0, requestId) {
     return new Promise((resolve) => {
       if (this.requestId !== requestId) {
         resolve();
@@ -516,7 +516,7 @@ export class AudioService {
 
           if (c < subChunks.length - 1 && requestId === this.requestId) {
             await new Promise((res) => {
-              this.activeTimer = setTimeout(res, 60);
+              this.activeTimer = setTimeout(res, 20);
             });
           }
         }

@@ -202,7 +202,9 @@ export default function ExperienceVisionPage({
         setHasTestedCover(true);
         if (!hasSpokenCoverFeedbackRef.current) {
           hasSpokenCoverFeedbackRef.current = true;
-          setSpeakingText('Bạn đang trải nghiệm góc nhìn của mắt bị nhược thị nặng. Hình ảnh rất tối và mờ. Khi đã sẵn sàng, ba mẹ hãy bấm nút Tiếp theo ở góc dưới.');
+          const coverVoice = activeStageRef.current?.coverVoiceText ||
+            'Dạ, khi che mắt khỏe lại, ba mẹ có thể thấy hình ảnh qua mắt nhược thị trở nên rất tối, mờ và mất nét. Não bộ của trẻ nhỏ bị nhược thị phải nhìn thế giới mờ ảo như thế này suốt mỗi ngày. Trải nghiệm xong, ba mẹ hãy bấm nút Tiếp theo màu xanh ở góc dưới nghen.';
+          setSpeakingText(coverVoice);
         }
       } else {
         setIsEyeCovered(false);
@@ -272,7 +274,15 @@ export default function ExperienceVisionPage({
     if (activeStageRef.current?.id === 7) {
       setIsEyeCovered((prev) => {
         const next = !prev;
-        if (next) setHasTestedCover(true);
+        if (next) {
+          setHasTestedCover(true);
+          if (!hasSpokenCoverFeedbackRef.current) {
+            hasSpokenCoverFeedbackRef.current = true;
+            const coverVoice = activeStageRef.current?.coverVoiceText ||
+              'Dạ, khi che mắt khỏe lại, ba mẹ có thể thấy hình ảnh qua mắt nhược thị trở nên rất tối, mờ và mất nét. Não bộ của trẻ nhỏ bị nhược thị phải nhìn thế giới mờ ảo như thế này suốt mỗi ngày. Trải nghiệm xong, ba mẹ hãy bấm nút Tiếp theo màu xanh ở góc dưới nghen.';
+            setSpeakingText(coverVoice);
+          }
+        }
         return next;
       });
     }
