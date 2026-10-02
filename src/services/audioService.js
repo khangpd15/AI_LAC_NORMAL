@@ -1,14 +1,14 @@
-import { AUDIO_CONFIG, AUDIO_MESSAGES, AUDIO_STATES } from '../constants/audioConfig.js';
+import { AUDIO_CONFIG, AUDIO_MESSAGES, AUDIO_STATES, DIALECT_VOICE_PRIORITY, SPEECH_RATE_PRESETS } from '../constants/audioConfig.js';
 
 /**
  * AudioService - RemiCare Text-To-Speech (TTS)
- * Implements a gentle, patient, natural Southern Vietnamese female voice
- * (Nữ miền Tây / Đồng bằng sông Cửu Long).
+ * Hỗ trợ 3 phương ngữ Việt: Miền Nam, Miền Trung, Miền Bắc.
  *
  * Features:
- * - Prioritized Southern Vietnamese female voice selection (Microsoft An, Phuong, Google tiếng Việt, Linh, Mai, Chi)
- * - Calibrated speech rate (0.88x) & pitch (1.0)
- * - Intelligent sentence pause cadence (350-450ms between sentences, 500-800ms before warnings)
+ * - Chọn giọng theo miền: options.dialect = 'south' | 'central' | 'north'
+ * - Tốc độ đọc có thể điều chỉnh: options.rate hoặc dùng SPEECH_RATE_PRESETS
+ * - Tốc độ mặc định 0.88x; Chậm: 0.90x; Rất chậm: 0.85x
+ * - Intelligent sentence pause cadence (350-450ms giữa câu; 500-800ms trước cảnh báo)
  * - SSML tag parsing & <break time="..." /> pause translation
  * - Full audio state management with reactive snapshot listener
  */
@@ -95,47 +95,41 @@ export class AudioService {
   }
 
   /**
-   * Intelligently selects the best Southern Vietnamese female voice.
-   * Priority:
-   * 1. Southern Female (Microsoft An, Phuong, South, Nam Bộ, Miền Tây)
-   * 2. Natural Female Vietnamese (Google tiếng Việt, Apple Linh/Mai/Chi)
-   * 3. Any standard Vietnamese female voice
-   * 4. Exclude or penalize explicit male voices (NamMinh, male)
+   * Chọn giọng tiếng Việt tốt nhất theo danh sách ưu tiên.
+   * Giọng nam (NamMinh, male) bị loại để đảm bảo luôn dùng giọng nữ.
+   *
+   * @param {SpeechSynthesisVoice[]} voices
+   * @param {string[]|Object[]} priorityKeywords - mảng {pattern, score}
    */
-  selectVietnameseVoice(voices = this.voices) {
+  selectVietnameseVoice(voices = this.voices, priorityKeywords = AUDIO_CONFIG.voicePriorityKeywords) {
     if (!voices || !voices.length) return null;
 
-    // Filter Vietnamese voices first
+    // Lọc giọng tiếng Việt
     const viVoices = voices.filter((v) => {
       const lang = (v.lang || '').toLowerCase().replace('_', '-');
       return lang === 'vi-vn' || lang.startsWith('vi') || /vietnam/i.test(v.name || '');
     });
 
     if (viVoices.length > 0) {
-      // Score each Vietnamese voice based on Southern & Female indicators
       let bestVoice = viVoices[0];
       let bestScore = -Infinity;
 
       for (const voice of viVoices) {
-        let score = 100; // Base score for being Vietnamese
+        let score = 100;
         const name = (voice.name || '').toLowerCase();
 
-        // Check for Southern / Female priority patterns
-        for (const { pattern, score: bonus } of AUDIO_CONFIG.voicePriorityKeywords) {
+        for (const { pattern, score: bonus } of priorityKeywords) {
           if (pattern.test(name)) {
             score += bonus;
           }
         }
 
-        // Penalize male voices heavily to ensure female voice
+        // Loại giọng nam (NamMinh, male) trừ khi tên có "nam bộ" (miền nam)
         if (/(namminh|male|man\b|nam\s*online)/i.test(name) && !/(vietnam|nam\s*bộ)/i.test(name)) {
           score -= 300;
         }
 
-        // Prefer default voice slightly if tied
-        if (voice.default) {
-          score += 10;
-        }
+        if (voice.default) score += 10;
 
         if (score > bestScore) {
           bestScore = score;
@@ -146,8 +140,23 @@ export class AudioService {
       return bestVoice;
     }
 
-    // Fallback if no specific vi voice is installed: check default or first voice
     return voices.find((v) => v.default) || voices[0] || null;
+  }
+
+  /**
+   * Chọn giọng theo phương ngữ (dialect).
+   *
+   * @param {'south'|'central'|'north'} dialect
+   * @param {SpeechSynthesisVoice[]} voices
+   * @returns {SpeechSynthesisVoice|null}
+   */
+  selectVoiceByDialect(dialect, voices = this.voices) {
+    const keywords = DIALECT_VOICE_PRIORITY[dialect];
+    if (!keywords) {
+      console.warn(`[AudioService] Dialect '${dialect}' không hợp lệ, dùng giọng mặc định (south).`);
+      return this.selectVietnameseVoice(voices, DIALECT_VOICE_PRIORITY.south);
+    }
+    return this.selectVietnameseVoice(voices, keywords);
   }
 
   waitForVoices(timeoutMs = AUDIO_CONFIG.voiceLoadTimeoutMs) {
@@ -281,10 +290,19 @@ export class AudioService {
     await this.waitForVoices(options.voiceLoadTimeoutMs);
     if (requestId !== this.requestId) return false;
 
-    const voice = options.voice || this.selectedVoice;
-    const rate = options.rate ?? AUDIO_CONFIG.rate;     // 0.88x
+    // Chọn giọng theo dialect nếu được chỉ định
+    const voice = options.voice ||
+      (options.dialect ? this.selectVoiceByDialect(options.dialect) : this.selectedVoice);
+
+    // Tốc độ đọc: options.rate > SPEECH_RATE_PRESETS[options.ratePreset] > mặc định 0.88x
+    const rate = options.rate ??
+      (options.ratePreset ? (SPEECH_RATE_PRESETS[options.ratePreset] ?? AUDIO_CONFIG.rate) : AUDIO_CONFIG.rate);
     const pitch = options.pitch ?? AUDIO_CONFIG.pitch;   // 1.0
     const volume = options.volume ?? AUDIO_CONFIG.volume; // 1.0
+
+    if (options.dialect) {
+      console.info(`[AudioService] Dialect: ${options.dialect} | Rate: ${rate}x | Voice: ${voice?.name ?? 'default'}`);
+    }
 
     const segments = this.parseSpeechSegments(cleanText, options);
     if (!segments.length) return false;

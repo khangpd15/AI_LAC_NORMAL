@@ -1,12 +1,17 @@
 /**
  * AUDIO & TEXT-TO-SPEECH (TTS) CONFIGURATION - REMICARE
- * Tailored for gentle, natural, warm Southern Vietnamese female voice (Nữ miền Tây / Đồng bằng sông Cửu Long).
+ * Hỗ trợ 3 phương ngữ: Miền Nam, Miền Trung, Miền Bắc.
  *
  * Speech characteristics:
- * - Tone: Calm, caring, patient, respectful ("Dạ", "cô chú", "nghen", "nha")
- * - Rate: 0.88x (0.85-0.95x optimal for elderly and low-vision patients)
- * - Pitch: 1.0 (natural female, warm, non-metallic)
- * - Pause: 350-450ms between standard guidance sentences; 500-800ms before critical warnings
+ * - Tone: Bình tĩnh, ân cần, nhẹ nhàng (phù hợp bệnh nhân người lớn tuổi)
+ * - Rate: 0.88x mặc định | Đọc chậm: 0.90x | Rất chậm: 0.85x
+ * - Pitch: 1.0 (giọng nữ tự nhiên, không kim loại)
+ * - Pause: 350-450ms giữa câu hướng dẫn; 500-800ms trước cảnh báo quan trọng
+ *
+ * Phương ngữ được hỗ trợ (dialect option):
+ * - 'south'   → Miền Nam / Miền Tây (mặc định)
+ * - 'central' → Miền Trung
+ * - 'north'   → Miền Bắc
  */
 
 export const AUDIO_CONFIG = Object.freeze({
@@ -21,20 +26,84 @@ export const AUDIO_CONFIG = Object.freeze({
   pauseWarningMs: 650,        // Khoảng nghỉ trước câu cảnh báo quan trọng (500-800ms)
   pauseEmergencyMs: 500,      // Khoảng nghỉ trước câu cấp cứu
 
-  // Danh sách ưu tiên nhận diện giọng Nữ miền Tây / Miền Nam (Southern Vietnamese Female)
-  // 1. Microsoft An Online (Natural) - Vietnamese (Vietnam) - Giọng nữ miền Nam chuẩn, ấm áp
-  // 2. Microsoft Phuong Online (Natural) - Giọng nữ miền Nam
-  // 3. Google tiếng Việt - Giọng nữ tự nhiên, mềm mại
-  // 4. Linh / Mai / Chi (Apple iOS/macOS Vietnamese voices)
+  // Danh sách ưu tiên giọng mặc định (Miền Nam — tương thích ngược)
+  // Dùng DIALECT_VOICE_PRIORITY để chọn giọng theo miền.
   voicePriorityKeywords: [
-    { pattern: /an\s*online/i, score: 250, label: 'Microsoft An (Southern Female)' },
-    { pattern: /phuong\s*online/i, score: 240, label: 'Microsoft Phuong (Southern Female)' },
+    { pattern: /an\s*online/i,      score: 250, label: 'Microsoft An Online (Nam Bộ Female)' },
+    { pattern: /phuong\s*online/i,  score: 240, label: 'Microsoft Phuong Online (Nam Bộ Female)' },
     { pattern: /(south|nam\s*bộ|miền\s*tây)/i, score: 230, label: 'Explicit Southern Vietnamese' },
     { pattern: /google\s*tiếng\s*việt/i, score: 200, label: 'Google Tiếng Việt (Female)' },
-    { pattern: /linh/i, score: 180, label: 'Linh (Apple Vietnamese Female)' },
-    { pattern: /mai/i, score: 170, label: 'Mai (Vietnamese Female)' },
-    { pattern: /chi/i, score: 160, label: 'Chi (Vietnamese Female)' },
-    { pattern: /hoaimy/i, score: 120, label: 'Microsoft HoaiMy (Vietnamese Female)' },
+    { pattern: /linh/i,             score: 180, label: 'Linh (Apple Vietnamese Female)' },
+    { pattern: /mai/i,              score: 170, label: 'Mai (Vietnamese Female)' },
+    { pattern: /chi/i,              score: 160, label: 'Chi (Vietnamese Female)' },
+    { pattern: /hoaimy/i,           score: 120, label: 'Microsoft HoaiMy (Fallback)' },
+  ],
+});
+
+/**
+ * Preset tốc độ đọc (Speech Rate Presets)
+ * Truyền vào options.rate khi gọi audioService.speak(text, { rate: SPEECH_RATE_PRESETS.SLOW })
+ */
+export const SPEECH_RATE_PRESETS = Object.freeze({
+  NORMAL:    0.88,  // Tốc độ bình thường — rõ ràng, tự nhiên
+  SLOW:      0.90,  // Đọc chậm nhẹ — dễ theo dõi hơn
+  VERY_SLOW: 0.85,  // Đọc rất chậm — phù hợp người cao tuổi, thị lực yếu
+});
+
+/**
+ * Cấu hình giọng theo 3 miền (Dialect Voice Priority)
+ *
+ * Mỗi miền có danh sách ưu tiên giọng riêng.
+ * Nếu không tìm thấy giọng của miền đó, sẽ fallback sang giọng tiếng Việt bất kỳ.
+ *
+ * Sử dụng: audioService.speak(text, { dialect: 'north' })
+ * Giá trị hợp lệ: 'south' | 'central' | 'north'
+ */
+export const DIALECT_VOICE_PRIORITY = Object.freeze({
+  /**
+   * Miền Nam / Miền Tây — Giọng nữ ấm áp, nhẹ nhàng
+   * Microsoft An Online > Microsoft Phuong Online > Google tiếng Việt > Apple Linh/Mai/Chi
+   */
+  south: [
+    { pattern: /an\s*online/i,      score: 250, label: 'Microsoft An Online (Nam Bộ Female)' },
+    { pattern: /phuong\s*online/i,  score: 240, label: 'Microsoft Phuong Online (Nam Bộ Female)' },
+    { pattern: /(south|nam\s*bộ|miền\s*tây)/i, score: 230, label: 'Explicit Southern Vietnamese' },
+    { pattern: /google\s*tiếng\s*việt/i, score: 200, label: 'Google Tiếng Việt (Female)' },
+    { pattern: /linh/i,             score: 180, label: 'Linh (Apple Vietnamese Female)' },
+    { pattern: /mai/i,              score: 170, label: 'Mai (Vietnamese Female)' },
+    { pattern: /chi/i,              score: 160, label: 'Chi (Vietnamese Female)' },
+    { pattern: /hoaimy/i,           score: 100, label: 'HoaiMy (Fallback)' },
+  ],
+
+  /**
+   * Miền Trung — Giọng nữ nhẹ nhàng, trầm ấm
+   * HoaiMy (Huế/Đà Nẵng) > Dao > Google tiếng Việt > fallback
+   */
+  central: [
+    { pattern: /hoaimy/i,           score: 250, label: 'Microsoft HoaiMy (Central Female)' },
+    { pattern: /dao/i,              score: 230, label: 'Dao (Central Vietnamese Female)' },
+    { pattern: /(trung|central|hue|da\s*nang)/i, score: 220, label: 'Explicit Central Vietnamese' },
+    { pattern: /google\s*tiếng\s*việt/i, score: 190, label: 'Google Tiếng Việt (Female)' },
+    { pattern: /linh/i,             score: 160, label: 'Linh (Apple Vietnamese Female)' },
+    { pattern: /mai/i,              score: 150, label: 'Mai (Vietnamese Female)' },
+    { pattern: /an\s*online/i,      score: 100, label: 'Microsoft An (Fallback)' },
+    { pattern: /phuong\s*online/i,  score: 100, label: 'Microsoft Phuong (Fallback)' },
+  ],
+
+  /**
+   * Miền Bắc — Giọng nữ chuẩn phổ thông, rõ chữ
+   * Ngoc / Hoa (Hà Nội) > Google tiếng Việt > HoaiMy > fallback
+   * Lưu ý: NamMinh là giọng nam → bị loại trong selectVietnameseVoice
+   */
+  north: [
+    { pattern: /ngoc/i,             score: 260, label: 'Ngoc (North Vietnamese Female)' },
+    { pattern: /hoa\b/i,            score: 250, label: 'Hoa (North Vietnamese Female)' },
+    { pattern: /(north|hà\s*nội|hanoi|bắc)/i, score: 230, label: 'Explicit Northern Vietnamese' },
+    { pattern: /google\s*tiếng\s*việt/i, score: 200, label: 'Google Tiếng Việt (Female)' },
+    { pattern: /hoaimy/i,           score: 180, label: 'Microsoft HoaiMy (Female)' },
+    { pattern: /linh/i,             score: 160, label: 'Linh (Apple Vietnamese Female)' },
+    { pattern: /an\s*online/i,      score: 100, label: 'Microsoft An (Fallback)' },
+    { pattern: /phuong\s*online/i,  score: 100, label: 'Microsoft Phuong (Fallback)' },
   ],
 });
 
