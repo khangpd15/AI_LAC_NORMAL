@@ -107,6 +107,95 @@ export default function Gaze4DirectionsStep({
     };
   }, [directionIndex, activeConfig, isVoiceEnabled, speak]);
 
+  const directionIndexRef = useRef(directionIndex);
+  const activeConfigRef = useRef(activeConfig);
+  const capturesRef = useRef(captures);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    directionIndexRef.current = directionIndex;
+    activeConfigRef.current = activeConfig;
+    capturesRef.current = captures;
+    onCompleteRef.current = onComplete;
+  }, [directionIndex, activeConfig, captures, onComplete]);
+
+  // Finalizes a captured direction: advances to next direction or completes 4-direction protocol with DL analysis
+  const handleFinalizeGazeStep = useCallback(
+    async (newCaptureRecord, currentCaptures) => {
+      const currentIdx = directionIndexRef.current;
+      const currentConfig = activeConfigRef.current;
+      const updatedCaptures = {
+        ...currentCaptures,
+        ...capturesRef.current,
+        [currentConfig.id]: newCaptureRecord,
+      };
+      setCaptures(updatedCaptures);
+
+      // If there are still more directions to capture (e.g. TRÁI -> PHẢI -> LÊN -> THẲNG):
+      if (currentIdx < GAZE_DIRECTIONS_CONFIG.length - 1) {
+        setDirectionIndex((prevIdx) => prevIdx + 1);
+        setStepStatus('OBSERVING');
+        setProgressRatio(0);
+        setCountdownPhase(null);
+        return;
+      }
+
+      // All 4 directions completed!
+      // On STRAIGHT gaze (final step), trigger Strabismus Deep Learning screening
+      let strabismusResult = null;
+      const straightImage = newCaptureRecord?.image || updatedCaptures.straight?.image;
+
+      if (straightImage) {
+        try {
+          setIsAnalyzing(true);
+          isAnalyzingRef.current = true;
+          setAnalysisError(null);
+
+          const controller = new AbortController();
+          abortControllerRef.current = controller;
+
+          strabismusResult = await predictStrabismusImage(straightImage, {
+            signal: controller.signal,
+            timeoutMs: 15000,
+          });
+        } catch (err) {
+          if (err.name === 'AbortError') {
+            console.log('Strabismus AI prediction was aborted.');
+            return;
+          }
+          console.warn('Strabismus AI prediction warning / fallback:', err);
+          // Graceful fallback so clinical flow is never blocked
+          strabismusResult = {
+            status: 'INCONCLUSIVE',
+            confidence: null,
+            quality_score: newCaptureRecord?.qualityScore || 0.85,
+            message: err.userMessage || 'Không thể kết nối đến máy chủ AI (sử dụng kết quả lâm sàng)',
+          };
+        } finally {
+          setIsAnalyzing(false);
+          isAnalyzingRef.current = false;
+        }
+      }
+
+      setStepStatus('COMPLETED');
+      if (isVoiceEnabled && speak) {
+        speak('Giờ mình lùi ra xa một chút nghen.');
+      }
+
+      const fullGazeTrackingData = {
+        distanceCm: '15-20',
+        completedAt: new Date().toISOString(),
+        captures: updatedCaptures,
+        strabismusResult,
+      };
+
+      if (onCompleteRef.current) {
+        onCompleteRef.current(fullGazeTrackingData);
+      }
+    },
+    [isVoiceEnabled, speak]
+  );
+
   // Main evaluation frame loop
   useEffect(() => {
     if (stepStatus !== 'OBSERVING') return;
@@ -189,7 +278,7 @@ export default function Gaze4DirectionsStep({
         handleFinalizeGazeStep(captureRecord, captures);
       }, 1200);
     }
-  }, [landmarks, stepStatus, isOrienting, activeConfig, estimatedDistanceCm, directionIndex, videoRef, captures, isVoiceEnabled, speak, onComplete]);
+  }, [landmarks, stepStatus, isOrienting, activeConfig, estimatedDistanceCm, directionIndex, videoRef, captures, isVoiceEnabled, speak, onComplete, handleFinalizeGazeStep]);
 
   // Click-to-snap handler: allows instant capture on clicking the target
   const handleManualSnap = () => {
