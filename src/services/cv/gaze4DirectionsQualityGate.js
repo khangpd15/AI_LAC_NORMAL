@@ -231,8 +231,9 @@ export class Gaze4DirectionsQualityGate {
         break;
       case 'straight':
       case 'center':
-        // Looking STRAIGHT: both meanDx and meanDy stay near center with minimal deviation
-        isDirectionCorrect = Math.abs(meanDx) <= (thresh * 0.85) && Math.abs(meanDy) <= (thresh * 0.90);
+        // Looking STRAIGHT: User faces camera naturally
+        // Wide forward bounds: ensures natural head/eye alignment without getting stuck
+        isDirectionCorrect = Math.abs(meanDx) <= (thresh * 1.4) && meanDy >= -(thresh * 1.4) && meanDy <= (thresh * 1.6);
         directionHint = 'Nhìn thẳng vào giữa màn hình nghen.';
         break;
       case 'down':
@@ -277,22 +278,36 @@ export class Gaze4DirectionsQualityGate {
     }
 
     // 9. Frame passes all checks -> Accumulate Stability
+    const isStraightGaze = targetDirection === 'straight' || targetDirection === 'center';
+    // For 'straight' gaze, AI auto-captures fast (350ms ~ 10 frames) so it snaps immediately
+    const targetStableMs = isStraightGaze ? 350 : this.requiredStableMs;
+
     this.accumulatedStableMs += dt;
-    const progressRatio = Math.min(1.0, this.accumulatedStableMs / this.requiredStableMs);
-    const isReadyToCapture = this.accumulatedStableMs >= this.requiredStableMs;
+    const progressRatio = Math.min(1.0, this.accumulatedStableMs / targetStableMs);
+    const isReadyToCapture = this.accumulatedStableMs >= targetStableMs;
 
     // Calculate rhythm countdown phase (1... 2... Chụp!)
     let countdownPhase = null;
     let feedbackText = 'Giữ yên mắt hướng về mục tiêu...';
-    if (this.accumulatedStableMs >= 2000) {
-      countdownPhase = 'snap';
-      feedbackText = '📸 Chụp!';
-    } else if (this.accumulatedStableMs >= 1350) {
-      countdownPhase = '2';
-      feedbackText = 'Đang đếm: 2... Giữ yên mắt!';
-    } else if (this.accumulatedStableMs >= 650) {
-      countdownPhase = '1';
-      feedbackText = 'Đang đếm: 1... Giữ yên mắt!';
+
+    if (isStraightGaze) {
+      if (this.accumulatedStableMs >= 250) {
+        countdownPhase = 'snap';
+        feedbackText = '📸 Chụp ngay!';
+      } else {
+        feedbackText = 'Đã nhận diện mắt thẳng...';
+      }
+    } else {
+      if (this.accumulatedStableMs >= 2000) {
+        countdownPhase = 'snap';
+        feedbackText = '📸 Chụp!';
+      } else if (this.accumulatedStableMs >= 1350) {
+        countdownPhase = '2';
+        feedbackText = 'Đang đếm: 2... Giữ yên mắt!';
+      } else if (this.accumulatedStableMs >= 650) {
+        countdownPhase = '1';
+        feedbackText = 'Đang đếm: 1... Giữ yên mắt!';
+      }
     }
 
     return {

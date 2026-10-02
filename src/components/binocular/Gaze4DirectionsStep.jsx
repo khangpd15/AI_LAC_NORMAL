@@ -79,9 +79,12 @@ export default function Gaze4DirectionsStep({
     }
 
     if (orientTimeoutRef.current) clearTimeout(orientTimeoutRef.current);
+    // For 'straight' gaze: start evaluating immediately (250ms) so AI captures right away!
+    const isStraight = activeConfig?.id === 'straight' || activeConfig?.id === 'center';
+    const orientDelay = isStraight ? 250 : 1600;
     orientTimeoutRef.current = setTimeout(() => {
       setIsOrienting(false);
-    }, 1800);
+    }, orientDelay);
 
     return () => {
       if (orientTimeoutRef.current) clearTimeout(orientTimeoutRef.current);
@@ -196,6 +199,68 @@ export default function Gaze4DirectionsStep({
     }
   }, [landmarks, stepStatus, isOrienting, activeConfig, estimatedDistanceCm, directionIndex, videoRef, captures, isVoiceEnabled, speak, onComplete]);
 
+  // Click-to-snap handler: allows instant capture on clicking the target
+  const handleManualSnap = () => {
+    if (stepStatus !== 'OBSERVING') return;
+    setStepStatus('CAPTURING');
+    setShowShutterFlash(true);
+
+    if (isVoiceEnabled && speak && !spokenSnapRef.current) {
+      spokenSnapRef.current = true;
+      speak('Chụp!');
+    }
+
+    const capturedDataUrl = captureGazeFrameDataUrl(videoRef.current);
+
+    const captureRecord = {
+      direction: activeConfig.id,
+      directionName: activeConfig.name,
+      timestamp: new Date().toISOString(),
+      image: capturedDataUrl,
+      landmarks: landmarks ? landmarks.slice(0, 478).map((p) => ({ x: Number(p.x.toFixed(3)), y: Number(p.y.toFixed(3)) })) : null,
+      qualityScore: 0.95,
+      distanceCm: estimatedDistanceCm,
+      gazeOffsets: { meanDx: 0, meanDy: 0 },
+    };
+
+    setCaptures((prev) => ({
+      ...prev,
+      [activeConfig.id]: captureRecord,
+    }));
+
+    setTimeout(() => setShowShutterFlash(false), 250);
+
+    setStepStatus('SUCCESS_TRANSITION');
+    gateRef.current.reset();
+
+    setTimeout(() => {
+      if (directionIndex < GAZE_DIRECTIONS_CONFIG.length - 1) {
+        setDirectionIndex((idx) => idx + 1);
+        setStepStatus('OBSERVING');
+        setProgressRatio(0);
+        setCountdownPhase(null);
+      } else {
+        setStepStatus('COMPLETED');
+        if (isVoiceEnabled && speak) {
+          speak('Giờ mình lùi ra xa một chút nghen.');
+        }
+
+        const fullGazeTrackingData = {
+          distanceCm: '15-20',
+          completedAt: new Date().toISOString(),
+          captures: {
+            ...captures,
+            [activeConfig.id]: captureRecord,
+          },
+        };
+
+        if (onComplete) {
+          onComplete(fullGazeTrackingData);
+        }
+      }
+    }, 1000);
+  };
+
   // Circumference for circular progress ring (r = 36, perimeter = 2 * PI * 36 ~= 226)
   const radius = 36;
   const circumference = 2 * Math.PI * radius;
@@ -245,8 +310,9 @@ export default function Gaze4DirectionsStep({
         {stepStatus !== 'COMPLETED' && (
           <div
             className={`gaze-fixed-target-wrapper target-${activeConfig.id}`}
-            style={activeConfig.targetPosition}
-            title={activeConfig.arrowHint}
+            style={{ ...activeConfig.targetPosition, pointerEvents: 'auto', cursor: 'pointer' }}
+            onClick={handleManualSnap}
+            title={`${activeConfig.arrowHint} (AI tự chụp hoặc bấm vào để chụp ngay)`}
           >
             <div className="target-ring-container">
               {/* SVG Circular Progress Ring */}
@@ -288,6 +354,9 @@ export default function Gaze4DirectionsStep({
             {/* Direction Arrow Hint */}
             <div className="target-floating-hint">
               <span>{activeConfig.arrowHint}</span>
+              {activeConfig.id === 'straight' && (
+                <span style={{ fontSize: '0.72rem', opacity: 0.85, marginLeft: '6px' }}>• Tự chụp</span>
+              )}
             </div>
           </div>
         )}
