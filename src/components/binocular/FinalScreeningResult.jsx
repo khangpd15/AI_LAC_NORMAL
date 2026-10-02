@@ -109,6 +109,67 @@ function BrockStringSummarySection({ brockString }) {
   );
 }
 
+function Gaze4DirectionsSummarySection({ gazeTracking }) {
+  const captures = gazeTracking?.captures || {};
+  const directions = [
+    { key: 'left', label: 'Trái', icon: '←' },
+    { key: 'right', label: 'Phải', icon: '→' },
+    { key: 'up', label: 'Lên', icon: '↑' },
+    { key: 'down', label: 'Xuống', icon: '↓' },
+  ];
+
+  const totalCaptured = Object.values(captures).filter((c) => !!c?.image).length;
+
+  return (
+    <div className="final-screening-section gaze-summary-section">
+      <div className="section-header-flex">
+        <h3 className="final-screening-section-title">Chụp 4 hướng mắt (Cự ly 15–20 cm)</h3>
+        <span className="badge badge-accent">
+          {totalCaptured === 4 ? '✓ Đủ 4 hướng' : `${totalCaptured}/4 ảnh`}
+        </span>
+      </div>
+      <p className="section-subtext" style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '12px' }}>
+        Hình ảnh ghi nhận cử động nhãn cầu 4 hướng ở cự ly gần nhằm hỗ trợ quan sát trực quan.
+      </p>
+
+      <div className="gaze-photos-grid">
+        {directions.map(({ key, label, icon }) => {
+          const cap = captures[key];
+          return (
+            <div key={key} className="gaze-photo-card">
+              <div className="gaze-photo-badge">
+                <span className="gaze-icon">{icon}</span>
+                <span>{label}</span>
+              </div>
+              <div className="gaze-photo-frame">
+                {cap?.image ? (
+                  <img
+                    src={cap.image}
+                    alt={`Mắt nhìn ${label}`}
+                    className="gaze-photo-img"
+                  />
+                ) : (
+                  <div className="gaze-photo-placeholder">
+                    <span>Chưa có ảnh</span>
+                  </div>
+                )}
+              </div>
+              <div className="gaze-photo-meta">
+                <span className={`meta-status ${cap?.image ? 'status-ok' : 'status-missing'}`}>
+                  {cap?.image ? '✓ Đã chụp' : 'Chưa ghi nhận'}
+                </span>
+                {cap?.distanceCm && (
+                  <span className="meta-dist">{cap.distanceCm} cm</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function QualityWarnings({ quality }) {
   if (!quality?.warnings?.length && !quality?.reasons?.length) return null;
   return (
@@ -129,7 +190,7 @@ function QualityWarnings({ quality }) {
   );
 }
 
-function TechnicalDetails({ coverTest, brockString, quality }) {
+function TechnicalDetails({ coverTest, brockString, quality, gazeTracking }) {
   const metricOrNull = (v, digits = 4) =>
     typeof v === 'number' && Number.isFinite(v) ? v.toFixed(digits) : 'null';
 
@@ -224,6 +285,50 @@ function TechnicalDetails({ coverTest, brockString, quality }) {
         Góc quy tụ lâm sàng: null — Hệ thống chưa có dữ liệu hiệu chuẩn với synoptophore hoặc lăng kính.
       </p>
 
+      {/* Gaze 4 Directions technical */}
+      {gazeTracking && (
+        <>
+          <h4>Chụp 4 hướng mắt — Dữ liệu kỹ thuật (15–20 cm)</h4>
+          <div className="table-responsive">
+            <table className="metrics-table">
+              <thead>
+                <tr>
+                  <th>Hướng</th>
+                  <th>Thời gian</th>
+                  <th>Khoảng cách</th>
+                  <th>Điểm chất lượng</th>
+                  <th>Landmarks</th>
+                  <th>Ảnh</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { key: 'left', label: 'Trái (Left)' },
+                  { key: 'right', label: 'Phải (Right)' },
+                  { key: 'up', label: 'Lên (Up)' },
+                  { key: 'down', label: 'Xuống (Down)' },
+                ].map(({ key, label }) => {
+                  const cap = gazeTracking?.captures?.[key];
+                  return (
+                    <tr key={key}>
+                      <td>{label}</td>
+                      <td>{cap?.timestamp ? new Date(cap.timestamp).toLocaleTimeString() : '--'}</td>
+                      <td>{cap?.distanceCm ? `${cap.distanceCm} cm` : '--'}</td>
+                      <td>{cap?.qualityScore ? cap.qualityScore.toFixed(2) : '--'}</td>
+                      <td>{cap?.landmarks ? `${cap.landmarks.length} pts` : '--'}</td>
+                      <td>{cap?.image ? 'Đã lưu' : 'Không có'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="technical-calibration-note">
+            Khoảng cách 15–20 cm là khoảng cách kỹ thuật nhằm chụp rõ chi tiết nhãn cầu, không phải tiêu chuẩn lâm sàng.
+          </p>
+        </>
+      )}
+
       {/* Quality gate details */}
       <h4>Quality Gate</h4>
       <QualityWarnings quality={quality} />
@@ -316,8 +421,11 @@ export default function FinalScreeningResult({ sessionData, onRestart }) {
         </p>
       </section>
 
-      {/* ── Cover Test & Brock String info ── */}
+      {/* ── Cover Test & Brock String & Gaze info ── */}
       <section className="final-screening-details-section" aria-label="Thông tin chi tiết sàng lọc">
+        {sessionData?.gazeTracking && (
+          <Gaze4DirectionsSummarySection gazeTracking={sessionData.gazeTracking} />
+        )}
         <div className="final-screening-two-col">
           <CoverTestSummaryRow coverTest={coverTest} />
           <BrockStringSummarySection brockString={brockString} />
@@ -359,6 +467,7 @@ export default function FinalScreeningResult({ sessionData, onRestart }) {
             coverTest={coverTest}
             brockString={brockString}
             quality={quality}
+            gazeTracking={sessionData?.gazeTracking}
           />
         </div>
       )}

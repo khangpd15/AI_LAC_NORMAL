@@ -47,6 +47,8 @@ export function createBinocularSession() {
     completedAt: null,
     currentState: BINOCULAR_SCREENING_STATES.IDLE,
 
+    gazePositionCheck: null,
+    gazeTracking: null,
     coverPositionCheck: null,
     brockPositionCheck: null,
     positionCheck: {
@@ -177,7 +179,9 @@ export function updatePositionCheckData(sessionId, positionData, testType = null
     timestamp: positionData.timestamp || Date.now(),
   };
 
-  if (resolvedTestType === 'COVER_TEST') {
+  if (resolvedTestType === 'GAZE_4_DIRECTIONS') {
+    session.gazePositionCheck = record;
+  } else if (resolvedTestType === 'COVER_TEST') {
     session.coverPositionCheck = record;
   } else if (resolvedTestType === 'BROCK_STRING') {
     session.brockPositionCheck = record;
@@ -198,6 +202,20 @@ export function updatePositionCheckData(sessionId, positionData, testType = null
       reasons: positionData.quality?.reasons,
     });
   }
+}
+
+export function updateGazePositionCheckData(sessionId, positionData) {
+  return updatePositionCheckData(sessionId, positionData, 'GAZE_4_DIRECTIONS');
+}
+
+export function updateGazeTrackingData(sessionId, gazeData) {
+  const session = sessionsMap.get(sessionId);
+  if (!session) return;
+  session.gazeTracking = gazeData;
+  logScreeningEvent(sessionId, 'GAZE_4_DIRECTIONS_COMPLETE', {
+    distanceCm: gazeData.distanceCm,
+    directions: Object.keys(gazeData.captures || {}),
+  });
 }
 
 export function updateCoverPositionCheckData(sessionId, positionData) {

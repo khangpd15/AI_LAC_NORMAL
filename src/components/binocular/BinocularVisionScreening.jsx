@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ScreeningProgress from './ScreeningProgress';
 import PositionCheck from './PositionCheck';
+import Gaze4DirectionsStep from './Gaze4DirectionsStep';
 import CoverTestStep from './CoverTestStep';
 import ScreeningSummary from './ScreeningSummary';
 import { useCamera } from '../../hooks/useCamera.js';
@@ -14,6 +15,8 @@ import {
 } from '../../services/positionCalibrationService.js';
 import {
   createBinocularSession,
+  updateGazePositionCheckData,
+  updateGazeTrackingData,
   updateCoverPositionCheckData,
   updateCoverTestData,
   generateScreeningSummary,
@@ -27,16 +30,17 @@ import { finalizeScreeningSample, setScreeningImage } from '../../services/scree
 /**
  * BinocularVisionScreening Component
  * Master Orchestrator for the unified Digital Binocular Vision Screening protocol:
+ * GAZE_POSITION (15–20 cm) -> GAZE 4 DIRECTIONS (Left, Right, Up, Down) ->
  * COVER_POSITION (33–40 cm) -> COVER TEST -> BROCK_POSITION (20–25 cm) -> BROCK STRING -> SUMMARY
  */
 export default function BinocularVisionScreening() {
-  // Global Screening Step: 'COVER_POSITION' | 'COVER' | 'BROCK_POSITION' | 'BROCK' | 'SUMMARY'
-  const [currentStep, setCurrentStep] = useState('COVER_POSITION');
+  // Global Screening Step: 'GAZE_POSITION' | 'GAZE_4_DIRECTIONS' | 'COVER_POSITION' | 'COVER' | 'BROCK_POSITION' | 'BROCK' | 'SUMMARY'
+  const [currentStep, setCurrentStep] = useState('GAZE_POSITION');
   const [session, setSession] = useState(() => createBinocularSession());
   const [positionReport, setPositionReport] = useState(null);
 
   // Stateful distance stability tracker for consecutive frame smoothing
-  const distanceTrackerRef = useRef(new DistanceStabilityTracker('COVER_TEST'));
+  const distanceTrackerRef = useRef(new DistanceStabilityTracker('GAZE_4_DIRECTIONS'));
 
   // Video element ref
   const videoRef = useRef(null);
@@ -56,12 +60,13 @@ export default function BinocularVisionScreening() {
         processFrameAI(res.features);
       }
 
-      // If in a Position Check step, evaluate distance with the active test's independent configuration
+      // Evaluate distance with the active test's independent configuration
+      const isGazePos = currentStep === 'GAZE_POSITION' || currentStep === 'GAZE_4_DIRECTIONS';
       const isCoverPos = currentStep === 'COVER_POSITION' || currentStep === 'POSITION';
       const isBrockPos = currentStep === 'BROCK_POSITION';
 
-      if (isCoverPos || isBrockPos) {
-        const testType = isBrockPos ? 'BROCK_STRING' : 'COVER_TEST';
+      if (isGazePos || isCoverPos || isBrockPos) {
+        const testType = isGazePos ? 'GAZE_4_DIRECTIONS' : isBrockPos ? 'BROCK_STRING' : 'COVER_TEST';
         if (distanceTrackerRef.current.testType !== testType) {
           distanceTrackerRef.current.reset(testType);
         }
@@ -109,11 +114,41 @@ export default function BinocularVisionScreening() {
 
   // Reset distance tracker when retrying position check
   const handlePositionRetry = useCallback(() => {
+    const isGazePos = currentStep === 'GAZE_POSITION';
     const isBrockPos = currentStep === 'BROCK_POSITION';
-    const testType = isBrockPos ? 'BROCK_STRING' : 'COVER_TEST';
+    const testType = isGazePos ? 'GAZE_4_DIRECTIONS' : isBrockPos ? 'BROCK_STRING' : 'COVER_TEST';
     distanceTrackerRef.current.reset(testType);
     setPositionReport(null);
   }, [currentStep]);
+
+  // Handler: Proceed from Gaze Position Check (15–20 cm) to Gaze 4 Directions
+  const handleGazePositionProceed = useCallback(() => {
+    if (!session || !positionReport || positionReport.status !== 'READY') return;
+
+    updateGazePositionCheckData(session.sessionId, positionReport);
+    logScreeningEvent(session.sessionId, 'GAZE_POSITION_READY', {
+      estimatedDistanceCm: positionReport.estimatedDistanceCm,
+      stableDistanceCm: positionReport.stableDistanceCm,
+    });
+
+    setCurrentStep('GAZE_4_DIRECTIONS');
+  }, [session, positionReport]);
+
+  // Handler: Complete Gaze 4 Directions and transition to Cover Test Position Check (33–40 cm)
+  const handleGaze4DirectionsComplete = useCallback((gazeData) => {
+    if (!session) return;
+
+    updateGazeTrackingData(session.sessionId, gazeData);
+
+    // Switch tracker to Cover Test target range (33–40 cm)
+    distanceTrackerRef.current.reset('COVER_TEST');
+    setPositionReport(null);
+    setCurrentStep('COVER_POSITION');
+
+    if (speak) {
+      speak('Giờ mình lùi ra xa một chút nghen.');
+    }
+  }, [session, speak]);
 
   // Handler: Proceed from Cover Test Position Check to Cover Test
   const handleCoverPositionProceed = useCallback(() => {
@@ -161,11 +196,11 @@ export default function BinocularVisionScreening() {
   // Handler: Restart entire screening flow
   const handleRestart = useCallback(() => {
     cancelSpeech();
-    distanceTrackerRef.current.reset('COVER_TEST');
+    distanceTrackerRef.current.reset('GAZE_4_DIRECTIONS');
     const newSession = createBinocularSession();
     setSession(newSession);
     setPositionReport(null);
-    setCurrentStep('COVER_POSITION');
+    setCurrentStep('GAZE_POSITION');
   }, [cancelSpeech]);
 
   return (
@@ -175,7 +210,7 @@ export default function BinocularVisionScreening() {
         <div className="screening-header-text">
           <h1 className="screening-page-title">Digital Binocular Vision Screening</h1>
           <p className="screening-page-subtitle">
-            Quy trình sàng lọc thị giác hai mắt tích hợp: Vị trí Cover Test &rarr; Cover Test &rarr; Vị trí Brock String &rarr; Brock String &rarr; Tổng hợp kết quả
+            Quy trình sàng lọc tích hợp: Chụp 4 hướng mắt (15–20 cm) &rarr; Cover Test (33–40 cm) &rarr; Kết quả tổng hợp
           </p>
         </div>
       </div>
@@ -185,6 +220,39 @@ export default function BinocularVisionScreening() {
 
       {/* Active Step Container */}
       <div className="screening-step-container">
+        {(currentStep === 'GAZE_POSITION' || currentStep === 'GAZE_POSITION_CHECK') && (
+          <PositionCheck
+            testType="GAZE_4_DIRECTIONS"
+            videoRef={videoRef}
+            stream={stream}
+            landmarks={rawLandmarks}
+            features={features}
+            positionReport={positionReport}
+            onProceed={handleGazePositionProceed}
+            onRetry={handlePositionRetry}
+            isActive={isActive}
+            isLoading={isCamLoading}
+            error={camError}
+            onVideoReady={initCamera}
+            speak={speak}
+            isVoiceEnabled={isVoiceEnabled}
+          />
+        )}
+
+        {currentStep === 'GAZE_4_DIRECTIONS' && (
+          <Gaze4DirectionsStep
+            videoRef={videoRef}
+            stream={stream}
+            landmarks={rawLandmarks}
+            positionReport={positionReport}
+            onComplete={handleGaze4DirectionsComplete}
+            speak={speak}
+            isVoiceEnabled={isVoiceEnabled}
+            toggleSound={toggleSound}
+            onVideoReady={initCamera}
+          />
+        )}
+
         {(currentStep === 'COVER_POSITION' || currentStep === 'POSITION') && (
           <PositionCheck
             testType="COVER_TEST"

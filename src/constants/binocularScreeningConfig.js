@@ -16,6 +16,10 @@ export const BINOCULAR_SCREENING_STATES = {
   POSITION_CHECK: 'COVER_TEST_POSITION_CHECK',
   POSITION_READY: 'POSITION_READY',
 
+  // Gaze 4 Directions Flow (15–20 cm)
+  GAZE_POSITION_CHECK: 'GAZE_POSITION_CHECK',
+  GAZE_4_DIRECTIONS: 'GAZE_4_DIRECTIONS',
+
   // Cover Test Flow
   COVER_TEST_POSITION_CHECK: 'COVER_TEST_POSITION_CHECK',
   COVER_TEST_INTRO: 'COVER_TEST_INTRO',
@@ -45,6 +49,24 @@ export const POSITION_STATUS = {
 
 // Independent Position Check Configuration for each Screening Test
 export const POSITION_CONFIG = {
+  GAZE_4_DIRECTIONS: {
+    testType: 'GAZE_4_DIRECTIONS',
+    label: '4 HƯỚNG MẮT',
+    title: 'Chụp 4 hướng mắt',
+    subtitle: 'Kiểm tra vị trí trước khi chụp 4 hướng (15–20 cm)',
+    minDistanceCm: 15,
+    maxDistanceCm: 20,
+    optimalCm: 17.5,
+    instruction: 'Đưa mặt lại gần camera một chút (15–20 cm)',
+    targetRangeLabel: '15–20 cm',
+    readyMessage: '✓ Vị trí phù hợp',
+    tooCloseMessage: 'Bạn đang quá gần. Hãy lùi ra khoảng 15–20 cm.',
+    tooFarMessage: 'Bạn đang quá xa. Hãy đưa mặt lại gần khoảng 15–20 cm.',
+    buttonLabel: 'BẮT ĐẦU CHỤP 4 HƯỚNG',
+    clinicalNote: 'Khoảng cách 15–20 cm là thông số kỹ thuật cho bước chụp ảnh mắt cận cảnh, không phải tiêu chuẩn lâm sàng.',
+    disclaimer: 'Khoảng cách yêu cầu: 15–20 cm',
+  },
+
   COVER_TEST: {
     testType: 'COVER_TEST',
     label: 'COVER TEST',
@@ -81,6 +103,53 @@ export const POSITION_CONFIG = {
     disclaimer: 'Khoảng cách yêu cầu của bài kiểm tra: 20–25 cm',
   },
 };
+
+/**
+ * Configuration for 4-Direction Gaze Fixed Targets
+ * LEFT -> RIGHT -> UP -> DOWN (1 fixed non-moving target per step)
+ */
+export const GAZE_DIRECTIONS_CONFIG = [
+  {
+    id: 'left',
+    direction: 'left',
+    name: 'LEFT',
+    label: 'TRÁI',
+    stepNumber: '1/4',
+    voiceText: 'Nhìn thẳng sang trái nghen.',
+    targetPosition: { left: '40px', top: '50%', transform: 'translateY(-50%)' },
+    arrowHint: '← Nhìn sang bên trái',
+  },
+  {
+    id: 'right',
+    direction: 'right',
+    name: 'RIGHT',
+    label: 'PHẢI',
+    stepNumber: '2/4',
+    voiceText: 'Nhìn thẳng sang phải nghen.',
+    targetPosition: { right: '40px', top: '50%', transform: 'translateY(-50%)' },
+    arrowHint: 'Nhìn sang bên phải →',
+  },
+  {
+    id: 'up',
+    direction: 'up',
+    name: 'UP',
+    label: 'LÊN TRÊN',
+    stepNumber: '3/4',
+    voiceText: 'Nhìn thẳng lên trên nghen.',
+    targetPosition: { top: '35px', left: '50%', transform: 'translateX(-50%)' },
+    arrowHint: '↑ Nhìn lên trên',
+  },
+  {
+    id: 'down',
+    direction: 'down',
+    name: 'DOWN',
+    label: 'XUỐNG DƯỚI',
+    stepNumber: '4/4',
+    voiceText: 'Nhìn thẳng xuống dưới nghen.',
+    targetPosition: { bottom: '45px', left: '50%', transform: 'translateX(-50%)' },
+    arrowHint: '↓ Nhìn xuống dưới',
+  },
+];
 
 /**
  * Quality & Stability control thresholds for Position Check.

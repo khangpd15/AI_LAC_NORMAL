@@ -5,26 +5,38 @@ import React from 'react';
  * Renders step progression bar across:
  * 1. POSITION -> 2. COVER TEST -> 3. BROCK STRING -> 4. SUMMARY
  */
-export default function ScreeningProgress({ currentStep = 'COVER_POSITION' }) {
+export default function ScreeningProgress({ currentStep = 'GAZE_POSITION' }) {
   const steps = [
-    { id: 'COVER_POSITION', label: '1. Vị trí Cover Test', shortLabel: 'Vị trí 33-40cm' },
-    { id: 'COVER', label: '2. Cover Test', shortLabel: 'Cover Test' },
-    { id: 'BROCK', label: '3. Brock String (Đang cải tiến)', shortLabel: 'Brock String (Đang cải tiến)', disabled: true },
-    { id: 'SUMMARY', label: '4. Kết quả', shortLabel: 'Kết quả' },
+    { id: 'GAZE_POSITION', label: '1. Vị trí 4 hướng', shortLabel: 'Vị trí 15-20cm' },
+    { id: 'GAZE_4_DIRECTIONS', label: '2. Chụp 4 hướng', shortLabel: 'Chụp 4 hướng' },
+    { id: 'COVER_POSITION', label: '3. Vị trí Cover Test', shortLabel: 'Vị trí 33-40cm' },
+    { id: 'COVER', label: '4. Cover Test', shortLabel: 'Cover Test' },
+    { id: 'BROCK', label: '5. Brock String (Đang cải tiến)', shortLabel: 'Brock String (Đang cải tiến)', disabled: true },
+    { id: 'SUMMARY', label: '6. Kết quả', shortLabel: 'Kết quả' },
   ];
 
   const getStepIndex = (stepId) => {
     switch (stepId) {
+      case 'GAZE_POSITION':
+      case 'GAZE_POSITION_CHECK':
+        return 0;
+      case 'GAZE_4_DIRECTIONS':
+        return 1;
       case 'COVER_POSITION':
       case 'POSITION':
-        return 0;
-      case 'COVER':
-        return 1;
-      case 'BROCK_POSITION':
-      case 'BROCK':
+      case 'COVER_TEST_POSITION_CHECK':
         return 2;
-      case 'SUMMARY':
+      case 'COVER':
+      case 'COVER_TEST_RUNNING':
         return 3;
+      case 'BROCK_POSITION':
+      case 'BROCK_STRING_POSITION_CHECK':
+      case 'BROCK':
+      case 'BROCK_STRING_RUNNING':
+        return 4;
+      case 'SUMMARY':
+      case 'SCREENING_SUMMARY':
+        return 5;
       default:
         return 0;
     }
