@@ -5082,3 +5082,490 @@ textarea:focus {
     font-size: 0.62rem;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Screening mobile polish: camera-first UI for Gaze 4 Directions + Cover Test.
+   Keep this near the end so it wins over older responsive audit blocks above.
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .app-main {
+    padding: 8px 10px 18px;
+  }
+
+  .binocular-screening-page {
+    gap: 8px;
+  }
+
+  .screening-page-header {
+    display: none;
+  }
+
+  .screening-progress-nav {
+    padding: 6px;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+
+  .screening-progress-list {
+    gap: 3px;
+  }
+
+  .progress-step-item {
+    min-height: 34px;
+    padding: 3px 2px;
+    background: transparent;
+  }
+
+  .progress-step-item.active {
+    background: var(--color-pale-teal);
+    border: 1px solid var(--color-soft-mint);
+  }
+
+  .step-marker {
+    width: 22px;
+    height: 22px;
+    border-width: 1.5px;
+    font-size: 0.68rem;
+  }
+
+  .step-label-short {
+    font-size: 0.64rem;
+  }
+
+  .position-check-card,
+  .gaze-4-directions-card,
+  .cover-test-card {
+    padding: 10px !important;
+    border-radius: 14px;
+    margin-bottom: 10px;
+  }
+
+  .binocular-screening-page .stage-header {
+    margin-bottom: 6px;
+  }
+
+  .binocular-screening-page .stage-title {
+    font-size: 1.08rem;
+    line-height: 1.18;
+  }
+
+  .position-check-card > .audio-button-wrap,
+  .cover-test-card .stage-header > .audio-button-wrap {
+    align-items: stretch;
+    margin-bottom: 8px;
+  }
+
+  .position-check-card > .audio-button-wrap .audio-button,
+  .cover-test-card .stage-header > .audio-button-wrap .audio-button {
+    width: 100%;
+    min-height: 40px;
+    padding: 7px 10px;
+    border-radius: 12px;
+    font-size: 0.84rem;
+  }
+
+  .position-check-layout,
+  .cover-running-layout {
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .camera-frame,
+  .gaze-camera-viewport {
+    aspect-ratio: 3 / 4 !important;
+    min-height: 330px;
+    max-height: min(62vh, 520px) !important;
+    border-radius: 16px;
+  }
+
+  .gaze-camera-viewport .camera-view-container,
+  .gaze-camera-viewport .camera-frame {
+    height: 100%;
+    min-height: 100%;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .distance-gauge-container {
+    margin-top: 8px;
+    padding: 9px 10px;
+  }
+
+  .distance-gauge-header {
+    justify-content: center !important;
+  }
+
+  .distance-gauge-header > div:first-child,
+  .distance-gauge-label {
+    display: none !important;
+  }
+
+  .distance-gauge-value {
+    font-size: 0.95rem;
+  }
+
+  .distance-track {
+    height: 10px;
+  }
+
+  .feedback-banner {
+    padding: 7px 9px;
+    font-size: 0.8rem;
+    line-height: 1.28;
+  }
+
+  .checklist-card {
+    padding: 10px !important;
+  }
+
+  .checklist-title {
+    display: none;
+  }
+
+  .checklist-items {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .checklist-item {
+    justify-content: center;
+    min-height: 34px;
+    padding: 6px 5px;
+    text-align: center;
+  }
+
+  .check-icon {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .check-text strong {
+    font-size: 0.7rem;
+  }
+
+  .checklist-actions {
+    display: grid !important;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: 7px !important;
+  }
+
+  .checklist-actions .btn {
+    width: 100%;
+    min-height: 44px;
+    font-size: 0.84rem;
+    padding: 8px 10px;
+  }
+
+  .gaze-step-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding-bottom: 6px;
+  }
+
+  .gaze-header-left,
+  .gaze-header-right {
+    display: none;
+  }
+
+  .gaze-header-center {
+    grid-column: 1;
+    order: initial;
+    text-align: center;
+  }
+
+  .gaze-current-direction-title {
+    font-size: 1.05rem;
+  }
+
+  .gaze-distance-badge {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    max-width: none;
+  }
+
+  .dist-pill {
+    width: fit-content;
+    max-width: 100%;
+    min-height: 30px;
+    padding: 5px 9px;
+    font-size: 0.72rem;
+  }
+
+  .target-ring-container,
+  .target-progress-ring {
+    width: 64px;
+    height: 64px;
+  }
+
+  .target-glowing-core {
+    width: 40px;
+    height: 40px;
+    border-width: 2px;
+  }
+
+  .core-counter-text,
+  .core-bullseye-icon {
+    font-size: 1.18rem;
+  }
+
+  .target-floating-hint {
+    max-width: 104px;
+    padding: 3px 7px;
+    font-size: 0.66rem;
+    line-height: 1.15;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .gaze-feedback-bottom-bar {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    gap: 5px;
+  }
+
+  .feedback-voice-bubble {
+    width: 100%;
+    justify-content: center;
+    padding: 6px 9px;
+    border-radius: 12px;
+    font-size: 0.74rem;
+  }
+
+  .gaze-capture-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    margin-top: 6px;
+  }
+
+  .gaze-strip-card {
+    padding: 5px 3px;
+    gap: 2px;
+  }
+
+  .gaze-strip-thumb,
+  .gaze-strip-img {
+    height: 30px !important;
+  }
+
+  .gaze-strip-title {
+    font-size: 0.66rem;
+    line-height: 1.05;
+  }
+
+  .cover-test-card .stage-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cover-test-card .stage-header .badge-primary {
+    grid-column: 1;
+    width: fit-content;
+  }
+
+  .cover-test-card .stage-title {
+    grid-column: 1 / -1;
+  }
+
+  .cover-test-card .header-sound-btn {
+    grid-column: 2;
+    grid-row: 1;
+    position: static !important;
+  }
+
+  .cover-test-card .header-sound-btn .btn-sound {
+    width: 42px;
+    min-width: 42px;
+    min-height: 38px;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 0;
+    border-radius: 12px;
+  }
+
+  .cover-test-card .header-sound-btn .btn-sound.sound-on::before {
+    content: '🔊';
+    font-size: 1rem;
+  }
+
+  .cover-test-card .header-sound-btn .btn-sound.sound-off::before {
+    content: '🔇';
+    font-size: 1rem;
+  }
+
+  .cover-state-machine-box {
+    padding: 10px !important;
+  }
+
+  .cover-state-machine-box h3 {
+    display: none;
+  }
+
+  .intro-steps-list {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .intro-steps-list > div {
+    min-height: 74px;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    gap: 4px !important;
+    padding: 8px 5px !important;
+  }
+
+  .intro-steps-list > div > span {
+    font-size: 1.25rem !important;
+  }
+
+  .intro-steps-list strong {
+    font-size: 0.72rem;
+    line-height: 1.1;
+  }
+
+  .cover-action-box {
+    margin-top: 8px !important;
+  }
+
+  .cover-action-box .btn,
+  .cover-finished-view .btn {
+    width: 100%;
+    min-height: 46px;
+    border-radius: 14px;
+  }
+
+  .cover-debug-panel {
+    display: none !important;
+  }
+
+  .fullscreen-test-mode {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  .fullscreen-top-bar {
+    top: max(8px, env(safe-area-inset-top));
+    padding: 0 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    gap: 6px;
+  }
+
+  .fullscreen-top-bar > .fullscreen-pills-row:first-child {
+    grid-column: 1;
+    grid-row: 1;
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .fullscreen-top-bar > .fullscreen-pills-row:last-child {
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: flex-end;
+  }
+
+  .fullscreen-instruction-banner {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    max-width: 100%;
+    padding: 8px 10px;
+    border-radius: 14px;
+  }
+
+  .fullscreen-inst-title {
+    font-size: 1rem;
+    line-height: 1.16;
+  }
+
+  .fullscreen-inst-sub,
+  .fullscreen-eye-visual {
+    display: none !important;
+  }
+
+  .fullscreen-pill {
+    min-height: 34px;
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    border-radius: 12px;
+  }
+
+  .fullscreen-exit-btn,
+  .fullscreen-top-bar .btn-sound {
+    min-height: 34px;
+    width: auto;
+    padding: 5px 8px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+  }
+
+  .fullscreen-fixation-container .fixation-dot-core {
+    width: 30px !important;
+    height: 30px !important;
+    border-width: 2px !important;
+  }
+
+  .camera-occluder-zone {
+    backdrop-filter: blur(2px);
+  }
+
+  .occluder-patch {
+    padding: 8px;
+    max-width: 88%;
+    gap: 3px;
+  }
+
+  .occluder-icon {
+    font-size: 1.35rem;
+  }
+
+  .occluder-text {
+    font-size: 0.68rem;
+  }
+
+  .occluder-subtext {
+    display: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .screening-progress-nav {
+    padding: 5px;
+  }
+
+  .progress-step-item {
+    min-height: 28px;
+  }
+
+  .step-label-short {
+    display: none;
+  }
+
+  .step-marker {
+    width: 24px;
+    height: 24px;
+  }
+
+  .camera-frame,
+  .gaze-camera-viewport {
+    min-height: 350px;
+    max-height: min(64vh, 500px) !important;
+  }
+
+  .checklist-items {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .checklist-actions {
+    grid-template-columns: 1fr;
+  }
+}
