@@ -1,0 +1,43 @@
+{
+  "datasetVersion": "hirschberg-folder-labels-v0.1",
+  "domain": "legacy_or_unknown_hirschberg_crop",
+  "labelSource": "user_attested_doctor_confirmed_folder_label",
+  "recordCount": 696,
+  "labelCounts": {
+    "esotropia": 246,
+    "exotropia": 270,
+    "normal": 180
+  },
+  "originalSplitCounts": {
+    "test": 79,
+    "train": 502,
+    "val": 115
+  },
+  "generatedSplitCounts": {
+    "test": 125,
+    "train": 467,
+    "val": 104
+  },
+  "generatedSplitLabelCounts": {
+    "test/esotropia": 48,
+    "test/exotropia": 52,
+    "test/normal": 25,
+    "train/esotropia": 163,
+    "train/exotropia": 173,
+    "train/normal": 131,
+    "val/esotropia": 35,
+    "val/exotropia": 45,
+    "val/normal": 24
+  },
+  "uniqueGroupCount": 504,
+  "originalCrossSplitGroupCount": 117,
+  "generatedCrossSplitGroupCount": 0,
+  "duplicateShaCount": 0,
+  "limitations": [
+    "participant_id is UNKNOWN because no participant manifest was present",
+    "generated split prevents same label+basename group crossing splits but cannot prove patient-level independence",
+    "consent_status is UNKNOWN",
+    "protocol capture status is UNKNOWN_CROPPED_224",
+    "training use remains exploratory until participant IDs and protocol metadata are confirmed"
+  ]
+}

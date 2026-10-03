@@ -17,6 +17,43 @@ import { toCanonicalEye } from '../utils/eyeCoordinateMapping.js';
 
 const isRealNumber = (v) => typeof v === 'number' && Number.isFinite(v);
 
+const roundCoord = (v) => (isRealNumber(v) ? Number(v.toFixed(4)) : null);
+
+const landmarkPoint = (landmarks, index) => {
+  const point = landmarks?.[index];
+  if (!point) return null;
+  return {
+    x: roundCoord(point.x),
+    y: roundCoord(point.y),
+  };
+};
+
+const eyeCornerForResearch = (landmarks, eye) => {
+  if (eye === 'left') {
+    return {
+      inner: landmarkPoint(landmarks, 362),
+      outer: landmarkPoint(landmarks, 263),
+    };
+  }
+  if (eye === 'right') {
+    return {
+      inner: landmarkPoint(landmarks, 133),
+      outer: landmarkPoint(landmarks, 33),
+    };
+  }
+  return {
+    left: eyeCornerForResearch(landmarks, 'left'),
+    right: eyeCornerForResearch(landmarks, 'right'),
+  };
+};
+
+const coverVisibilityStatus = ({ eye, coverEye, coordsValid, blink }) => {
+  if (coverEye === eye) return 'OCCLUDED_BY_COVER';
+  if (blink) return 'BLINK';
+  if (!coordsValid) return 'LOST';
+  return 'VISIBLE';
+};
+
 /**
  * Creates an instance of the timestamp-based time-series recorder for a cycle.
  * Mutable in-memory buffer avoids array allocations and re-renders in the realtime loop.
@@ -272,13 +309,36 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
       previousKinematicSample = null;
     }
 
+    const effectiveTrackEyeCanonical = effectiveTrackEye ? toCanonicalEye(effectiveTrackEye) : null;
+    const trackedIrisX = effectiveTrackEye === 'left'
+      ? (leftCoordsValid ? roundCoord(leftX) : null)
+      : effectiveTrackEye === 'right'
+        ? (rightCoordsValid ? roundCoord(rightX) : null)
+        : null;
+    const trackedEyeCorner = eyeCornerForResearch(rawLandmarks, effectiveTrackEye);
+    const researchVisibility = {
+      left: coverVisibilityStatus({ eye: 'left', coverEye, coordsValid: leftCoordsValid, blink: isBlinkL }),
+      right: coverVisibilityStatus({ eye: 'right', coverEye, coordsValid: rightCoordsValid, blink: isBlinkR }),
+      trackedEye: effectiveTrackEyeCanonical,
+      trackedStatus: effectiveTrackEye === 'left'
+        ? coverVisibilityStatus({ eye: 'left', coverEye, coordsValid: leftCoordsValid, blink: isBlinkL })
+        : effectiveTrackEye === 'right'
+          ? coverVisibilityStatus({ eye: 'right', coverEye, coordsValid: rightCoordsValid, blink: isBlinkR })
+          : null,
+    };
+
     // Standardized Sample Schema (Section 8: index, timestamp, t, phase, coveredEye, leftEye, rightEye, trackingQuality...)
     const sample = {
       index: samples.length,
       timestamp: epochTimestamp,
+      realTimestampMs: epochTimestamp,
       t,
       phase,
       coveredEye: canonicalCoveredEye,
+      trackEye: effectiveTrackEyeCanonical,
+      iris_x: trackedIrisX,
+      eye_corner: trackedEyeCorner,
+      visibility: researchVisibility,
       leftX: leftCoordsValid ? Number(leftX.toFixed(4)) : null,
       leftY: leftCoordsValid ? Number(leftY.toFixed(4)) : null,
       leftValid,

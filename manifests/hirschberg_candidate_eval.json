@@ -1,0 +1,107 @@
+{
+  "phase": "Phase 6B Exploratory Hirschberg Classifier Evaluation",
+  "createdAt": "2026-10-03T13:23:18.253038+00:00",
+  "status": "COMPLETED_RESEARCH_CANDIDATE",
+  "datasetVersion": "hirschberg-folder-labels-v0.1",
+  "manifestPath": "D:\\AI_Check_Lac\\manifests\\hirschberg_folder_labels.jsonl",
+  "artifactPath": "D:\\REMICARE-STRABISMUS-AI\\app\\models\\research\\hirschberg_candidate_v0.1.joblib",
+  "seed": 20261003,
+  "modelFamily": "HistGradientBoosting",
+  "validationComparison": {
+    "HistGradientBoosting": {
+      "val_accuracy": 0.7981,
+      "val_balanced_accuracy": 0.7841,
+      "val_macro_f1": 0.7917
+    },
+    "RandomForest": {
+      "val_accuracy": 0.7308,
+      "val_balanced_accuracy": 0.7324,
+      "val_macro_f1": 0.7343
+    },
+    "LogisticRegression": {
+      "val_accuracy": 0.7404,
+      "val_balanced_accuracy": 0.7225,
+      "val_macro_f1": 0.7255
+    },
+    "MLPClassifier": {
+      "val_accuracy": 0.7308,
+      "val_balanced_accuracy": 0.7196,
+      "val_macro_f1": 0.7244
+    }
+  },
+  "testMetrics": {
+    "model_name": "HistGradientBoosting",
+    "seed": 20261003,
+    "test_accuracy": 0.76,
+    "test_balanced_accuracy": 0.7597,
+    "test_macro_f1": 0.7532,
+    "test_weighted_f1": 0.7606,
+    "confusion_matrix_3class": [
+      [
+        36,
+        10,
+        2
+      ],
+      [
+        5,
+        40,
+        7
+      ],
+      [
+        5,
+        1,
+        19
+      ]
+    ],
+    "classification_report": {
+      "esotropia": {
+        "precision": 0.782608695652174,
+        "recall": 0.75,
+        "f1-score": 0.7659574468085106,
+        "support": 48.0
+      },
+      "exotropia": {
+        "precision": 0.7843137254901961,
+        "recall": 0.7692307692307693,
+        "f1-score": 0.7766990291262136,
+        "support": 52.0
+      },
+      "normal": {
+        "precision": 0.6785714285714286,
+        "recall": 0.76,
+        "f1-score": 0.7169811320754716,
+        "support": 25.0
+      },
+      "accuracy": 0.76,
+      "macro avg": {
+        "precision": 0.7484979499045995,
+        "recall": 0.7597435897435897,
+        "f1-score": 0.7532125360033985,
+        "support": 125.0
+      },
+      "weighted avg": {
+        "precision": 0.762510534648642,
+        "recall": 0.76,
+        "f1-score": 0.7606306821060673,
+        "support": 125.0
+      }
+    },
+    "binary_strabismus_vs_normal": {
+      "sensitivity": 0.91,
+      "specificity": 0.76,
+      "ppv": 0.9381,
+      "npv": 0.6786,
+      "roc_auc": 0.9124,
+      "tp": 91,
+      "fp": 6,
+      "tn": 19,
+      "fn": 9
+    }
+  },
+  "governanceDeclarations": [
+    "Status is strictly research_candidate, NOT deployed to production.",
+    "Production endpoint /api/v1/strabismus/predict remains unchanged.",
+    "Trained on 224x224 folder-labeled crops with unverified participant IDs.",
+    "Not for clinical diagnosis or clinical angle determination."
+  ]
+}

@@ -1,10 +1,9 @@
 /**
- * REMICARE AI - GAZE 4 DIRECTIONS QUALITY GATE & AUTO-CAPTURE SERVICE
+ * REMICARE AI - GAZE / HIRSCHBERG QUALITY GATE & AUTO-CAPTURE SERVICE
  * 
  * Evaluates real-time frame quality, anatomical landmark visibility,
  * vector gaze orientation, and temporal fixation stability (1.0–1.5s)
- * before triggering automatic capture for the 4 gaze directions:
- * LEFT, RIGHT, UP, STRAIGHT.
+ * before triggering automatic capture for gaze or Hirschberg photo steps.
  */
 
 import { LANDMARKS } from '../../constants/screeningConfig.js';
@@ -24,12 +23,12 @@ export const GAZE_QUALITY_REASONS = Object.freeze({
 });
 
 /**
- * Gaze 4 Directions Evaluation & Stability Controller
+ * Gaze/Hirschberg Evaluation & Stability Controller
  */
 export class Gaze4DirectionsQualityGate {
   constructor({
     requiredStableMs = 2100,      // ~2.1s required hold (allows 1... 2... Chụp! rhythm)
-    minDistanceCm = 15,          // 15–20 cm technical distance range
+    minDistanceCm = 15,
     maxDistanceCm = 20,
     directionThreshold = 0.050,   // Clear normalized iris displacement threshold
   } = {}) {
@@ -136,8 +135,9 @@ export class Gaze4DirectionsQualityGate {
       };
     }
 
-    // 4. Distance 15–20 cm gate (with generous 1.5cm engineering tolerance)
+    // 4. Distance gate (with generous 1.5cm engineering tolerance)
     const dist = distanceCm;
+    const rangeLabel = `${this.minDistanceCm}–${this.maxDistanceCm} cm`;
     if (dist !== null && Number.isFinite(dist)) {
       if (dist > this.maxDistanceCm + 1.5) {
         this.reset();
@@ -147,7 +147,7 @@ export class Gaze4DirectionsQualityGate {
           progressRatio: 0,
           stableMs: 0,
           activeReason: GAZE_QUALITY_REASONS.DISTANCE_TOO_FAR,
-          feedbackText: 'Đưa mặt lại gần camera một chút (15–20 cm).',
+          feedbackText: `Đưa mặt lại gần camera một chút (${rangeLabel}).`,
           gazeOffsets: { meanDx: 0, meanDy: 0 },
           qualityScore: 0.5,
         };
@@ -160,7 +160,7 @@ export class Gaze4DirectionsQualityGate {
           progressRatio: 0,
           stableMs: 0,
           activeReason: GAZE_QUALITY_REASONS.DISTANCE_TOO_CLOSE,
-          feedbackText: 'Lùi ra xa camera một chút (15–20 cm).',
+          feedbackText: `Lùi ra xa camera một chút (${rangeLabel}).`,
           gazeOffsets: { meanDx: 0, meanDy: 0 },
           qualityScore: 0.5,
         };
@@ -479,4 +479,3 @@ export function captureBilateralEyeRoi(video, landmarks, options = {}) {
     return { dataUrl: null, roiBox: null, aspectRatio: 0, bothEyesDetected: false, reason: 'EXCEPTION' };
   }
 }
-

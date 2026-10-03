@@ -1,0 +1,58 @@
+{
+  "benchmarkName": "Phase 6A Hirschberg Detector Technical Coverage Benchmark",
+  "datasetVersion": "hirschberg-folder-labels-v0.1",
+  "manifestPath": "D:/AI_Check_Lac/manifests/hirschberg_folder_labels.jsonl",
+  "totalImagesEvaluated": 696,
+  "detectorSuccessRates": {
+    "pupilCenterDetection": {
+      "detectedCount": 101,
+      "successRatePercent": 14.51,
+      "pupilNotFoundCount": 595,
+      "lowQualityInputCount": 0
+    },
+    "cornealReflexDetection": {
+      "detectedCount": 205,
+      "successRatePercent": 29.45,
+      "reflexNotFoundCount": 229,
+      "multipleReflexCount": 262,
+      "lowQualityInputCount": 0,
+      "tierBreakdown": {
+        "strict_specular": 199,
+        "adaptive_specular": 134,
+        "medium_specular": 134
+      }
+    },
+    "jointMeasurementCoverage": {
+      "jointDetectedCount": 31,
+      "coveragePercent": 4.45
+    }
+  },
+  "perSplitCoverage": {
+    "test": {
+      "total": 125,
+      "pupilSuccessRatePercent": 9.6,
+      "reflexSuccessRatePercent": 28.8,
+      "jointCoveragePercent": 3.2
+    },
+    "train": {
+      "total": 467,
+      "pupilSuccessRatePercent": 14.99,
+      "reflexSuccessRatePercent": 29.76,
+      "jointCoveragePercent": 4.71
+    },
+    "val": {
+      "total": 104,
+      "pupilSuccessRatePercent": 18.27,
+      "reflexSuccessRatePercent": 28.85,
+      "jointCoveragePercent": 4.81
+    }
+  },
+  "safetyAndComplianceDeclarations": [
+    "All thresholds are TODO_PILOT and pending doctor/pilot review.",
+    "Reports technical detector coverage / success rate ONLY.",
+    "NO clinical sensitivity, specificity, accuracy, or diagnostic metrics are calculated.",
+    "NO clinical threshold is established.",
+    "NO clinical diagnosis is made.",
+    "Data is exploratory-only cropped images (not production full-frame protocol)."
+  ]
+}

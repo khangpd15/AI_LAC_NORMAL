@@ -79,61 +79,67 @@ function CoverTestSummaryRow({ coverTest }) {
 
 function Gaze4DirectionsSummarySection({ gazeTracking }) {
   const captures = gazeTracking?.captures || {};
-  const directions = [
-    { key: 'left', label: 'Trái', icon: '←' },
-    { key: 'right', label: 'Phải', icon: '→' },
-    { key: 'up', label: 'Lên', icon: '↑' },
-    { key: 'straight', label: 'Thẳng', icon: '⦿', fallbackKey: 'down' },
-  ];
-
+  const cap = captures.hirschberg || captures.straight || {};
   const totalCaptured = Object.values(captures).filter((c) => !!c?.image).length;
+  const measurement = gazeTracking?.hirschbergResult;
 
   return (
     <div className="final-screening-section gaze-summary-section">
       <div className="section-header-flex">
-        <h3 className="final-screening-section-title">Chụp 4 hướng mắt (Cự ly 15–20 cm)</h3>
+        <h3 className="final-screening-section-title">Ảnh Hirschberg (Cự ly 20–25 cm)</h3>
         <span className="badge badge-accent">
-          {totalCaptured === 4 ? '✓ Đủ 4 hướng' : `${totalCaptured}/4 ảnh`}
+          {totalCaptured >= 1 ? '✓ Đã chụp' : 'Chưa có ảnh'}
         </span>
       </div>
       <p className="section-subtext" style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '12px' }}>
-        Hình ảnh ghi nhận cử động nhãn cầu 4 hướng ở cự ly gần nhằm hỗ trợ quan sát trực quan.
+        Ảnh nhìn thẳng dùng để đo phản xạ giác mạc theo phương pháp Hirschberg nghiên cứu. Kết quả đo chưa phải chẩn đoán.
       </p>
 
       <div className="gaze-photos-grid">
-        {directions.map(({ key, label, icon, fallbackKey }) => {
-          const cap = captures[key] || (fallbackKey ? captures[fallbackKey] : null);
-          return (
-            <div key={key} className="gaze-photo-card">
-              <div className="gaze-photo-badge">
-                <span className="gaze-icon">{icon}</span>
-                <span>{label}</span>
+        <div className="gaze-photo-card">
+          <div className="gaze-photo-badge">
+            <span className="gaze-icon">H</span>
+            <span>Hirschberg</span>
+          </div>
+          <div className="gaze-photo-frame">
+            {cap?.image ? (
+              <img
+                src={cap.image}
+                alt="Ảnh Hirschberg"
+                className="gaze-photo-img"
+              />
+            ) : (
+              <div className="gaze-photo-placeholder">
+                <span>Chưa có ảnh</span>
               </div>
-              <div className="gaze-photo-frame">
-                {cap?.image ? (
-                  <img
-                    src={cap.image}
-                    alt={`Mắt nhìn ${label}`}
-                    className="gaze-photo-img"
-                  />
-                ) : (
-                  <div className="gaze-photo-placeholder">
-                    <span>Chưa có ảnh</span>
-                  </div>
-                )}
-              </div>
-              <div className="gaze-photo-meta">
-                <span className={`meta-status ${cap?.image ? 'status-ok' : 'status-missing'}`}>
-                  {cap?.image ? '✓ Đã chụp' : 'Chưa ghi nhận'}
-                </span>
-                {cap?.distanceCm && (
-                  <span className="meta-dist">{cap.distanceCm} cm</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
+            )}
+          </div>
+          <div className="gaze-photo-meta">
+            <span className={`meta-status ${cap?.image ? 'status-ok' : 'status-missing'}`}>
+              {cap?.image ? '✓ Đã chụp' : 'Chưa ghi nhận'}
+            </span>
+            {cap?.distanceCm && (
+              <span className="meta-dist">{cap.distanceCm} cm</span>
+            )}
+            {measurement?.result && (
+              <span className="meta-dist">{measurement.result}</span>
+            )}
+          </div>
+        </div>
       </div>
+
+      {measurement?.measurements?.delta_h != null && (
+        <div className="final-screening-info-row" style={{ marginTop: '12px' }}>
+          <span>Chỉ số Hirschberg delta_h</span>
+          <strong>{measurement.measurements.delta_h}</strong>
+        </div>
+      )}
+      {measurement?.reasonCodes?.length > 0 && (
+        <div className="final-screening-info-row">
+          <span>Lý do/ghi chú</span>
+          <strong>{measurement.reasonCodes.join(' | ')}</strong>
+        </div>
+      )}
     </div>
   );
 }
@@ -178,7 +184,13 @@ function StrabismusAIScreeningSection({ strabismusResult }) {
   let emoji = '⚪';
   let statusTitle = 'CHƯA ĐỦ ĐIỀU KIỆN ĐÁNH GIÁ';
 
-  if (status === 'NORMAL') {
+  if (strabismusResult?.screening_status === 'HIRSCHBERG_MEASUREMENT_ONLY') {
+    statusText = strabismusResult.message || 'Đã đo Hirschberg theo chế độ nghiên cứu; chưa có ngưỡng chẩn đoán được duyệt.';
+    badgeClass = 'badge-inconclusive';
+    bannerClass = 'strabismus-banner strabismus-banner--inconclusive';
+    emoji = '⚪';
+    statusTitle = 'HIRSCHBERG NGHIÊN CỨU';
+  } else if (status === 'NORMAL') {
     statusText = 'Chưa ghi nhận tín hiệu bất thường đối xứng trục nhãn cầu qua ảnh chụp.';
     badgeClass = 'badge-clear';
     bannerClass = 'strabismus-banner strabismus-banner--normal';
@@ -206,7 +218,7 @@ function StrabismusAIScreeningSection({ strabismusResult }) {
       <div className="section-header-flex">
         <div className="strabismus-ai-title-wrap">
           <h3 className="final-screening-section-title" style={{ margin: 0 }}>
-            👁️ Phân tích hình ảnh AI (Góc nhìn thẳng)
+            Phân tích hình ảnh (Hirschberg)
           </h3>
         </div>
         <span className={`badge ${badgeClass} strabismus-status-badge`}>
@@ -215,7 +227,7 @@ function StrabismusAIScreeningSection({ strabismusResult }) {
       </div>
 
       <p className="section-subtext" style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '12px' }}>
-        Trích xuất vùng hai mắt (Bilateral Eye ROI) và phân tích tính đối xứng trục nhãn cầu bằng mô hình thị giác máy tính.
+        Đo ảnh nhìn thẳng theo phương pháp Hirschberg nghiên cứu. Ngưỡng lâm sàng vẫn là TODO_PILOT.
       </p>
 
       <div className={bannerClass}>
@@ -241,7 +253,7 @@ function StrabismusAIScreeningSection({ strabismusResult }) {
 
       <div className="final-screening-disclaimer-box" style={{ marginTop: '12px', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.8rem', color: '#475569', lineHeight: 1.5 }}>
         <p style={{ margin: 0 }}>
-          ⓘ <strong>Về chỉ số Độ tự tin ({confidencePct != null ? `${confidencePct}%` : '--'}):</strong> Con số này thể hiện mức độ tự tin toán học của thuật toán phân lớp nơ-ron đối với mẫu ảnh đã chụp, <strong>hoàn toàn không phải là xác suất mắc bệnh</strong>. Kết quả AI chỉ là tín hiệu tính toán hỗ trợ sàng lọc và không tự quyết định kết quả chẩn đoán lâm sàng.
+          <strong>Lưu ý:</strong> Hirschberg trong phiên bản này chỉ là phép đo hình học nghiên cứu. Không dùng kết quả này như xác suất mắc bệnh hoặc chẩn đoán.
         </p>
       </div>
     </div>
@@ -311,12 +323,12 @@ function TechnicalDetails({ coverTest, quality, gazeTracking, strabismusResult }
       {/* Gaze 4 Directions technical */}
       {gazeTracking && (
         <>
-          <h4>Chụp 4 hướng mắt — Dữ liệu kỹ thuật (15–20 cm)</h4>
+          <h4>Hirschberg — Dữ liệu kỹ thuật (20–25 cm)</h4>
           <div className="table-responsive">
             <table className="metrics-table">
               <thead>
                 <tr>
-                  <th>Hướng</th>
+                  <th>Phương pháp</th>
                   <th>Thời gian</th>
                   <th>Khoảng cách</th>
                   <th>Điểm chất lượng</th>
@@ -326,12 +338,9 @@ function TechnicalDetails({ coverTest, quality, gazeTracking, strabismusResult }
               </thead>
               <tbody>
                 {[
-                  { key: 'left', label: 'Trái (Left)' },
-                  { key: 'right', label: 'Phải (Right)' },
-                  { key: 'up', label: 'Lên (Up)' },
-                  { key: 'straight', label: 'Thẳng (Straight)', fallbackKey: 'down' },
-                ].map(({ key, label, fallbackKey }) => {
-                  const cap = gazeTracking?.captures?.[key] || (fallbackKey ? gazeTracking?.captures?.[fallbackKey] : null);
+                  { key: 'hirschberg', label: 'Hirschberg' },
+                ].map(({ key, label }) => {
+                  const cap = gazeTracking?.captures?.[key] || gazeTracking?.captures?.straight;
                   return (
                     <tr key={key}>
                       <td>{label}</td>
@@ -347,7 +356,7 @@ function TechnicalDetails({ coverTest, quality, gazeTracking, strabismusResult }
             </table>
           </div>
           <p className="technical-calibration-note">
-            Khoảng cách 15–20 cm là khoảng cách kỹ thuật nhằm chụp rõ chi tiết nhãn cầu, không phải tiêu chuẩn lâm sàng.
+            Khoảng cách 20–25 cm và ngưỡng Hirschberg hiện là TODO_PILOT, chưa phải tiêu chuẩn lâm sàng đã hiệu chuẩn.
           </p>
         </>
       )}

@@ -12,6 +12,7 @@ import {
   FIXATION_TARGET_CONFIG,
 } from '../../constants/binocularScreeningConfig.js';
 import { SCREENING_CONFIG, COVER_TEST_CONFIG } from '../../constants/screeningConfig.js';
+import { RESEARCH_QUALITY_CONFIG } from '../../constants/researchScreeningConfig.js';
 import { aggregateCoverCycles, createCoverFrame, createCycleRecord, generateUUIDv4, inconclusiveCycle, isCoverSessionCurrent, isValidUUIDv4, validateBaselinePair } from '../../services/coverTestProtocolService.js';
 import { createTimeSeriesRecorder } from '../../services/coverTestTimeSeriesService.js';
 import { captureScreeningFrame, captureEyeRegionCrop } from '../../services/screeningImageCaptureService.js';
@@ -205,6 +206,15 @@ export default function CoverTestStep({
           samplingRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
           samplingMode: COVER_TEST_CONFIG.datasetSamplingMode,
           protocolVersion: 'cover-test-v1',
+          researchSchemaVersion: RESEARCH_QUALITY_CONFIG.schemaVersion,
+          coverSequenceSchema: {
+            timestampField: 'realTimestampMs',
+            phaseField: 'phase',
+            irisXField: 'iris_x',
+            eyeCornerField: 'eye_corner',
+            visibilityField: 'visibility',
+            thresholdSource: RESEARCH_QUALITY_CONFIG.thresholdSource,
+          },
           camera: { mirrored: true },
         },
         cycles: cyclesList || [],

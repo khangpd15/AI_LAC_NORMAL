@@ -4,3 +4,4 @@ export { transferStrabismusApi } from './transferApi.js';
 export { checkBackendHealthApi } from './healthApi.js';
 
 export { predictStrabismusImage, checkStrabismusHealthApi, dataUrlToBlob } from './strabismusApi.js';
+export { measureResearchGeometry } from './researchMeasurementApi.js';

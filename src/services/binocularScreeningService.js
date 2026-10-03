@@ -73,6 +73,7 @@ export function createBinocularSession() {
     gazeTracking: null,
     coverPositionCheck: null,
     brockPositionCheck: null,
+    preparation: null,
     positionCheck: {
       testType: 'COVER_TEST',
       estimatedDistanceCm: null,
@@ -147,6 +148,24 @@ export function createBinocularSession() {
   return session;
 }
 
+export function updatePreparationData(sessionId, preparationData) {
+  const session = sessionsMap.get(sessionId);
+  if (!session) return;
+
+  const record = {
+    ...preparationData,
+    recordedAt: new Date().toISOString(),
+  };
+  session.preparation = record;
+  session.currentState = BINOCULAR_SCREENING_STATES.CAMERA_PERMISSION;
+  logScreeningEvent(sessionId, 'PRE_CAMERA_CHECKLIST_COMPLETE', {
+    eligibility: record.eligibility,
+    selfReported: record.selfReported,
+    device: record.device,
+    cameraPlan: record.cameraPlan,
+  });
+}
+
 
 /**
  * Updates Position Check telemetry in the session for a specific test type
@@ -218,7 +237,8 @@ export function updateGazeTrackingData(sessionId, gazeData) {
   }
   logScreeningEvent(sessionId, 'GAZE_4_DIRECTIONS_COMPLETE', {
     distanceCm: gazeData.distanceCm,
-    directions: Object.keys(gazeData.captures || {}),
+    method: gazeData.method || 'HIRSCHBERG',
+    captures: Object.keys(gazeData.captures || {}),
   });
 }
 
@@ -341,12 +361,12 @@ export function evaluateFinalScreening(session) {
 
   // Step 2: Assemble structured screening evidence (Single Source of Truth)
   const coverTestEvidence = session?.coverTest || {};
-  const fourDirectionsEvidence = session?.gazeTracking || {};
+  const hirschbergEvidence = session?.gazeTracking || {};
   const aiImageEvidence = session?.strabismusResult || session?.gazeTracking?.strabismusResult || null;
 
   const screeningEvidence = {
     coverTest: coverTestEvidence,
-    fourDirections: fourDirectionsEvidence,
+    hirschberg: hirschbergEvidence,
     aiImageAnalysis: aiImageEvidence,
     quality: gateResult,
   };
@@ -374,10 +394,10 @@ export function evaluateFinalScreening(session) {
     const coverValidCycles = coverTestEvidence?.validCycles ?? 0;
     const isCoverSuspicious = coverVerdict === COVER_TEST_VERDICTS.REFIXATION_DETECTED && coverValidCycles >= 2;
 
-    // Secondary Functional Evidence: 4 Directions Motility
-    const captures = fourDirectionsEvidence?.captures || {};
-    const totalCapturedDirections = Object.values(captures).filter((c) => !!c?.image).length;
-    const _isMotilityComplete = totalCapturedDirections >= 4;
+    // Secondary image evidence: Hirschberg measurement is research-only.
+    const captures = hirschbergEvidence?.captures || {};
+    const totalCapturedFrames = Object.values(captures).filter((c) => !!c?.image).length;
+    const _isHirschbergComplete = totalCapturedFrames >= 1;
 
     // Supporting Computational Evidence: AI Deep Learning Image Analysis
     const aiStatus = aiImageEvidence?.status; // 'NORMAL' | 'SUSPICIOUS' | 'INCONCLUSIVE' | null
@@ -424,7 +444,7 @@ export function evaluateFinalScreening(session) {
   if (typeof window !== 'undefined' && import.meta.env?.DEV) {
     console.log(
       `[SYNTHESIS] Cover: ${coverTestEvidence?.status || 'N/A'} | ` +
-      `Four Directions: ${Object.values(fourDirectionsEvidence?.captures || {}).filter((c) => !!c?.image).length}/4 | ` +
+      `Hirschberg: ${Object.values(hirschbergEvidence?.captures || {}).filter((c) => !!c?.image).length}/1 | ` +
       `AI: ${aiImageEvidence?.status || 'N/A'} | ` +
       `Quality: ${gateResult?.coverTestValid ? 'PASS' : 'FAIL'} | ` +
       `Final: ${status}`

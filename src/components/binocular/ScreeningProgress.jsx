@@ -3,12 +3,13 @@ import React from 'react';
 /**
  * ScreeningProgress Component
  * Renders step progression bar across:
- * 1. POSITION -> 2. COVER TEST -> 3. BROCK STRING -> 4. SUMMARY
+ * 1. PRECHECK -> 2. POSITION -> 3. HIRSCHBERG -> 4. COVER TEST -> 5. SUMMARY
  */
 export default function ScreeningProgress({ currentStep = 'GAZE_POSITION' }) {
   const steps = [
+    { id: 'PRECHECK', label: 'Chuẩn bị', shortLabel: 'Chuẩn bị' },
     { id: 'GAZE_POSITION', label: 'Vị trí', shortLabel: 'Vị trí' },
-    { id: 'GAZE_4_DIRECTIONS', label: '4 hướng', shortLabel: '4 hướng' },
+    { id: 'GAZE_4_DIRECTIONS', label: 'Hirschberg', shortLabel: 'H' },
     { id: 'COVER_POSITION', label: 'Khoảng cách', shortLabel: 'Cự ly' },
     { id: 'COVER', label: 'Cover', shortLabel: 'Cover' },
     { id: 'SUMMARY', label: 'Kết quả', shortLabel: 'KQ' },
@@ -16,21 +17,23 @@ export default function ScreeningProgress({ currentStep = 'GAZE_POSITION' }) {
 
   const getStepIndex = (stepId) => {
     switch (stepId) {
+      case 'PRECHECK':
+        return 0;
       case 'GAZE_POSITION':
       case 'GAZE_POSITION_CHECK':
-        return 0;
-      case 'GAZE_4_DIRECTIONS':
         return 1;
+      case 'GAZE_4_DIRECTIONS':
+        return 2;
       case 'COVER_POSITION':
       case 'POSITION':
       case 'COVER_TEST_POSITION_CHECK':
-        return 2;
+        return 3;
       case 'COVER':
       case 'COVER_TEST_RUNNING':
-        return 3;
+        return 4;
       case 'SUMMARY':
       case 'SCREENING_SUMMARY':
-        return 4;
+        return 5;
       default:
         return 0;
     }

@@ -16,7 +16,7 @@ export const BINOCULAR_SCREENING_STATES = {
   POSITION_CHECK: 'COVER_TEST_POSITION_CHECK',
   POSITION_READY: 'POSITION_READY',
 
-  // Gaze 4 Directions Flow (15–20 cm)
+  // Hirschberg photo flow (20-25 cm)
   GAZE_POSITION_CHECK: 'GAZE_POSITION_CHECK',
   GAZE_4_DIRECTIONS: 'GAZE_4_DIRECTIONS',
 
@@ -51,20 +51,20 @@ export const POSITION_STATUS = {
 export const POSITION_CONFIG = {
   GAZE_4_DIRECTIONS: {
     testType: 'GAZE_4_DIRECTIONS',
-    label: '4 HƯỚNG MẮT',
-    title: 'Chụp 4 hướng mắt',
-    subtitle: 'Kiểm tra vị trí trước khi chụp 4 hướng (15–20 cm)',
-    minDistanceCm: 15,
-    maxDistanceCm: 20,
-    optimalCm: 17.5,
-    instruction: 'Đưa mặt lại gần camera một chút (15–20 cm)',
-    targetRangeLabel: '15–20 cm',
+    label: 'HIRSCHBERG',
+    title: 'Chụp Hirschberg',
+    subtitle: 'Kiểm tra vị trí trước khi chụp ảnh phản xạ giác mạc (20–25 cm)',
+    minDistanceCm: 20,
+    maxDistanceCm: 25,
+    optimalCm: 22.5,
+    instruction: 'Đưa mặt vào khoảng 20–25 cm',
+    targetRangeLabel: '20–25 cm',
     readyMessage: '✓ Vị trí phù hợp',
-    tooCloseMessage: 'Bạn đang quá gần. Hãy lùi ra khoảng 15–20 cm.',
-    tooFarMessage: 'Bạn đang quá xa. Hãy đưa mặt lại gần khoảng 15–20 cm.',
-    buttonLabel: 'BẮT ĐẦU CHỤP 4 HƯỚNG',
-    clinicalNote: 'Khoảng cách 15–20 cm là thông số kỹ thuật cho bước chụp ảnh mắt cận cảnh, không phải tiêu chuẩn lâm sàng.',
-    disclaimer: 'Khoảng cách yêu cầu: 15–20 cm',
+    tooCloseMessage: 'Bạn đang quá gần. Hãy lùi ra khoảng 20–25 cm.',
+    tooFarMessage: 'Bạn đang quá xa. Hãy đưa mặt lại gần khoảng 20–25 cm.',
+    buttonLabel: 'BẮT ĐẦU CHỤP HIRSCHBERG',
+    clinicalNote: 'Khoảng cách 20–25 cm là thông số TODO_PILOT cho bước Hirschberg, chưa phải chuẩn lâm sàng đã hiệu chuẩn.',
+    disclaimer: 'Khoảng cách yêu cầu: 20–25 cm',
   },
 
   COVER_TEST: {

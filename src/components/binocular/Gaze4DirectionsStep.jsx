@@ -1,41 +1,59 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GAZE_DIRECTIONS_CONFIG } from '../../constants/binocularScreeningConfig.js';
 import {
   Gaze4DirectionsQualityGate,
   captureGazeFrameDataUrl,
   captureBilateralEyeRoi,
 } from '../../services/cv/gaze4DirectionsQualityGate.js';
+import { evaluateResearchFrameQuality } from '../../services/cv/researchQualityGate.js';
 import CameraView from '../CameraView';
 import AudioButton from '../audio/AudioButton';
-import { predictStrabismusImage } from '../../api/strabismusApi.js';
+import { measureResearchGeometry } from '../../api/researchMeasurementApi.js';
+import HirschbergQualityReviewModal from './HirschbergQualityReviewModal.jsx';
+import {
+  inspectHirschbergImage,
+  validateHirschbergQuality,
+  loadImageElement,
+} from '../../services/hirschbergQualityPrescreenService.js';
+
+const HIRSCHBERG_CAPTURE_CONFIG = {
+  id: 'hirschberg',
+  direction: 'straight',
+  name: 'HIRSCHBERG',
+  label: 'HIRSCHBERG',
+  stepNumber: '1/1',
+  voiceText: 'Nhìn thẳng vào chấm ở giữa màn hình và giữ yên nghen.',
+  targetPosition: { left: '50%', top: '50%', transform: 'translate(-50%, -50%)' },
+  arrowHint: 'Nhìn thẳng vào chấm sáng',
+};
 
 /**
- * Gaze4DirectionsStep Component
- * Captures 4 gaze directions (LEFT, RIGHT, UP, STRAIGHT) with fixed non-moving targets
- * at close distance (15–20 cm) prior to Cover Test.
- * 
- * Auto-captures with a distinct rhythm:
- * 1. Speaks direction: "Nhìn thẳng sang trái nghen."
- * 2. Gives a 1.8s grace period to orient eyes.
- * 3. Once user locks gaze onto fixed target: counts "Một...", "Hai...", "Chụp!" (~2s total).
- * 4. Captures photo, transitions to next direction.
+ * Hirschberg capture & upload step with AI quality pre-screening.
+ * Allows users to either capture live via camera or upload an image file.
+ * Evaluates image quality (face, eyes, head pose, focus, exposure, reflex) before submitting to AI.
  */
 export default function Gaze4DirectionsStep({
   videoRef,
   stream,
   landmarks,
   positionReport,
+  preparationData,
+  sessionId,
   onComplete,
   speak,
   isVoiceEnabled = true,
   toggleSound,
   onVideoReady,
 }) {
-  // Current direction index: 0 (LEFT), 1 (RIGHT), 2 (UP), 3 (STRAIGHT)
-  const [directionIndex, setDirectionIndex] = useState(0);
-
-  // Status state: 'OBSERVING' | 'CAPTURING' | 'SUCCESS_TRANSITION' | 'COMPLETED'
+  // Status state: 'OBSERVING' | 'CAPTURING' | 'REVIEWING' | 'SUCCESS_TRANSITION' | 'COMPLETED'
   const [stepStatus, setStepStatus] = useState('OBSERVING');
+
+  // Input mode: 'CAMERA' | 'UPLOAD'
+  const [inputMode, setInputMode] = useState('CAMERA');
+  const fileInputRef = useRef(null);
+
+  // Pre-screening review candidate
+  const [reviewCandidate, setReviewCandidate] = useState(null);
+  const [isInspecting, setIsInspecting] = useState(false);
 
   // Real-time quality gate feedback
   const [progressRatio, setProgressRatio] = useState(0);
@@ -63,7 +81,13 @@ export default function Gaze4DirectionsStep({
   }, []);
 
   // Quality gate instance (2100ms stable hold for 1... 2... Chụp!)
-  const gateRef = useRef(new Gaze4DirectionsQualityGate({ requiredStableMs: 2100 }));
+  const gateRef = useRef(
+    new Gaze4DirectionsQualityGate({
+      requiredStableMs: 2100,
+      minDistanceCm: 20,
+      maxDistanceCm: 25,
+    })
+  );
 
   // Audio speech tracking refs to avoid duplicate speaks
   const spokenIntroRef = useRef(false);
@@ -75,6 +99,9 @@ export default function Gaze4DirectionsStep({
   // Flash animation state
   const [showShutterFlash, setShowShutterFlash] = useState(false);
   const [videoAspect, setVideoAspect] = useState(null);
+  const activeConfig = HIRSCHBERG_CAPTURE_CONFIG;
+  const estimatedDistanceCm =
+    positionReport?.stableDistanceCm ?? positionReport?.estimatedDistanceCm ?? null;
 
   const handleVideoReady = useCallback(
     (videoEl) => {
@@ -86,6 +113,65 @@ export default function Gaze4DirectionsStep({
     [onVideoReady]
   );
 
+  const buildCaptureRecord = useCallback(
+    ({ gateResult = null, manual = false } = {}) => {
+      const capturedDataUrl = captureGazeFrameDataUrl(videoRef.current);
+
+      let eyeRoiDataUrl = null;
+      let eyeRoiBox = null;
+      const roiRes = captureBilateralEyeRoi(videoRef.current, landmarks);
+      if (roiRes?.bothEyesDetected && roiRes?.dataUrl) {
+        eyeRoiDataUrl = roiRes.dataUrl;
+        eyeRoiBox = roiRes.roiBox;
+      }
+
+      const researchLandmarks = landmarks
+        ? landmarks.slice(0, 478).map((p) => ({
+            x: Number(p.x.toFixed(5)),
+            y: Number(p.y.toFixed(5)),
+            z: typeof p.z === 'number' ? Number(p.z.toFixed(5)) : undefined,
+          }))
+        : null;
+      const researchQuality = evaluateResearchFrameQuality({
+        video: videoRef.current,
+        landmarks,
+        distanceCm: estimatedDistanceCm,
+        gazeGateResult: gateResult,
+        positionReport,
+      });
+
+      return {
+        direction: activeConfig.id,
+        directionName: activeConfig.name,
+        method: 'HIRSCHBERG',
+        timestamp: new Date().toISOString(),
+        image: capturedDataUrl,
+        originalFrame: capturedDataUrl,
+        eyeRoi: eyeRoiDataUrl,
+        roiBox: eyeRoiBox,
+        landmarks: landmarks
+          ? landmarks.slice(0, 478).map((p) => ({ x: Number(p.x.toFixed(3)), y: Number(p.y.toFixed(3)) }))
+          : null,
+        researchLandmarks,
+        qualityScore: gateResult?.qualityScore ?? (manual ? 0.95 : null),
+        distanceCm: estimatedDistanceCm,
+        gazeOffsets: gateResult?.gazeOffsets ?? { meanDx: 0, meanDy: 0 },
+        researchQuality,
+        backendResearchPayload: {
+          payloadType: 'HIRSCHBERG_ORIGINAL_FRAME_WITH_METADATA',
+          preparedOnly: false,
+          imageField: 'originalFrame',
+          metadata: {
+            ...researchQuality.metadata,
+            landmarks: researchLandmarks,
+          },
+          quality: researchQuality.checks,
+        },
+      };
+    },
+    [activeConfig, estimatedDistanceCm, landmarks, positionReport, videoRef]
+  );
+
   useEffect(() => {
     const v = videoRef?.current;
     if (v && v.videoWidth && v.videoHeight) {
@@ -93,10 +179,7 @@ export default function Gaze4DirectionsStep({
     }
   }, [videoRef, stream]);
 
-  const activeConfig = GAZE_DIRECTIONS_CONFIG[directionIndex];
-  const estimatedDistanceCm = positionReport?.stableDistanceCm ?? positionReport?.estimatedDistanceCm ?? null;
-
-  // When direction changes: announce direction and give 1.8s grace period to orient eyes
+  // Announce Hirschberg capture and give a short grace period to orient eyes.
   useEffect(() => {
     gateRef.current.reset();
     spokenIntroRef.current = false;
@@ -114,9 +197,7 @@ export default function Gaze4DirectionsStep({
     }
 
     if (orientTimeoutRef.current) clearTimeout(orientTimeoutRef.current);
-    // For 'straight' gaze: start evaluating immediately (250ms) so AI captures right away!
-    const isStraight = activeConfig?.id === 'straight' || activeConfig?.id === 'center';
-    const orientDelay = isStraight ? 250 : 1600;
+    const orientDelay = 500;
     orientTimeoutRef.current = setTimeout(() => {
       setIsOrienting(false);
     }, orientDelay);
@@ -124,24 +205,57 @@ export default function Gaze4DirectionsStep({
     return () => {
       if (orientTimeoutRef.current) clearTimeout(orientTimeoutRef.current);
     };
-  }, [directionIndex, activeConfig, isVoiceEnabled, speak]);
+  }, [activeConfig, isVoiceEnabled, speak]);
 
-  const directionIndexRef = useRef(directionIndex);
   const activeConfigRef = useRef(activeConfig);
   const capturesRef = useRef(captures);
   const onCompleteRef = useRef(onComplete);
 
   useEffect(() => {
-    directionIndexRef.current = directionIndex;
     activeConfigRef.current = activeConfig;
     capturesRef.current = captures;
     onCompleteRef.current = onComplete;
-  }, [directionIndex, activeConfig, captures, onComplete]);
+  }, [activeConfig, captures, onComplete]);
 
-  // Finalizes a captured direction: advances to next direction or completes 4-direction protocol with DL analysis
+  const buildResearchMeasurementPayload = useCallback(
+    (captureRecord) => {
+      const eligibility = preparationData?.eligibility || {};
+      const qualityMeta = captureRecord?.researchQuality?.metadata || {};
+      const distanceBucket =
+        qualityMeta.distanceBucket ||
+        captureRecord?.researchQuality?.checks?.distance?.bucket ||
+        'UNKNOWN';
+
+      return {
+        schemaVersion: 'remicare-research-quality-v0.1',
+        featureVersion: 'research-geometry-v0.1',
+        protocolVersion: 'hirschberg-photo-v1',
+        configVersion: 'TODO_PILOT',
+        testType: 'HIRSCHBERG',
+        sessionId: sessionId || `client-${Date.now()}`,
+        requestId: `hirschberg-${Date.now()}`,
+        distance_bucket: distanceBucket,
+        eligibility: {
+          consent: Boolean(eligibility.guardianConsent),
+          ageYears: eligibility.ageYears ?? null,
+          redFlag: Boolean(eligibility.redFlagPresent),
+        },
+        quality: captureRecord?.researchQuality?.checks || {},
+        metadata: {
+          ...(qualityMeta || {}),
+          landmarks: captureRecord?.researchLandmarks || [],
+          selfReported: preparationData?.selfReported || {},
+          preparationSchemaVersion: preparationData?.schemaVersion || null,
+        },
+        imageDataUrl: captureRecord?.originalFrame,
+      };
+    },
+    [preparationData, sessionId]
+  );
+
+  // Finalizes the Hirschberg capture and calls the research geometry endpoint.
   const handleFinalizeGazeStep = useCallback(
     async (newCaptureRecord, currentCaptures) => {
-      const currentIdx = directionIndexRef.current;
       const currentConfig = activeConfigRef.current;
       const updatedCaptures = {
         ...currentCaptures,
@@ -150,21 +264,9 @@ export default function Gaze4DirectionsStep({
       };
       setCaptures(updatedCaptures);
 
-      // If there are still more directions to capture (e.g. TRÁI -> PHẢI -> LÊN -> THẲNG):
-      if (currentIdx < GAZE_DIRECTIONS_CONFIG.length - 1) {
-        setDirectionIndex((prevIdx) => prevIdx + 1);
-        setStepStatus('OBSERVING');
-        setProgressRatio(0);
-        setCountdownPhase(null);
-        return;
-      }
+      let hirschbergResult = null;
 
-      // All 4 directions completed!
-      // On STRAIGHT gaze (final step), trigger Strabismus Deep Learning screening
-      let strabismusResult = null;
-      const straightRoiImage = newCaptureRecord?.eyeRoi || updatedCaptures.straight?.eyeRoi;
-
-      if (straightRoiImage) {
+      if (newCaptureRecord?.originalFrame && newCaptureRecord?.researchLandmarks?.length >= 478) {
         try {
           setIsAnalyzing(true);
           isAnalyzingRef.current = true;
@@ -173,44 +275,41 @@ export default function Gaze4DirectionsStep({
           const controller = new AbortController();
           abortControllerRef.current = controller;
 
-          // Dispatch the Bilateral Eye ROI directly to the AI service
-          strabismusResult = await predictStrabismusImage(straightRoiImage, {
-            signal: controller.signal,
-            timeoutMs: 15000,
-          });
+          hirschbergResult = await measureResearchGeometry(
+            buildResearchMeasurementPayload(newCaptureRecord),
+            {
+              signal: controller.signal,
+              timeoutMs: 20000,
+            }
+          );
         } catch (err) {
           if (err.name === 'AbortError') {
-            console.log('Strabismus AI prediction was aborted.');
+            console.log('Hirschberg research measurement was aborted.');
             return;
           }
-          console.warn('Strabismus AI prediction warning / fallback:', err);
-          // Graceful fallback so clinical flow is never blocked
-          strabismusResult = {
+          console.warn('Hirschberg research measurement warning / fallback:', err);
+          hirschbergResult = {
             status: 'INCONCLUSIVE',
-            prediction: 'INCONCLUSIVE',
-            confidence: null,
-            confidence_type: 'MODEL_SOFTMAX',
-            screening_status: 'AI_SIGNAL',
-            quality: 'FAIL_NETWORK',
-            quality_score: newCaptureRecord?.qualityScore || 0.85,
-            message: err.userMessage || 'Không thể kết nối đến máy chủ AI (sử dụng kết quả lâm sàng)',
+            result: 'SYSTEM_ERROR',
+            reasonCodes: ['RESEARCH_BACKEND_UNAVAILABLE'],
+            measurements: {},
+            quality: newCaptureRecord?.researchQuality || {},
+            experimental: true,
+            message: err.userMessage || 'Không thể kết nối backend Hirschberg nghiên cứu.',
           };
         } finally {
           setIsAnalyzing(false);
           isAnalyzingRef.current = false;
         }
       } else {
-        // Defensive: If no valid Bilateral Eye ROI was extracted, do NOT send full face!
-        console.warn('[Gaze4DirectionsStep] Bilateral Eye ROI unavailable at straight capture. AI inference skipped defensively.');
-        strabismusResult = {
+        hirschbergResult = {
           status: 'INCONCLUSIVE',
-          prediction: 'INCONCLUSIVE',
-          confidence: null,
-          confidence_type: 'MODEL_SOFTMAX',
-          screening_status: 'AI_SIGNAL',
-          quality: 'FAIL_ROI_LANDMARKS',
-          quality_score: newCaptureRecord?.qualityScore || 0.70,
-          message: 'Không trích xuất được vùng hai mắt hợp lệ để sàng lọc AI (mắt chưa nhìn thẳng hoặc thiếu landmarks).',
+          result: 'INVALID_LANDMARKS',
+          reasonCodes: ['ORIGINAL_FRAME_OR_LANDMARKS_MISSING'],
+          measurements: {},
+          quality: newCaptureRecord?.researchQuality || {},
+          experimental: true,
+          message: 'Không đủ ảnh gốc hoặc landmarks để đo Hirschberg.',
         };
       }
 
@@ -220,35 +319,219 @@ export default function Gaze4DirectionsStep({
       }
 
       const fullGazeTrackingData = {
-        distanceCm: '15-20',
+        method: 'HIRSCHBERG',
+        distanceCm: '20-25',
         completedAt: new Date().toISOString(),
+        researchQualitySchema: 'remicare-research-quality-v0.1',
+        aiPayloadPolicy: {
+          diagnosticModelInput: 'not_used_in_hirschberg_step',
+          researchImageInput: 'original_hirschberg_frame_with_metadata',
+          backendResearchTransfer: 'POST /api/v1/research/measurements',
+        },
         captures: updatedCaptures,
-        strabismusResult,
+        hirschbergResult,
+        strabismusResult: {
+          status: 'INCONCLUSIVE',
+          prediction: 'INCONCLUSIVE',
+          confidence: null,
+          confidence_type: 'NONE',
+          screening_status: 'HIRSCHBERG_MEASUREMENT_ONLY',
+          quality: hirschbergResult?.status || 'INCONCLUSIVE',
+          quality_score: newCaptureRecord?.qualityScore || null,
+          message:
+            'Bước này đã chuyển sang Hirschberg đo hình học nghiên cứu; không chạy model ảnh ROI cũ.',
+          hirschbergResult,
+        },
       };
 
       if (onCompleteRef.current) {
         onCompleteRef.current(fullGazeTrackingData);
       }
     },
-    [isVoiceEnabled, speak]
+    [buildResearchMeasurementPayload, isVoiceEnabled, speak]
   );
+
+  // Triggers pre-screening quality review modal for a captured frame
+  const triggerPreScreenReview = useCallback(
+    async (captureRecord) => {
+      setStepStatus('REVIEWING');
+      setIsInspecting(true);
+      setShowShutterFlash(true);
+      setTimeout(() => setShowShutterFlash(false), 250);
+
+      try {
+        const img = await loadImageElement(captureRecord.originalFrame);
+        const validation = validateHirschbergQuality({
+          element: img,
+          landmarks: captureRecord.researchLandmarks || landmarks,
+          distanceCm: estimatedDistanceCm,
+        });
+
+        setReviewCandidate({
+          dataUrl: captureRecord.originalFrame,
+          landmarks: captureRecord.researchLandmarks || landmarks,
+          captureRecord,
+          validation,
+          source: 'CAMERA',
+        });
+      } catch (err) {
+        console.error('Prescreen review error:', err);
+        setReviewCandidate({
+          dataUrl: captureRecord.originalFrame,
+          landmarks: captureRecord.researchLandmarks || landmarks,
+          captureRecord,
+          validation: {
+            isAcceptable: false,
+            title: 'Lỗi kiểm tra chất lượng',
+            summary: err.message || 'Không thể kiểm tra chất lượng ảnh chụp.',
+            errors: [
+              {
+                code: 'INSPECT_ERROR',
+                label: 'Lỗi đọc ảnh',
+                tip: 'Vui lòng thử chụp lại.',
+              },
+            ],
+            warnings: [],
+            passedChecks: [],
+            metrics: {},
+          },
+          source: 'CAMERA',
+        });
+      } finally {
+        setIsInspecting(false);
+      }
+    },
+    [estimatedDistanceCm, landmarks]
+  );
+
+  // File upload handler
+  const handleFileUpload = useCallback(
+    async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      setInputMode('UPLOAD');
+      setStepStatus('REVIEWING');
+      setIsInspecting(true);
+      setAnalysisError(null);
+
+      try {
+        const result = await inspectHirschbergImage(file, {
+          distanceCm: estimatedDistanceCm,
+        });
+
+        const researchLandmarks = result.landmarks
+          ? result.landmarks.slice(0, 478).map((p) => ({
+              x: Number(p.x.toFixed(5)),
+              y: Number(p.y.toFixed(5)),
+              z: typeof p.z === 'number' ? Number(p.z.toFixed(5)) : undefined,
+            }))
+          : null;
+
+        const captureRecord = {
+          direction: activeConfig.id,
+          directionName: activeConfig.name,
+          method: 'HIRSCHBERG_UPLOAD',
+          timestamp: new Date().toISOString(),
+          image: result.dataUrl,
+          originalFrame: result.dataUrl,
+          eyeRoi: null,
+          roiBox: null,
+          landmarks: researchLandmarks,
+          researchLandmarks,
+          qualityScore: result.validation.isAcceptable ? 0.95 : 0.4,
+          distanceCm: estimatedDistanceCm,
+          gazeOffsets: { meanDx: 0, meanDy: 0 },
+          researchQuality: result.validation.qualityReport,
+          backendResearchPayload: {
+            payloadType: 'HIRSCHBERG_ORIGINAL_FRAME_WITH_METADATA',
+            preparedOnly: false,
+            imageField: 'originalFrame',
+            metadata: {
+              ...(result.validation.qualityReport?.metadata || {}),
+              landmarks: researchLandmarks,
+              source: 'USER_UPLOADED_FILE',
+            },
+            quality: result.validation.qualityReport?.checks || {},
+          },
+        };
+
+        setReviewCandidate({
+          dataUrl: result.dataUrl,
+          landmarks: researchLandmarks,
+          captureRecord,
+          validation: result.validation,
+          source: 'UPLOAD',
+        });
+      } catch (err) {
+        console.error('Failed to process uploaded image:', err);
+        setReviewCandidate({
+          dataUrl: null,
+          landmarks: null,
+          captureRecord: null,
+          validation: {
+            isAcceptable: false,
+            title: 'Lỗi tải ảnh',
+            summary: err.message || 'Không thể đọc tệp ảnh đã chọn.',
+            errors: [
+              {
+                code: 'FILE_READ_ERROR',
+                label: 'Tệp không hợp lệ',
+                tip: 'Vui lòng chọn tệp ảnh JPEG/PNG/WebP rõ nét.',
+              },
+            ],
+            warnings: [],
+            passedChecks: [],
+            metrics: {},
+          },
+          source: 'UPLOAD',
+        });
+      } finally {
+        setIsInspecting(false);
+        if (event.target) event.target.value = '';
+      }
+    },
+    [activeConfig, estimatedDistanceCm]
+  );
+
+  // Confirms the pre-screened photo and sends to backend AI
+  const handleConfirmReview = useCallback(async () => {
+    if (!reviewCandidate?.captureRecord || !reviewCandidate?.validation?.isAcceptable) return;
+    await handleFinalizeGazeStep(reviewCandidate.captureRecord, captures);
+  }, [handleFinalizeGazeStep, reviewCandidate, captures]);
+
+  // Retake photo: resets review and returns to live camera
+  const handleRetake = useCallback(() => {
+    setReviewCandidate(null);
+    setStepStatus('OBSERVING');
+    setInputMode('CAMERA');
+    gateRef.current.reset();
+    spokenIntroRef.current = false;
+    spokenOneRef.current = false;
+    spokenTwoRef.current = false;
+    spokenSnapRef.current = false;
+  }, []);
+
+  // Trigger file upload dialog
+  const handleTriggerReupload = useCallback(() => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  }, []);
 
   // Main evaluation frame loop
   useEffect(() => {
     if (stepStatus !== 'OBSERVING') return;
 
     if (isOrienting) {
-      const targetHint = activeConfig.id === 'straight' || activeConfig.id === 'center'
-        ? 'ở giữa màn hình'
-        : `bên ${activeConfig.label.toLowerCase()}`;
-      setFeedbackMessage(`Đang hướng dẫn... Cô chú nhìn thẳng vào mục tiêu ${targetHint} nghen.`);
+      setFeedbackMessage('Đang hướng dẫn... Cô chú nhìn thẳng vào chấm ở giữa màn hình nghen.');
       return;
     }
 
     const gate = gateRef.current;
     const res = gate.evaluate({
       landmarks,
-      targetDirection: activeConfig.id,
+      targetDirection: 'straight',
       distanceCm: estimatedDistanceCm,
       timestampMs: performance.now(),
     });
@@ -278,106 +561,40 @@ export default function Gaze4DirectionsStep({
 
     // Trigger auto-capture if Quality Gate is fulfilled (~2.1s stable hold)
     if (res.isReadyToCapture) {
-      setStepStatus('CAPTURING');
-      setShowShutterFlash(true);
-
       if (isVoiceEnabled && speak && !spokenSnapRef.current) {
         spokenSnapRef.current = true;
         speak('Chụp!');
       }
 
-      const capturedDataUrl = captureGazeFrameDataUrl(videoRef.current);
-
-      let eyeRoiDataUrl = null;
-      let eyeRoiBox = null;
-      if (activeConfig.id === 'straight' || activeConfig.id === 'center') {
-        const roiRes = captureBilateralEyeRoi(videoRef.current, landmarks);
-        if (roiRes?.bothEyesDetected && roiRes?.dataUrl) {
-          eyeRoiDataUrl = roiRes.dataUrl;
-          eyeRoiBox = roiRes.roiBox;
-        }
-      }
-
-      const captureRecord = {
-        direction: activeConfig.id,
-        directionName: activeConfig.name,
-        timestamp: new Date().toISOString(),
-        image: capturedDataUrl,
-        eyeRoi: eyeRoiDataUrl,
-        roiBox: eyeRoiBox,
-        landmarks: landmarks ? landmarks.slice(0, 478).map((p) => ({ x: Number(p.x.toFixed(3)), y: Number(p.y.toFixed(3)) })) : null,
-        qualityScore: res.qualityScore,
-        distanceCm: estimatedDistanceCm,
-        gazeOffsets: res.gazeOffsets,
-      };
-
-      setCaptures((prev) => ({
-        ...prev,
-        [activeConfig.id]: captureRecord,
-      }));
-
-      // Short shutter visual
-      setTimeout(() => setShowShutterFlash(false), 250);
-
-      // Transition to next direction or complete flow
-      setStepStatus('SUCCESS_TRANSITION');
+      const captureRecord = buildCaptureRecord({ gateResult: res });
       gate.reset();
-
-      setTimeout(() => {
-        handleFinalizeGazeStep(captureRecord, captures);
-      }, 1200);
+      triggerPreScreenReview(captureRecord);
     }
-  }, [landmarks, stepStatus, isOrienting, activeConfig, estimatedDistanceCm, directionIndex, videoRef, captures, isVoiceEnabled, speak, onComplete, handleFinalizeGazeStep]);
+  }, [
+    landmarks,
+    stepStatus,
+    isOrienting,
+    activeConfig,
+    estimatedDistanceCm,
+    videoRef,
+    isVoiceEnabled,
+    speak,
+    buildCaptureRecord,
+    triggerPreScreenReview,
+  ]);
 
   // Click-to-snap handler: allows instant capture on clicking the target
   const handleManualSnap = () => {
     if (isAnalyzing || stepStatus !== 'OBSERVING') return;
-    setStepStatus('CAPTURING');
-    setShowShutterFlash(true);
 
     if (isVoiceEnabled && speak && !spokenSnapRef.current) {
       spokenSnapRef.current = true;
       speak('Chụp!');
     }
 
-    const capturedDataUrl = captureGazeFrameDataUrl(videoRef.current);
-
-    let eyeRoiDataUrl = null;
-    let eyeRoiBox = null;
-    if (activeConfig.id === 'straight' || activeConfig.id === 'center') {
-      const roiRes = captureBilateralEyeRoi(videoRef.current, landmarks);
-      if (roiRes?.bothEyesDetected && roiRes?.dataUrl) {
-        eyeRoiDataUrl = roiRes.dataUrl;
-        eyeRoiBox = roiRes.roiBox;
-      }
-    }
-
-    const captureRecord = {
-      direction: activeConfig.id,
-      directionName: activeConfig.name,
-      timestamp: new Date().toISOString(),
-      image: capturedDataUrl,
-      eyeRoi: eyeRoiDataUrl,
-      roiBox: eyeRoiBox,
-      landmarks: landmarks ? landmarks.slice(0, 478).map((p) => ({ x: Number(p.x.toFixed(3)), y: Number(p.y.toFixed(3)) })) : null,
-      qualityScore: 0.95,
-      distanceCm: estimatedDistanceCm,
-      gazeOffsets: { meanDx: 0, meanDy: 0 },
-    };
-
-    setCaptures((prev) => ({
-      ...prev,
-      [activeConfig.id]: captureRecord,
-    }));
-
-    setTimeout(() => setShowShutterFlash(false), 250);
-
-    setStepStatus('SUCCESS_TRANSITION');
+    const captureRecord = buildCaptureRecord({ manual: true });
     gateRef.current.reset();
-
-    setTimeout(() => {
-      handleFinalizeGazeStep(captureRecord, captures);
-    }, 1000);
+    triggerPreScreenReview(captureRecord);
   };
 
   // Circumference for circular progress ring (r = 36, perimeter = 2 * PI * 36 ~= 226)
@@ -387,22 +604,53 @@ export default function Gaze4DirectionsStep({
   const compactFeedback = isOrienting
     ? activeConfig.voiceText
     : isPassing
-      ? 'Giữ yên...'
-      : feedbackMessage || activeConfig.voiceText;
+    ? 'Giữ yên...'
+    : feedbackMessage || activeConfig.voiceText;
 
   return (
     <div className="card stage-card-main gaze-4-directions-card">
       {/* Shutter flash overlay */}
       {showShutterFlash && <div className="gaze-shutter-flash" />}
 
-      {/* Deep Learning Analyzing Overlay */}
+      {/* Hirschberg input mode switcher: Camera vs Upload */}
+      <div className="hirschberg-mode-toolbar">
+        <button
+          type="button"
+          className={`btn-mode-tab ${inputMode === 'CAMERA' ? 'active' : ''}`}
+          onClick={() => {
+            setInputMode('CAMERA');
+            if (stepStatus === 'REVIEWING') handleRetake();
+          }}
+        >
+          📷 Camera trực tiếp
+        </button>
+
+        <button
+          type="button"
+          className={`btn-mode-tab ${inputMode === 'UPLOAD' ? 'active' : ''}`}
+          onClick={handleTriggerReupload}
+          title="Chọn ảnh khuôn mặt rõ nét từ thiết bị"
+        >
+          📁 Tải ảnh từ thiết bị
+        </button>
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          onChange={handleFileUpload}
+          style={{ display: 'none' }}
+        />
+      </div>
+
+      {/* Hirschberg backend measurement overlay */}
       {isAnalyzing && (
         <div className="gaze-analyzing-overlay fade-in">
           <div className="analyzing-pill-box">
             <div className="analyzing-spinner" />
             <div className="analyzing-text-block">
-              <strong>Đang phân tích hình ảnh...</strong>
-              <small>Hệ thống AI RemiCare đang sàng lọc thị giác hai mắt</small>
+              <strong>Đang đo Hirschberg...</strong>
+              <small>Backend nghiên cứu đang đo phản xạ giác mạc trên ảnh gốc</small>
             </div>
           </div>
         </div>
@@ -426,7 +674,7 @@ export default function Gaze4DirectionsStep({
       {/* Header bar with direction and step counter */}
       <div className="gaze-step-header">
         <div className="gaze-header-left">
-          <span className="badge badge-primary">Chụp 4 hướng</span>
+          <span className="badge badge-primary">Hirschberg</span>
           <span className="badge badge-secondary">{activeConfig.stepNumber}</span>
         </div>
 
@@ -464,23 +712,17 @@ export default function Gaze4DirectionsStep({
         />
 
         {/* 1 FIXED NON-MOVING TARGET */}
-        {stepStatus !== 'COMPLETED' && (
+        {stepStatus === 'OBSERVING' && (
           <div
             className={`gaze-fixed-target-wrapper target-${activeConfig.id}`}
             style={{ ...activeConfig.targetPosition, pointerEvents: 'auto', cursor: 'pointer' }}
             onClick={handleManualSnap}
-            title={`${activeConfig.arrowHint} (AI tự chụp hoặc bấm vào để chụp ngay)`}
+            title={`${activeConfig.arrowHint} (tự chụp hoặc bấm vào để chụp ngay)`}
           >
             <div className="target-ring-container">
               {/* SVG Circular Progress Ring */}
               <svg className="target-progress-ring" width="88" height="88" viewBox="0 0 88 88">
-                <circle
-                  className="target-ring-bg"
-                  cx="44"
-                  cy="44"
-                  r={radius}
-                  fill="none"
-                />
+                <circle className="target-ring-bg" cx="44" cy="44" r={radius} fill="none" />
                 <circle
                   className="target-ring-fill"
                   cx="44"
@@ -494,16 +736,20 @@ export default function Gaze4DirectionsStep({
                 />
               </svg>
 
-              {/* Glowing Target Core with Countdown Number (1, 2, 📸) */}
-              <div className={`target-glowing-core ${countdownPhase ? 'counting' : ''} ${isPassing ? 'core-locking' : ''}`}>
+              {/* Glowing Target Core with Countdown Number (1, 2, snap) */}
+              <div
+                className={`target-glowing-core ${countdownPhase ? 'counting' : ''} ${
+                  isPassing ? 'core-locking' : ''
+                }`}
+              >
                 {countdownPhase === 'snap' ? (
-                  <span className="core-counter-text">📸</span>
+                  <span className="core-counter-text">OK</span>
                 ) : countdownPhase === '2' ? (
                   <span className="core-counter-text">2</span>
                 ) : countdownPhase === '1' ? (
                   <span className="core-counter-text">1</span>
                 ) : (
-                  <span className="core-bullseye-icon">🎯</span>
+                  <span className="core-bullseye-icon">•</span>
                 )}
               </div>
             </div>
@@ -511,22 +757,9 @@ export default function Gaze4DirectionsStep({
             {/* Direction Arrow Hint */}
             <div className="target-floating-hint">
               <span>{activeConfig.arrowHint}</span>
-              {activeConfig.id === 'straight' && (
-                <span style={{ fontSize: '0.72rem', opacity: 0.85, marginLeft: '6px' }}>• Tự chụp</span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Success Capture Overlay Badge */}
-        {stepStatus === 'SUCCESS_TRANSITION' && (
-          <div className="gaze-success-overlay fade-in">
-            <div className="success-pill-box">
-              <span className="success-icon">✓</span>
-              <div className="success-text-block">
-                <strong>ĐÃ CHỤP THÀNH CÔNG!</strong>
-                <small>Tiếp theo...</small>
-              </div>
+              <span style={{ fontSize: '0.72rem', opacity: 0.85, marginLeft: '6px' }}>
+                • Tự chụp hoặc bấm để chụp
+              </span>
             </div>
           </div>
         )}
@@ -534,18 +767,12 @@ export default function Gaze4DirectionsStep({
         {/* Distance Range Indicator Banner */}
         <div className="gaze-distance-badge">
           {estimatedDistanceCm !== null ? (
-            estimatedDistanceCm > 20 ? (
-              <span className="dist-pill dist-far">
-                Gần hơn ({estimatedDistanceCm} cm)
-              </span>
-            ) : estimatedDistanceCm < 15 ? (
-              <span className="dist-pill dist-close">
-                Xa hơn ({estimatedDistanceCm} cm)
-              </span>
+            estimatedDistanceCm > 25 ? (
+              <span className="dist-pill dist-far">Gần hơn ({estimatedDistanceCm} cm)</span>
+            ) : estimatedDistanceCm < 20 ? (
+              <span className="dist-pill dist-close">Xa hơn ({estimatedDistanceCm} cm)</span>
             ) : (
-              <span className="dist-pill dist-ok">
-                ✓ {estimatedDistanceCm} cm
-              </span>
+              <span className="dist-pill dist-ok">✓ {estimatedDistanceCm} cm</span>
             )
           ) : (
             <span className="dist-pill dist-detecting">Đang đo cự ly...</span>
@@ -569,34 +796,39 @@ export default function Gaze4DirectionsStep({
         </div>
       </div>
 
-      {/* Bottom thumbnails of captured directions */}
-      <div className="gaze-capture-strip">
-        {GAZE_DIRECTIONS_CONFIG.map((dir, idx) => {
-          const cap = captures[dir.id];
-          const isCurrent = idx === directionIndex;
-          const isDone = Boolean(cap);
+      {/* Pre-screening Review Modal when photo is captured or uploaded */}
+      {stepStatus === 'REVIEWING' && reviewCandidate && (
+        <HirschbergQualityReviewModal
+          imageDataUrl={reviewCandidate.dataUrl}
+          validation={reviewCandidate.validation}
+          isInspecting={isInspecting}
+          isAnalyzing={isAnalyzing}
+          analysisError={analysisError}
+          onConfirm={handleConfirmReview}
+          onRetake={handleRetake}
+          onReupload={handleTriggerReupload}
+        />
+      )}
 
+      {/* Captured Hirschberg thumbnail strip */}
+      <div className="gaze-capture-strip">
+        {(() => {
+          const cap = captures[HIRSCHBERG_CAPTURE_CONFIG.id];
+          const isDone = Boolean(cap);
           return (
-            <div
-              key={dir.id}
-              className={`gaze-strip-card ${isCurrent ? 'active' : ''} ${isDone ? 'done' : ''}`}
-            >
+            <div className={`gaze-strip-card active ${isDone ? 'done' : ''}`}>
               <div className="gaze-strip-thumb">
                 {isDone && cap?.image ? (
-                  <img src={cap.image} alt={dir.label} className="gaze-strip-img" />
+                  <img src={cap.image} alt="Hirschberg" className="gaze-strip-img" />
                 ) : (
-                  <span className="gaze-strip-placeholder">
-                    {dir.id === 'left' ? '←' : dir.id === 'right' ? '→' : dir.id === 'up' ? '↑' : '⦿'}
-                  </span>
+                  <span className="gaze-strip-placeholder">H</span>
                 )}
               </div>
-              <span className="gaze-strip-title">{dir.label}</span>
-              <span className="gaze-strip-badge">
-                {isDone ? '✓ Đã chụp' : isCurrent ? 'Đang chụp' : 'Chờ'}
-              </span>
+              <span className="gaze-strip-title">Hirschberg</span>
+              <span className="gaze-strip-badge">{isDone ? '✓ Đã kiểm tra' : 'Đang thực hiện'}</span>
             </div>
           );
-        })}
+        })()}
       </div>
     </div>
   );

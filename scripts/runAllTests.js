@@ -150,3 +150,82 @@ console.log('--- RUNNING REMICARE CAMERA COORDINATE TRANSFORM TESTS ---');
 }
 
 console.log('ALL REMICARE CAMERA TESTS PASSED SUCCESSFULLY! ✓');
+
+// ==============================================================================
+// HIRSCHBERG QUALITY PRE-SCREENING SERVICE TESTS
+// ==============================================================================
+import { validateHirschbergQuality, QUALITY_PRESCREEN_STATUS } from '../src/services/hirschbergQualityPrescreenService.js';
+
+console.log('\n--- RUNNING HIRSCHBERG QUALITY PRE-SCREENING TESTS ---');
+
+// Helper to generate minimal synthetic landmarks array
+function createSyntheticLandmarks({ eyeOpening = 0.025, yawOffset = 0 } = {}) {
+  const landmarks = Array.from({ length: 478 }, () => ({ x: 0.5, y: 0.5, z: 0 }));
+
+  // Canthi and nose for head pose
+  // Left canthus: index 362 (nasal), Right canthus: index 133 (nasal)
+  // Nose tip: index 1
+  landmarks[362] = { x: 0.54, y: 0.40, z: 0 };
+  landmarks[133] = { x: 0.46, y: 0.40, z: 0 };
+  landmarks[1] = { x: 0.50 + yawOffset, y: 0.48, z: -0.05 };
+  landmarks[168] = { x: 0.50, y: 0.38, z: 0 }; // glabella
+  landmarks[33] = { x: 0.38, y: 0.40, z: 0 };  // right outer
+  landmarks[263] = { x: 0.62, y: 0.40, z: 0 }; // left outer
+
+  // Irises
+  landmarks[468] = { x: 0.58, y: 0.40, z: 0 }; // left iris
+  landmarks[473] = { x: 0.42, y: 0.40, z: 0 }; // right iris
+
+  // Eyelids
+  // Right: 159 (top), 145 (bottom)
+  landmarks[159] = { x: 0.42, y: 0.40 - eyeOpening / 2, z: 0 };
+  landmarks[145] = { x: 0.42, y: 0.40 + eyeOpening / 2, z: 0 };
+  // Left: 386 (top), 374 (bottom)
+  landmarks[386] = { x: 0.58, y: 0.40 - eyeOpening / 2, z: 0 };
+  landmarks[374] = { x: 0.58, y: 0.40 + eyeOpening / 2, z: 0 };
+
+  return landmarks;
+}
+
+// Test 6: Rejection when face landmarks are missing
+{
+  const res = validateHirschbergQuality({ landmarks: null });
+  assert.equal(res.isAcceptable, false);
+  assert.equal(res.status, QUALITY_PRESCREEN_STATUS.FAIL);
+  assert.ok(res.errors.some((e) => e.code === 'FACE_NOT_FOUND'));
+  console.log('✓ Test 6 Passed: Missing face landmarks is rejected with FACE_NOT_FOUND');
+}
+
+// Test 7: Rejection when eyes are closed or blinking
+{
+  const landmarks = createSyntheticLandmarks({ eyeOpening: 0.004 });
+  const res = validateHirschbergQuality({ landmarks });
+  assert.equal(res.isAcceptable, false);
+  assert.equal(res.status, QUALITY_PRESCREEN_STATUS.FAIL);
+  assert.ok(res.errors.some((e) => e.code === 'EYES_CLOSED_OR_BLINKING'));
+  console.log('✓ Test 7 Passed: Closed/blinking eyes rejected with EYES_CLOSED_OR_BLINKING');
+}
+
+// Test 8: Rejection when head pose has excessive yaw tilt
+{
+  const landmarks = createSyntheticLandmarks({ eyeOpening: 0.025, yawOffset: 0.06 });
+  const res = validateHirschbergQuality({ landmarks });
+  assert.equal(res.isAcceptable, false);
+  assert.equal(res.status, QUALITY_PRESCREEN_STATUS.FAIL);
+  assert.ok(res.errors.some((e) => e.code === 'HEAD_YAW_EXCEEDED'));
+  console.log('✓ Test 8 Passed: Excessive head yaw turn rejected with HEAD_YAW_EXCEEDED');
+}
+
+// Test 9: Acceptance when frontal face, eyes open and centered
+{
+  const landmarks = createSyntheticLandmarks({ eyeOpening: 0.025, yawOffset: 0.0 });
+  const res = validateHirschbergQuality({ landmarks, distanceCm: 22 });
+  assert.equal(res.isAcceptable, true);
+  assert.ok(res.passedChecks.some((c) => c.code === 'FACE_DETECTED'));
+  assert.ok(res.passedChecks.some((c) => c.code === 'EYES_OPEN_AND_CLEAR'));
+  assert.ok(res.passedChecks.some((c) => c.code === 'HEAD_POSE_CENTERED'));
+  console.log('✓ Test 9 Passed: Frontal clear photo with open eyes passes pre-screening');
+}
+
+console.log('ALL HIRSCHBERG PRE-SCREENING TESTS PASSED SUCCESSFULLY! ✓');
+

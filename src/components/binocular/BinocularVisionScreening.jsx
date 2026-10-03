@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ScreeningProgress from './ScreeningProgress';
+import ScreeningPreparationStep from './ScreeningPreparationStep';
 import PositionCheck from './PositionCheck';
 import Gaze4DirectionsStep from './Gaze4DirectionsStep';
 import CoverTestStep from './CoverTestStep';
@@ -15,6 +16,7 @@ import {
 } from '../../services/positionCalibrationService.js';
 import {
   createBinocularSession,
+  updatePreparationData,
   updateGazePositionCheckData,
   updateGazeTrackingData,
   updateCoverPositionCheckData,
@@ -28,18 +30,27 @@ import {
 } from '../../constants/binocularScreeningConfig.js';
 import { finalizeScreeningSample, setScreeningImage } from '../../services/screeningDatasetService.js';
 import { verifyFrameFreshness } from '../../services/cameraService.js';
+import {
+  RESEARCH_SCREENING_FLOW_ENABLED,
+  getScreeningCameraConstraints,
+  tryEnableTorchForResearch,
+  validateResearchCameraSettings,
+} from '../../constants/researchScreeningConfig.js';
 
 /**
  * BinocularVisionScreening Component
  * Master Orchestrator for the unified Digital Binocular Vision Screening protocol:
- * GAZE_POSITION (15–20 cm) -> GAZE 4 DIRECTIONS (Left, Right, Up, Down) ->
+ * GAZE_POSITION (20–25 cm) -> HIRSCHBERG PHOTO ->
  * COVER_POSITION (33–40 cm) -> COVER TEST -> BROCK_POSITION (20–25 cm) -> BROCK STRING -> SUMMARY
  */
 export default function BinocularVisionScreening() {
-  // Global Screening Step: 'GAZE_POSITION' | 'GAZE_4_DIRECTIONS' | 'COVER_POSITION' | 'COVER' | 'BROCK_POSITION' | 'BROCK' | 'SUMMARY'
-  const [currentStep, setCurrentStep] = useState('GAZE_POSITION');
+  // Global Screening Step: 'GAZE_POSITION' | 'GAZE_4_DIRECTIONS' (Hirschberg) | 'COVER_POSITION' | 'COVER' | 'SUMMARY'
+  const [currentStep, setCurrentStep] = useState(
+    RESEARCH_SCREENING_FLOW_ENABLED ? 'PRECHECK' : 'GAZE_POSITION'
+  );
   const [session, setSession] = useState(() => createBinocularSession());
   const [positionReport, setPositionReport] = useState(null);
+  const [cameraValidationError, setCameraValidationError] = useState(null);
 
   // Stateful distance stability tracker for consecutive frame smoothing
   const distanceTrackerRef = useRef(new DistanceStabilityTracker('GAZE_4_DIRECTIONS'));
@@ -47,6 +58,7 @@ export default function BinocularVisionScreening() {
   // Video element ref
   const videoRef = useRef(null);
   const coverTrackingContextRef = useRef({ phase: null, coveredEye: null, trackedEye: null });
+  const preparationDeviceRef = useRef(null);
   const lastDetectionTimeRef = useRef(0);
   const isRecoveringRef = useRef(false);
 
@@ -188,16 +200,45 @@ export default function BinocularVisionScreening() {
     if (!videoEl) return;
 
     try {
+      setCameraValidationError(null);
+      let activeStream = stream;
       if (!isActive) {
-        await startCam(videoEl);
+        activeStream = await startCam(videoEl, getScreeningCameraConstraints());
       } else {
         await attachVideo(videoEl);
       }
+
+      const track = activeStream?.getVideoTracks?.()[0] || null;
+      const settings = track?.getSettings ? track.getSettings() : {};
+      const validation = validateResearchCameraSettings(settings);
+      const torch = await tryEnableTorchForResearch(activeStream, preparationDeviceRef.current);
+
+      setSession((prev) => ({
+        ...prev,
+        preparation: {
+          ...(prev?.preparation || {}),
+          cameraRuntime: {
+            settings,
+            validation,
+            torch,
+            checkedAt: new Date().toISOString(),
+          },
+        },
+      }));
+
+      if (!validation.valid) {
+        stopCam();
+        setCameraValidationError(
+          `Camera ${validation.width}x${validation.height || 0} thấp hơn mức tối thiểu TODO_PILOT ${validation.minWidth}x${validation.minHeight}.`
+        );
+        return;
+      }
+
       await startLoop(videoEl);
     } catch (err) {
       console.error('Camera startup error:', err);
     }
-  }, [isActive, startCam, attachVideo, startLoop]);
+  }, [isActive, startCam, attachVideo, startLoop, stream, stopCam]);
 
   // iOS Safari / Mobile Browser Lifecycle: Handle Home, Control Center, App Switch, and Screen Lock
   useEffect(() => {
@@ -336,7 +377,19 @@ export default function BinocularVisionScreening() {
     setPositionReport(null);
   }, [currentStep]);
 
-  // Handler: Proceed from Gaze Position Check (15–20 cm) to Gaze 4 Directions
+  const handlePreparationComplete = useCallback((metadata) => {
+    if (!session) return;
+
+    updatePreparationData(session.sessionId, metadata);
+    preparationDeviceRef.current = metadata.device;
+    setSession((prev) => ({
+      ...prev,
+      preparation: metadata,
+    }));
+    setCurrentStep('GAZE_POSITION');
+  }, [session]);
+
+  // Handler: Proceed from Hirschberg position check (20–25 cm) to Hirschberg capture.
   const handleGazePositionProceed = useCallback(() => {
     if (!session || !positionReport || positionReport.status !== 'READY') return;
 
@@ -349,7 +402,7 @@ export default function BinocularVisionScreening() {
     setCurrentStep('GAZE_4_DIRECTIONS');
   }, [session, positionReport]);
 
-  // Handler: Complete Gaze 4 Directions and transition to Cover Test Position Check (33–40 cm)
+  // Handler: Complete Hirschberg capture and transition to Cover Test Position Check (33–40 cm)
   const handleGaze4DirectionsComplete = useCallback((gazeData) => {
     if (!session) return;
 
@@ -429,7 +482,8 @@ export default function BinocularVisionScreening() {
     const newSession = createBinocularSession();
     setSession(newSession);
     setPositionReport(null);
-    setCurrentStep('GAZE_POSITION');
+    setCameraValidationError(null);
+    setCurrentStep(RESEARCH_SCREENING_FLOW_ENABLED ? 'PRECHECK' : 'GAZE_POSITION');
   }, [cancelSpeech]);
 
   return (
@@ -449,6 +503,14 @@ export default function BinocularVisionScreening() {
 
       {/* Active Step Container */}
       <div className="screening-step-container">
+        {currentStep === 'PRECHECK' && (
+          <ScreeningPreparationStep
+            onComplete={handlePreparationComplete}
+            speak={speak}
+            isVoiceEnabled={isVoiceEnabled}
+          />
+        )}
+
         {(currentStep === 'GAZE_POSITION' || currentStep === 'GAZE_POSITION_CHECK') && (
           <PositionCheck
             testType="GAZE_4_DIRECTIONS"
@@ -461,7 +523,7 @@ export default function BinocularVisionScreening() {
             onRetry={handlePositionRetry}
             isActive={isActive}
             isLoading={isCamLoading}
-            error={camError}
+            error={cameraValidationError || camError}
             onVideoReady={initCamera}
             speak={speak}
             isVoiceEnabled={isVoiceEnabled}
@@ -474,6 +536,8 @@ export default function BinocularVisionScreening() {
             stream={stream}
             landmarks={rawLandmarks}
             positionReport={positionReport}
+            preparationData={session?.preparation}
+            sessionId={session?.sessionId}
             onComplete={handleGaze4DirectionsComplete}
             speak={speak}
             isVoiceEnabled={isVoiceEnabled}
@@ -494,7 +558,7 @@ export default function BinocularVisionScreening() {
             onRetry={handlePositionRetry}
             isActive={isActive}
             isLoading={isCamLoading}
-            error={camError}
+            error={cameraValidationError || camError}
             onVideoReady={initCamera}
             speak={speak}
             isVoiceEnabled={isVoiceEnabled}

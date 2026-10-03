@@ -148,3 +148,59 @@ export function closeFaceMesh(_faceMeshInstance = null) {
     currentResultsCallback = null;
   }
 }
+
+/**
+ * Process a single image element (e.g. uploaded file or captured frame) with FaceMesh
+ * @param {HTMLImageElement|HTMLCanvasElement|HTMLVideoElement} imageElement
+ * @param {Object} customOptions
+ * @returns {Promise<any>} MediaPipe results object
+ */
+export async function processSingleImageWithFaceMesh(imageElement, customOptions = {}) {
+  const instance = await initializeFaceMesh(null, customOptions);
+  if (!instance || !imageElement) {
+    return { multiFaceLandmarks: [] };
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let timer = null;
+
+    const cleanup = () => {
+      if (timer) clearTimeout(timer);
+      setFaceMeshResultsCallback(null);
+    };
+
+    const handler = (results) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(results || { multiFaceLandmarks: [] });
+    };
+
+    setFaceMeshResultsCallback(handler);
+
+    timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve({ multiFaceLandmarks: [] });
+    }, 4500);
+
+    try {
+      instance.send({ image: imageElement }).catch((err) => {
+        console.warn('FaceMesh send single image error:', err);
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve({ multiFaceLandmarks: [] });
+      });
+    } catch (err) {
+      console.warn('FaceMesh send single image sync error:', err);
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve({ multiFaceLandmarks: [] });
+    }
+  });
+}
+
