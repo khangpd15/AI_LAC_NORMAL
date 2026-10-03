@@ -81,11 +81,15 @@ export default function BinocularVisionScreening() {
 
         const landmarks = results?.multiFaceLandmarks?.[0] || null;
         if (landmarks) {
-          const report = distanceTrackerRef.current.update(landmarks);
+          const vW = videoRef.current?.videoWidth || 640;
+          const vH = videoRef.current?.videoHeight || 480;
+          const report = distanceTrackerRef.current.update(landmarks, vW, vH);
           setPositionReport(report);
         } else {
           // No face detected fallback
-          const report = estimateCameraDistance(null, 640, 480, testType);
+          const vW = videoRef.current?.videoWidth || 640;
+          const vH = videoRef.current?.videoHeight || 480;
+          const report = estimateCameraDistance(null, vW, vH, testType);
           setPositionReport(report);
         }
       }

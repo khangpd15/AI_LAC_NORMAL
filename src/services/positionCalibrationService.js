@@ -205,8 +205,8 @@ function calculateStability(history, currentEst) {
  */
 export function estimateCameraDistance(
   landmarks,
-  _videoWidth = 640,
-  _videoHeight = 480,
+  videoWidth = 640,
+  videoHeight = 480,
   testType = 'COVER_TEST',
   history = []
 ) {
@@ -268,9 +268,12 @@ export function estimateCameraDistance(
   const boundingBox = calculateBoundingBox(landmarks);
 
   // The face being detectable is not enough: its center must also be near the
-  // optical center of the video frame. This prevents a low/cornered face from
-  // passing solely because the eyes, pose, and estimated distance are valid.
+  // optical center of the video frame.
   const centeringConfig = POSITION_QUALITY_CONFIG.FACE_CENTERING;
+  const isPortrait = videoHeight > videoWidth;
+  const maxOffsetY = isPortrait ? Math.max(centeringConfig.MAX_OFFSET_Y, 0.16) : centeringConfig.MAX_OFFSET_Y;
+  const maxOffsetX = centeringConfig.MAX_OFFSET_X;
+
   const faceCentering = boundingBox
     ? (() => {
         const centerX = boundingBox.xMin + boundingBox.width / 2;
@@ -283,8 +286,8 @@ export function estimateCameraDistance(
           offsetX: Number(offsetX.toFixed(3)),
           offsetY: Number(offsetY.toFixed(3)),
           isCentered:
-            Math.abs(offsetX) <= centeringConfig.MAX_OFFSET_X &&
-            Math.abs(offsetY) <= centeringConfig.MAX_OFFSET_Y,
+            Math.abs(offsetX) <= maxOffsetX &&
+            Math.abs(offsetY) <= maxOffsetY,
         };
       })()
     : null;
@@ -329,17 +332,30 @@ export function estimateCameraDistance(
   const intercanthalSpan = leftInner && rightInner ? dist2D(leftInner, rightInner) : 0;
   const ipdSpan = leftIris && rightIris ? dist2D(leftIris, rightIris) : 0;
 
+  // Aspect ratio normalization for mobile devices (iOS / Android):
+  // Baseline benchmarks were calibrated on desktop webcam where width is the dominant dimension.
+  // In portrait orientation (videoHeight > videoWidth), horizontal normalized span (px / videoWidth)
+  // is inflated because videoWidth is the shorter dimension.
+  // Normalizing by (videoWidth / max(videoWidth, videoHeight)) scales it to the dominant dimension,
+  // maintaining optical distance consistency across both mobile portrait and desktop landscape.
+  const maxDim = Math.max(videoWidth, videoHeight);
+  const aspectFactor = maxDim > 0 && isPortrait ? videoWidth / maxDim : 1.0;
+
+  const normFaceSpan = faceWidthSpan * aspectFactor;
+  const normIntercanthalSpan = intercanthalSpan * aspectFactor;
+  const normIpdSpan = ipdSpan * aspectFactor;
+
   const baselineWidth = POSITION_QUALITY_CONFIG.OPTICAL_BASELINE.REFERENCE_FACE_WIDTH_AT_22_5CM;
   const baselineIntercanthal = POSITION_QUALITY_CONFIG.OPTICAL_BASELINE.REFERENCE_INTERCANTHAL_AT_22_5CM;
   const baselineCm = POSITION_QUALITY_CONFIG.OPTICAL_BASELINE.OPTIMAL_BASELINE_CM; // 22.5 cm
 
   let relativeScale = 1.0;
-  if (faceWidthSpan > 0.15) {
-    relativeScale = faceWidthSpan / baselineWidth;
-  } else if (ipdSpan > 0.08) {
-    relativeScale = ipdSpan / 0.18;
-  } else if (intercanthalSpan > 0.04) {
-    relativeScale = intercanthalSpan / baselineIntercanthal;
+  if (normFaceSpan > 0.12) {
+    relativeScale = normFaceSpan / baselineWidth;
+  } else if (normIpdSpan > 0.06) {
+    relativeScale = normIpdSpan / 0.18;
+  } else if (normIntercanthalSpan > 0.03) {
+    relativeScale = normIntercanthalSpan / baselineIntercanthal;
   } else {
     reasons.push(DATA_QUALITY_REASONS.INVALID_EYE_WIDTH);
   }

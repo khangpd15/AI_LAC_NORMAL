@@ -121,7 +121,7 @@ export async function sendFrameToFaceMesh(faceMeshInstance, videoElement) {
   try {
     let timeoutId = null;
     const timeoutPromise = new Promise((_, reject) => {
-      timeoutId = setTimeout(() => reject(new Error('MediaPipe send timeout')), 800);
+      timeoutId = setTimeout(() => reject(new Error('MediaPipe send timeout')), 2500);
     });
 
     try {

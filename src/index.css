@@ -384,7 +384,7 @@ button {
 .camera-frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: var(--camera-aspect-ratio, 4 / 3);
   background: var(--bg-surface);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -4321,7 +4321,7 @@ textarea:focus {
   }
 
   .gaze-camera-viewport {
-    aspect-ratio: 3 / 4;
+    aspect-ratio: var(--camera-aspect-ratio, 3 / 4);
     max-height: none;
     border-radius: 12px;
   }
@@ -4704,7 +4704,7 @@ textarea:focus {
   }
 
   .camera-frame {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: var(--camera-aspect-ratio, 4 / 3);
     max-height: 55vh;
     border-radius: 14px;
   }
@@ -4880,7 +4880,7 @@ textarea:focus {
 
   .gaze-camera-viewport {
     width: 100%;
-    aspect-ratio: 4 / 3 !important;
+    aspect-ratio: var(--camera-aspect-ratio, 4 / 3);
     max-height: 55vh !important;
     border-radius: 14px;
   }
@@ -5172,9 +5172,9 @@ textarea:focus {
 
   .camera-frame,
   .gaze-camera-viewport {
-    aspect-ratio: 3 / 4 !important;
-    min-height: 330px;
-    max-height: min(62vh, 520px) !important;
+    aspect-ratio: var(--camera-aspect-ratio, 3 / 4);
+    min-height: 280px;
+    max-height: min(62vh, 520px);
     border-radius: 16px;
   }
 
@@ -5557,8 +5557,9 @@ textarea:focus {
 
   .camera-frame,
   .gaze-camera-viewport {
-    min-height: 350px;
-    max-height: min(64vh, 500px) !important;
+    aspect-ratio: var(--camera-aspect-ratio, 3 / 4);
+    min-height: 280px;
+    max-height: min(64vh, 500px);
   }
 
   .checklist-items {

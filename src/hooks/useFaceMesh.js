@@ -117,7 +117,6 @@ export function useFaceMesh(onResults, options = {}) {
   const lastProcessedFrameTimestampRef = useRef(-Infinity);
   const rvfcIdRef = useRef(null);
   const lastFrameTimestampRef = useRef(0);
-  const lastVideoMediaTimeRef = useRef(-Infinity);
 
   // Check support for requestVideoFrameCallback (Chrome 83+, Edge 83+, Firefox 132+)
   // Safari iOS < 18 requires requestAnimationFrame fallback
@@ -126,7 +125,6 @@ export function useFaceMesh(onResults, options = {}) {
   const stopLoop = useCallback(() => {
     isLoopRunningRef.current = false;
     isSendingRef.current = false;
-    lastVideoMediaTimeRef.current = -Infinity;
     if (rafIdRef.current) {
       cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = null;
@@ -146,7 +144,6 @@ export function useFaceMesh(onResults, options = {}) {
 
     if (isNewVideo) {
       isSendingRef.current = false;
-      lastVideoMediaTimeRef.current = -Infinity;
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
         rafIdRef.current = null;
@@ -187,12 +184,6 @@ export function useFaceMesh(onResults, options = {}) {
     const processSingleFrame = async (frameTimestamp) => {
       const currentVideo = videoElementRef.current;
       if (!currentVideo || !isLoopRunningRef.current) return;
-      if (!supportsRVFC && Number.isFinite(currentVideo.currentTime)) {
-        if (currentVideo.currentTime === lastVideoMediaTimeRef.current) {
-          return;
-        }
-        lastVideoMediaTimeRef.current = currentVideo.currentTime;
-      }
       const metric = metricsRef.current;
       metric.decodedFrames += 1;
 
@@ -240,9 +231,9 @@ export function useFaceMesh(onResults, options = {}) {
         currentVideo.play().catch(() => {});
       }
 
-      // Safety watchdog: if isSending was stuck for > 1000ms, unlock it
+      // Safety watchdog: if isSending was stuck for > 2000ms, unlock it
       const clockNow = performance.now();
-      if (isSendingRef.current && clockNow - lastSendTimeRef.current > 1000) {
+      if (isSendingRef.current && clockNow - lastSendTimeRef.current > 2000) {
         console.warn('[FaceMesh] Watchdog: Resetting stuck isSending lock');
         isSendingRef.current = false;
       }

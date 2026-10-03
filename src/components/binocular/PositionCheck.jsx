@@ -86,6 +86,10 @@ export default function PositionCheck({
     bannerClass = 'banner-alert';
   }
 
+  const isPortraitMobile = typeof window !== 'undefined' && window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
+  const maxOffsetY = isPortraitMobile ? Math.max(centeringConfig.MAX_OFFSET_Y, 0.16) : centeringConfig.MAX_OFFSET_Y;
+  const maxOffsetX = centeringConfig.MAX_OFFSET_X;
+
   return (
     <div className="card stage-card-main position-check-card">
       <div className="stage-header">
@@ -123,10 +127,10 @@ export default function PositionCheck({
               aria-hidden="true"
               style={{
                 position: 'absolute',
-                left: `${(centeringConfig.TARGET_X - centeringConfig.MAX_OFFSET_X) * 100}%`,
-                top: `${(centeringConfig.TARGET_Y - centeringConfig.MAX_OFFSET_Y) * 100}%`,
-                width: `${centeringConfig.MAX_OFFSET_X * 200}%`,
-                height: `${centeringConfig.MAX_OFFSET_Y * 200}%`,
+                left: `${(centeringConfig.TARGET_X - maxOffsetX) * 100}%`,
+                top: `${(centeringConfig.TARGET_Y - maxOffsetY) * 100}%`,
+                width: `${maxOffsetX * 200}%`,
+                height: `${maxOffsetY * 200}%`,
                 border: `2px dashed ${checks.faceCentered ? 'var(--color-mint)' : 'var(--color-soft-amber)'}`,
                 borderRadius: '12px',
                 background: checks.faceCentered ? 'rgba(0, 171, 155, 0.08)' : 'rgba(242, 198, 109, 0.08)',

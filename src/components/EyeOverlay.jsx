@@ -410,7 +410,7 @@ export default function EyeOverlay({
             backdropFilter: 'blur(4px)',
           }}
         >
-          ⚙️ Telemetry HUD [D]
+          ⚙️ Telemetry HUD
         </button>
       )}
     </>

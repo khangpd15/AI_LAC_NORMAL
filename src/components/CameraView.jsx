@@ -116,16 +116,27 @@ export default function CameraView({
 
   return (
     <div className={`camera-view-container ${compact ? 'compact' : ''}`}>
-      <div className="camera-frame">
+      <div
+        className="camera-frame"
+        style={{
+          '--camera-aspect-ratio':
+            actualDimensions.width && actualDimensions.height
+              ? `${actualDimensions.width} / ${actualDimensions.height}`
+              : undefined,
+        }}
+      >
         {/* Layer 1: Base Video Stream */}
         <video
           ref={setVideoNode}
           autoPlay
           playsInline
+          webkit-playsinline="true"
           muted
           onLoadedMetadata={handleMetadata}
           onCanPlay={handleMetadata}
+          onResize={handleMetadata}
           onLoadedData={(e) => {
+            handleMetadata(e);
             if (e.target.paused) e.target.play().catch(() => {});
           }}
           onPlay={() => {

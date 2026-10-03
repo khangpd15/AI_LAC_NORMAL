@@ -23,6 +23,8 @@ export async function attachStreamToVideo(videoElement, stream) {
     }
     videoElement.muted = true;
     videoElement.playsInline = true;
+    videoElement.setAttribute('playsinline', 'true');
+    videoElement.setAttribute('webkit-playsinline', 'true');
 
     if (videoElement.paused) {
       await videoElement.play().catch((err) => {
@@ -48,15 +50,16 @@ export function getDefaultCameraConstraints() {
   const ua = navigator.userAgent || '';
   const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
   const lowMemory = (navigator.deviceMemory || 4) <= 3;
+  const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
 
-  // CAMERA PERFORMANCE
-  // Avoid high-resolution capture on mobile/low-end devices; iris tracking uses
-  // landmarks and eye ROI, not 4K full-frame pixels.
+  // CAMERA PERFORMANCE & ORIENTATION
+  // Avoid high-resolution capture on mobile/low-end devices.
+  // Match portrait orientation when held vertically to prevent video distortion or cropping.
   if (isMobile || lowMemory) {
     return {
       video: {
-        width: { ideal: 640, max: 960 },
-        height: { ideal: 480, max: 720 },
+        width: isPortrait ? { ideal: 480, max: 720 } : { ideal: 640, max: 960 },
+        height: isPortrait ? { ideal: 640, max: 960 } : { ideal: 480, max: 720 },
         facingMode: 'user',
         frameRate: { ideal: 30, max: 30 },
       },
@@ -66,8 +69,8 @@ export function getDefaultCameraConstraints() {
 
   return {
     video: {
-      width: { ideal: 960, max: 1280 },
-      height: { ideal: 540, max: 720 },
+      width: isPortrait ? { ideal: 720, max: 960 } : { ideal: 960, max: 1280 },
+      height: isPortrait ? { ideal: 960, max: 1280 } : { ideal: 540, max: 720 },
       facingMode: 'user',
       frameRate: { ideal: 30, max: 60 },
     },
@@ -76,10 +79,11 @@ export function getDefaultCameraConstraints() {
 }
 
 function getFallbackCameraConstraints() {
+  const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
   return {
     video: {
-      width: { ideal: 480, max: 640 },
-      height: { ideal: 360, max: 480 },
+      width: isPortrait ? { ideal: 360, max: 480 } : { ideal: 480, max: 640 },
+      height: isPortrait ? { ideal: 480, max: 640 } : { ideal: 360, max: 480 },
       facingMode: { ideal: 'user' },
       frameRate: { ideal: 24, max: 30 },
     },
