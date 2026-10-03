@@ -568,7 +568,11 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now(), opt
   const irisDistanceRatio = irisDistance / Math.max(0.01, interocularDistance);
 
   // Estimated physical distance (cm) via D = 4095 / (irisDistance * 640)
-  const irisDistancePx = irisDistance * 640.0;
+  const frameWidth = Number(options?.videoWidth) || 640;
+  const frameHeight = Number(options?.videoHeight) || 480;
+  const maxDim = Math.max(frameWidth, frameHeight);
+  const normIrisSpan = irisDistance * (frameWidth / maxDim);
+  const irisDistancePx = normIrisSpan * 640.0;
   const estimatedDistanceCm = irisDistancePx > 1.0 ? Number((4095.0 / irisDistancePx).toFixed(1)) : 50.0;
 
   const clampedLeftH = Math.min(1.5, Math.max(-0.5, leftHorizontalRatio));

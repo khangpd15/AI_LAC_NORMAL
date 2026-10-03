@@ -44,6 +44,16 @@ export default function CameraView({
   const [actualDimensions, setActualDimensions] = useState({ width: propWidth, height: propHeight });
   const [cameraStatus, setCameraStatus] = useState(isLoading ? 'REQUESTING' : error ? 'ERROR' : isActive ? 'TRACKING' : 'IDLE');
 
+  const syncDimensions = useCallback((node) => {
+    const v = node || nodeRef.current;
+    if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+      setActualDimensions((prev) => {
+        if (prev.width === v.videoWidth && prev.height === v.videoHeight) return prev;
+        return { width: v.videoWidth, height: v.videoHeight };
+      });
+    }
+  }, []);
+
   // Callback ref: stores internal node
   const setVideoNode = useCallback(
     (node) => {
@@ -57,11 +67,13 @@ export default function CameraView({
         attachStreamToVideo(node, stream);
       }
 
+      syncDimensions(node);
+
       if (node && onVideoReady) {
         Promise.resolve().then(() => onVideoReady(node));
       }
     },
-    [videoRef, stream, onVideoReady]
+    [videoRef, stream, onVideoReady, syncDimensions]
   );
 
   // Expose the owned video node through React's ref lifecycle.
@@ -88,6 +100,7 @@ export default function CameraView({
     setCameraStatus(status);
 
     if (video) {
+      syncDimensions(video);
       console.debug('[Camera]', {
         cameraStatus: status,
         readyState: video.readyState,
@@ -97,16 +110,16 @@ export default function CameraView({
         srcObject: Boolean(video.srcObject),
       });
     }
-  }, [error, isLoading, stream, isActive, landmarks]);
+  }, [error, isLoading, stream, isActive, landmarks, syncDimensions]);
 
   const handleMetadata = (e) => {
     const v = e.target;
+    syncDimensions(v);
+    if (v.paused && v.srcObject) {
+      v.play().catch(() => {});
+    }
+    setCameraStatus(isActive && landmarks ? 'TRACKING' : 'VIDEO_READY');
     if (v.videoWidth > 0 && v.videoHeight > 0) {
-      setActualDimensions({ width: v.videoWidth, height: v.videoHeight });
-      if (v.paused) {
-        v.play().catch(() => {});
-      }
-      setCameraStatus(isActive && landmarks ? 'TRACKING' : 'VIDEO_READY');
       console.debug('[Camera] Metadata loaded:', {
         width: v.videoWidth,
         height: v.videoHeight,
@@ -135,6 +148,7 @@ export default function CameraView({
           onLoadedMetadata={handleMetadata}
           onCanPlay={handleMetadata}
           onResize={handleMetadata}
+          onTimeUpdate={(e) => syncDimensions(e.target)}
           onLoadedData={(e) => {
             handleMetadata(e);
             if (e.target.paused) e.target.play().catch(() => {});
@@ -148,7 +162,7 @@ export default function CameraView({
         />
 
         {/* Layer 2: Eye Landmarks Canvas Overlay */}
-        {isActive && (
+        {isActive && !isLoading && (cameraStatus === 'TRACKING' || cameraStatus === 'VIDEO_READY') && (
           <EyeOverlay
             landmarks={landmarks}
             features={features}
@@ -231,7 +245,7 @@ export default function CameraView({
         )}
 
         {/* UI QUALITY STATUS */}
-        {isActive && (
+        {isActive && !isLoading && (cameraStatus === 'TRACKING' || cameraStatus === 'VIDEO_READY') && (
           <CameraQualityStatus
             quality={quality}
             speak={speak}

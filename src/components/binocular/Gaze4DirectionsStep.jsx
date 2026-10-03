@@ -74,6 +74,24 @@ export default function Gaze4DirectionsStep({
 
   // Flash animation state
   const [showShutterFlash, setShowShutterFlash] = useState(false);
+  const [videoAspect, setVideoAspect] = useState(null);
+
+  const handleVideoReady = useCallback(
+    (videoEl) => {
+      if (onVideoReady) onVideoReady(videoEl);
+      if (videoEl?.videoWidth && videoEl?.videoHeight) {
+        setVideoAspect(`${videoEl.videoWidth} / ${videoEl.videoHeight}`);
+      }
+    },
+    [onVideoReady]
+  );
+
+  useEffect(() => {
+    const v = videoRef?.current;
+    if (v && v.videoWidth && v.videoHeight) {
+      setVideoAspect(`${v.videoWidth} / ${v.videoHeight}`);
+    }
+  }, [videoRef, stream]);
 
   const activeConfig = GAZE_DIRECTIONS_CONFIG[directionIndex];
   const estimatedDistanceCm = positionReport?.stableDistanceCm ?? positionReport?.estimatedDistanceCm ?? null;
@@ -430,12 +448,17 @@ export default function Gaze4DirectionsStep({
       </div>
 
       {/* Main Video Viewport with Fixed Target Overlay */}
-      <div className="gaze-camera-viewport">
+      <div
+        className="gaze-camera-viewport"
+        style={{
+          '--camera-aspect-ratio': videoAspect || undefined,
+        }}
+      >
         <CameraView
           videoRef={videoRef}
           stream={stream}
           landmarks={landmarks}
-          onVideoReady={onVideoReady}
+          onVideoReady={handleVideoReady}
           showLandmarkPoints={false}
           showMeshConnections={false}
         />

@@ -6,6 +6,7 @@ import {
   POSITION_QUALITY_CONFIG,
   POSITION_STATUS,
 } from '../../constants/binocularScreeningConfig.js';
+import { useCameraDisplayRect, mapCameraRectToDisplay } from '../../utils/cameraCoordinateTransform.js';
 
 /**
  * PositionCheck Component
@@ -36,8 +37,9 @@ export default function PositionCheck({
   isVoiceEnabled = true,
 }) {
   const config = POSITION_CONFIG[testType] || POSITION_CONFIG.COVER_TEST;
-  const status = positionReport?.status || POSITION_STATUS.INITIALIZING;
-  const isReady = status === POSITION_STATUS.READY;
+  const isInitializing = isLoading || !isActive || !stream;
+  const status = isInitializing ? POSITION_STATUS.INITIALIZING : (positionReport?.status || POSITION_STATUS.INITIALIZING);
+  const isReady = !isInitializing && status === POSITION_STATUS.READY;
 
   const spokenIntroRef = React.useRef(false);
   React.useEffect(() => {
@@ -55,20 +57,37 @@ export default function PositionCheck({
     }
   }, [isReady, isVoiceEnabled, speak]);
 
-  const checks = positionReport?.checks || {
-    faceDetected: false,
-    faceCentered: false,
-    bothEyesDetected: false,
-    irisDetected: false,
-    distanceValid: false,
-    headPoseValid: false,
-    isStable: false,
-  };
+  const checks = isInitializing
+    ? {
+        faceDetected: false,
+        faceCentered: false,
+        bothEyesDetected: false,
+        irisDetected: false,
+        distanceValid: false,
+        headPoseValid: false,
+        isStable: false,
+      }
+    : (positionReport?.checks || {
+        faceDetected: false,
+        faceCentered: false,
+        bothEyesDetected: false,
+        irisDetected: false,
+        distanceValid: false,
+        headPoseValid: false,
+        isStable: false,
+      });
 
-  const estimatedDistanceCm = positionReport?.estimatedDistanceCm ?? null;
-  const stableDistanceCm = positionReport?.stableDistanceCm ?? estimatedDistanceCm;
-  const feedbackMessage = positionReport?.feedbackMessage || 'Đang kết nối camera và nhận diện khuôn mặt...';
+  const estimatedDistanceCm = isInitializing ? null : (positionReport?.estimatedDistanceCm ?? null);
+  const stableDistanceCm = isInitializing ? null : (positionReport?.stableDistanceCm ?? estimatedDistanceCm);
+  const feedbackMessage = isInitializing
+    ? 'Đang kết nối camera và nhận diện khuôn mặt...'
+    : (positionReport?.feedbackMessage || 'Đang kết nối camera và nhận diện khuôn mặt...');
   const centeringConfig = POSITION_QUALITY_CONFIG.FACE_CENTERING;
+
+  const displayRect = useCameraDisplayRect(videoRef);
+  const mappedBox = (positionReport?.boundingBox && checks.faceDetected && displayRect)
+    ? mapCameraRectToDisplay(positionReport.boundingBox, displayRect, true)
+    : null;
 
   // Dynamic visual track limits based on test config
   const trackMin = Math.max(10, config.minDistanceCm - 12);
@@ -89,6 +108,17 @@ export default function PositionCheck({
   const isPortraitMobile = typeof window !== 'undefined' && window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
   const maxOffsetY = isPortraitMobile ? Math.max(centeringConfig.MAX_OFFSET_Y, 0.16) : centeringConfig.MAX_OFFSET_Y;
   const maxOffsetX = centeringConfig.MAX_OFFSET_X;
+
+  const mappedTargetZone = React.useMemo(() => {
+    if (!displayRect) return null;
+    const targetZoneCameraRect = {
+      xMin: centeringConfig.TARGET_X - maxOffsetX,
+      yMin: centeringConfig.TARGET_Y - maxOffsetY,
+      width: maxOffsetX * 2,
+      height: maxOffsetY * 2,
+    };
+    return mapCameraRectToDisplay(targetZoneCameraRect, displayRect, true);
+  }, [displayRect, centeringConfig.TARGET_X, centeringConfig.TARGET_Y, maxOffsetX, maxOffsetY]);
 
   return (
     <div className="card stage-card-main position-check-card">
@@ -127,10 +157,10 @@ export default function PositionCheck({
               aria-hidden="true"
               style={{
                 position: 'absolute',
-                left: `${(centeringConfig.TARGET_X - maxOffsetX) * 100}%`,
-                top: `${(centeringConfig.TARGET_Y - maxOffsetY) * 100}%`,
-                width: `${maxOffsetX * 200}%`,
-                height: `${maxOffsetY * 200}%`,
+                left: mappedTargetZone ? `${mappedTargetZone.leftPercent}%` : `${(centeringConfig.TARGET_X - maxOffsetX) * 100}%`,
+                top: mappedTargetZone ? `${mappedTargetZone.topPercent}%` : `${(centeringConfig.TARGET_Y - maxOffsetY) * 100}%`,
+                width: mappedTargetZone ? `${mappedTargetZone.widthPercent}%` : `${maxOffsetX * 200}%`,
+                height: mappedTargetZone ? `${mappedTargetZone.heightPercent}%` : `${maxOffsetY * 200}%`,
                 border: `2px dashed ${checks.faceCentered ? 'var(--color-mint)' : 'var(--color-soft-amber)'}`,
                 borderRadius: '12px',
                 background: checks.faceCentered ? 'rgba(0, 171, 155, 0.08)' : 'rgba(242, 198, 109, 0.08)',
@@ -160,10 +190,10 @@ export default function PositionCheck({
                 className="face-bounding-box"
                 style={{
                   position: 'absolute',
-                  left: `${Math.max(0, (1.0 - positionReport.boundingBox.xMin - positionReport.boundingBox.width) * 100)}%`,
-                  top: `${positionReport.boundingBox.yMin * 100}%`,
-                  width: `${positionReport.boundingBox.width * 100}%`,
-                  height: `${positionReport.boundingBox.height * 100}%`,
+                  left: mappedBox ? `${mappedBox.leftPercent}%` : `${Math.max(0, (1.0 - positionReport.boundingBox.xMin - positionReport.boundingBox.width) * 100)}%`,
+                  top: mappedBox ? `${mappedBox.topPercent}%` : `${positionReport.boundingBox.yMin * 100}%`,
+                  width: mappedBox ? `${mappedBox.widthPercent}%` : `${positionReport.boundingBox.width * 100}%`,
+                  height: mappedBox ? `${mappedBox.heightPercent}%` : `${positionReport.boundingBox.height * 100}%`,
                   border: isReady ? '2px solid var(--color-mint)' : '2px dashed var(--color-soft-mint)',
                   borderRadius: '10px',
                   pointerEvents: 'none',

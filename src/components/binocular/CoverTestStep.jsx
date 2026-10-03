@@ -19,6 +19,7 @@ import { saveCoverTestSession as saveCoverTestCloudSession } from '../../service
 import { analyzeCoverTest } from '../../services/aiBackendService.js';
 import { toCanonicalEye, getCoverInstruction } from '../../utils/eyeCoordinateMapping.js';
 
+
 /**
  * CoverTestStep Component
  * Step 2 of Digital Binocular Vision Screening.
@@ -282,6 +283,24 @@ export default function CoverTestStep({
   // Fixation target positioning & lock state (Sections 9, 10, 11)
   const [lockedTargetPos, setLockedTargetPos] = useState(null);
   const isTargetLockedRef = useRef(false);
+  const [videoDims, setVideoDims] = useState({ width: null, height: null });
+
+  useEffect(() => {
+    const v = videoRef?.current;
+    if (!v) return;
+    const handleResize = () => {
+      if (v.videoWidth > 0 && v.videoHeight > 0) {
+        setVideoDims((prev) => (prev.width === v.videoWidth && prev.height === v.videoHeight ? prev : { width: v.videoWidth, height: v.videoHeight }));
+      }
+    };
+    handleResize();
+    v.addEventListener('resize', handleResize);
+    v.addEventListener('loadedmetadata', handleResize);
+    return () => {
+      v.removeEventListener('resize', handleResize);
+      v.removeEventListener('loadedmetadata', handleResize);
+    };
+  }, [videoRef, stream]);
 
   // Flow: Face detected -> Estimate face vertical midline -> Place fixation target -> LOCK target position
   const fixationTargetPos = useMemo(() => {
@@ -303,10 +322,12 @@ export default function CoverTestStep({
         // Clamp to safe central horizontal window [44%, 56%]
         const clampedX = Math.max(44, Math.min(56, displayX));
         // Vertical placement: comfortable straight-ahead visual target on screen (48%)
-        return { x: clampedX, y: 48 };
+        const eyeNormY = (landmarks[133] && landmarks[362]) ? (landmarks[133].y + landmarks[362].y) / 2 : 0.35;
+        const displayY = eyeNormY != null ? Number((eyeNormY * 100).toFixed(1)) : 38;
+        return { x: clampedX, y: Math.max(32, Math.min(42, displayY)) };
       }
     }
-    return { x: 50, y: 48 };
+    return { x: 50, y: 38 };
   }, [landmarks, lockedTargetPos]);
 
   // Independent High-Precision Elapsed Timer for TRACKING (Sections 1, 2, 3, 4, 5, 6)
@@ -854,6 +875,8 @@ export default function CoverTestStep({
           validSampleRatio={telemetry.validSampleRatio}
           faceMeshMetrics={faceMeshMetrics}
           aiMetrics={aiMetrics}
+          videoWidth={videoDims.width}
+          videoHeight={videoDims.height}
         />
         {/* Full-viewport camera background (Section 35.1) */}
         <div className="fullscreen-camera-background">

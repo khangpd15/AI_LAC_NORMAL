@@ -2065,6 +2065,9 @@ textarea:focus {
   background: #040810;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2086,7 +2089,10 @@ textarea:focus {
 .fullscreen-camera-background .camera-frame {
   width: 100% !important;
   height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
   max-width: 100% !important;
+  aspect-ratio: auto !important;
   border-radius: 0 !important;
   border: none !important;
   box-shadow: none !important;
@@ -2095,6 +2101,8 @@ textarea:focus {
 .fullscreen-camera-background video.camera-video-feed {
   width: 100% !important;
   height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
   object-fit: cover !important;
 }
 
@@ -3435,12 +3443,23 @@ textarea:focus {
 .gaze-camera-viewport {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: var(--camera-aspect-ratio, 4 / 3);
   max-height: 480px;
   background: #000;
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.gaze-camera-viewport .camera-view-container,
+.gaze-camera-viewport .camera-frame {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  border: 0;
+  box-shadow: none;
 }
 
 .gaze-video-feed {
@@ -5180,10 +5199,23 @@ textarea:focus {
 
   .gaze-camera-viewport .camera-view-container,
   .gaze-camera-viewport .camera-frame {
-    height: 100%;
-    min-height: 100%;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
     border: 0;
     box-shadow: none;
+  }
+
+  .fullscreen-camera-background .camera-view-container,
+  .fullscreen-camera-background .camera-frame {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    border-radius: 0 !important;
   }
 
   .distance-gauge-container {

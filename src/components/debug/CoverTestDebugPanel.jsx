@@ -21,6 +21,8 @@ export default function CoverTestDebugPanel({
   validSampleRatio = null,
   faceMeshMetrics = null,
   aiMetrics = null,
+  videoWidth = null,
+  videoHeight = null,
 }) {
   if (!import.meta.env.DEV) return null;
   const eyeWidthValid = quality?.isValid && quality?.leftEyeDetected && quality?.rightEyeDetected;
@@ -28,6 +30,7 @@ export default function CoverTestDebugPanel({
     <aside className="cover-debug-panel" aria-label="Cover Test development debug">
       <strong>Cover Test Debug</strong>
       <span>Camera: {cameraReady ? 'READY' : 'WAITING'}</span>
+      <span>Resolution: {videoWidth && videoHeight ? `${videoWidth}x${videoHeight}` : '--'}</span>
       <span>Face: {quality?.faceDetected ? 'DETECTED' : 'NOT DETECTED'}</span>
       <span>Left Iris: {quality?.leftEyeDetected ? 'VALID' : 'INVALID'}</span>
       <span>Right Iris: {quality?.rightEyeDetected ? 'VALID' : 'INVALID'}</span>

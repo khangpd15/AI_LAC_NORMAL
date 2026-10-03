@@ -24,6 +24,7 @@ import {
 } from '../../services/binocularScreeningService.js';
 import {
   SCREENING_EVENTS,
+  POSITION_STATUS,
 } from '../../constants/binocularScreeningConfig.js';
 import { finalizeScreeningSample, setScreeningImage } from '../../services/screeningDatasetService.js';
 
@@ -45,6 +46,7 @@ export default function BinocularVisionScreening() {
   // Video element ref
   const videoRef = useRef(null);
   const coverTrackingContextRef = useRef({ phase: null, coveredEye: null, trackedEye: null });
+  const lastDetectionTimeRef = useRef(0);
 
   // Vision, Hardware & Assistant Hooks
   const { stream, isActive, isLoading: isCamLoading, error: camError, start: startCam, stop: stopCam, attachVideo } = useCamera();
@@ -81,11 +83,13 @@ export default function BinocularVisionScreening() {
 
         const landmarks = results?.multiFaceLandmarks?.[0] || null;
         if (landmarks) {
+          lastDetectionTimeRef.current = performance.now();
           const vW = videoRef.current?.videoWidth || 640;
           const vH = videoRef.current?.videoHeight || 480;
           const report = distanceTrackerRef.current.update(landmarks, vW, vH);
           setPositionReport(report);
         } else {
+          lastDetectionTimeRef.current = 0;
           // No face detected fallback
           const vW = videoRef.current?.videoWidth || 640;
           const vH = videoRef.current?.videoHeight || 480;
@@ -95,6 +99,41 @@ export default function BinocularVisionScreening() {
       }
     };
   }, [currentStep, processResults, processFrameAI]);
+
+  // Watchdog: Clear stale position report immediately if no face detected for > 350ms or video stalls
+  useEffect(() => {
+    const watchdog = setInterval(() => {
+      const now = performance.now();
+      const isPositionStep =
+        currentStep === 'GAZE_POSITION' ||
+        currentStep === 'COVER_POSITION' ||
+        currentStep === 'POSITION' ||
+        currentStep === 'BROCK_POSITION';
+      if (!isPositionStep) return;
+
+      const testType = currentStep === 'GAZE_POSITION' ? 'GAZE_4_DIRECTIONS' : 'COVER_TEST';
+      const videoEl = videoRef.current;
+      const vW = videoEl?.videoWidth || 640;
+      const vH = videoEl?.videoHeight || 480;
+      const isVideoStalled =
+        !isActive || isCamLoading || !stream || !videoEl || videoEl.readyState < 2 || videoEl.paused;
+
+      if (isVideoStalled || (lastDetectionTimeRef.current > 0 && now - lastDetectionTimeRef.current > 350)) {
+        setPositionReport((prev) => {
+          if (!prev || prev.status === POSITION_STATUS.NO_FACE || prev.status === POSITION_STATUS.INITIALIZING) {
+            return prev;
+          }
+          const base = estimateCameraDistance(null, vW, vH, testType);
+          return isVideoStalled
+            ? { ...base, status: POSITION_STATUS.INITIALIZING, feedbackMessage: 'Đang kết nối camera...' }
+            : base;
+        });
+        distanceTrackerRef.current.reset(testType);
+      }
+    }, 120);
+
+    return () => clearInterval(watchdog);
+  }, [currentStep, isActive, isCamLoading, stream]);
 
   const { startLoop, stopLoop, metrics: faceMeshMetrics } = useFaceMesh((r) => handleResults.current?.(r));
 

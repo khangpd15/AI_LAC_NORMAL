@@ -20,7 +20,7 @@ export default function FixationTarget({
   targetPosition = null,
 }) {
   const leftStyle = targetPosition?.x != null ? `${targetPosition.x}%` : '50%';
-  const topStyle = targetPosition?.y != null ? `${targetPosition.y}%` : '50%';
+  const topStyle = targetPosition?.y != null ? `${targetPosition.y}%` : '38%';
 
   return (
     <div

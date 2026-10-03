@@ -295,9 +295,12 @@ export default function EyeOverlay({
             boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
             <span style={{ color: 'var(--color-mint)', fontWeight: 'bold' }}>REMICARE CV HUD</span>
             <span style={{ color: 'var(--color-soft-mint)', fontSize: '10px' }}>FPS: {currentFps}</span>
+          </div>
+          <div style={{ fontSize: '9px', color: 'var(--color-soft-mint)', marginBottom: '6px' }}>
+            Res: {videoWidth}x{videoHeight} {isMirrored ? '• Mirrored' : ''}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '6px' }}>

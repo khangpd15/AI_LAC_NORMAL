@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   validateEyeTrackingQuality,
   extractEyeFeatures,
@@ -30,6 +30,37 @@ export function useEyeTracking() {
   const frameTimeWindowRef = useRef([]);
   const lastFrameTimestampRef = useRef(null);
   const invalidFrameStreakRef = useRef(0);
+  const lastValidFrameTimeRef = useRef(0);
+
+  // Watchdog: If no valid face frame arrives for > 300ms, synchronously clear stale tracking state
+  useEffect(() => {
+    const watchdog = setInterval(() => {
+      const now = performance.now();
+      if (
+        latestLandmarksRef.current !== null &&
+        lastValidFrameTimeRef.current > 0 &&
+        now - lastValidFrameTimeRef.current > 300
+      ) {
+        latestFeaturesRef.current = null;
+        latestLandmarksRef.current = null;
+        latestRawLandmarksRef.current = null;
+        lastValidFrameTimeRef.current = 0;
+        setFeatures(null);
+        setRawLandmarks(null);
+        setSmoothedLandmarks(null);
+        setQuality({
+          isValid: false,
+          reason: 'Không phát hiện khuôn mặt',
+          faceDetected: false,
+          leftEyeDetected: false,
+          rightEyeDetected: false,
+          irisValid: false,
+        });
+      }
+    }, 100);
+
+    return () => clearInterval(watchdog);
+  }, []);
 
   const withRecoveryState = (qualityReport) => {
     // ERROR RECOVERY
@@ -58,24 +89,21 @@ export function useEyeTracking() {
 
     if (!multiLm || multiLm.length === 0 || !multiLm[0]) {
       const qualityReport = withRecoveryState(buildFrameQualityGate(baseQualityReport, null, qualityOptions));
-      const previousQuality = latestQualityRef.current;
       latestQualityRef.current = qualityReport;
-      const becameInvalid = previousQuality?.isValid !== false && qualityReport.isValid === false;
-      const shouldSyncState = now - lastStateSyncRef.current >= 100 || becameInvalid;
-      if (shouldSyncState) {
-        lastStateSyncRef.current = now;
-        setQuality(qualityReport);
-        setFeatures(null);
-        setRawLandmarks(null);
-        setSmoothedLandmarks(null);
-      }
       latestFeaturesRef.current = null;
       latestLandmarksRef.current = null;
       latestRawLandmarksRef.current = null;
+      lastValidFrameTimeRef.current = 0;
+      lastStateSyncRef.current = now;
+      setQuality(qualityReport);
+      setFeatures(null);
+      setRawLandmarks(null);
+      setSmoothedLandmarks(null);
       return null;
     }
 
     const lm = multiLm[0];
+    lastValidFrameTimeRef.current = now;
     // Resolve timestamp: prefer explicit frameTimestamp or results.presentationTime (rVFC), fallback to performance.now()
     const timestamp = (typeof frameTimestamp === 'number' && Number.isFinite(frameTimestamp))
       ? frameTimestamp

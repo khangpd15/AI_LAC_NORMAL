@@ -376,7 +376,7 @@ export function evaluateFinalScreening(session) {
     // Secondary Functional Evidence: 4 Directions Motility
     const captures = fourDirectionsEvidence?.captures || {};
     const totalCapturedDirections = Object.values(captures).filter((c) => !!c?.image).length;
-    const isMotilityComplete = totalCapturedDirections >= 4;
+    const _isMotilityComplete = totalCapturedDirections >= 4;
 
     // Supporting Computational Evidence: AI Deep Learning Image Analysis
     const aiStatus = aiImageEvidence?.status; // 'NORMAL' | 'SUSPICIOUS' | 'INCONCLUSIVE' | null
