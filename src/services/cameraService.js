@@ -8,6 +8,9 @@
 export function getCameraErrorMessage(error) {
   if (error?.name === 'NotAllowedError') return 'Bạn chưa cấp quyền truy cập camera trong trình duyệt.';
   if (error?.name === 'NotFoundError') return 'Không tìm thấy camera trên thiết bị.';
+  if (error?.name === 'NotReadableError') return 'Camera đang bận hoặc trình duyệt chưa mở được luồng hình. Hãy đóng ứng dụng khác đang dùng camera rồi thử lại.';
+  if (error?.name === 'OverconstrainedError') return 'Thiết bị không đáp ứng cấu hình camera được yêu cầu. Vui lòng thử bật lại camera.';
+  if (error?.name === 'SecurityError') return 'Trình duyệt đang chặn camera. Hãy mở trang bằng HTTPS hoặc cấp quyền camera cho trang này.';
   return error?.message || 'Không thể khởi động camera.';
 }
 
@@ -41,7 +44,7 @@ export async function attachStreamToVideo(videoElement, stream) {
   }
 }
 
-function getDefaultCameraConstraints() {
+export function getDefaultCameraConstraints() {
   const ua = navigator.userAgent || '';
   const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
   const lowMemory = (navigator.deviceMemory || 4) <= 3;
@@ -72,6 +75,53 @@ function getDefaultCameraConstraints() {
   };
 }
 
+function getFallbackCameraConstraints() {
+  return {
+    video: {
+      width: { ideal: 480, max: 640 },
+      height: { ideal: 360, max: 480 },
+      facingMode: { ideal: 'user' },
+      frameRate: { ideal: 24, max: 30 },
+    },
+    audio: false,
+  };
+}
+
+function shouldRetryWithFallback(error) {
+  return !['NotAllowedError', 'NotFoundError', 'SecurityError'].includes(error?.name);
+}
+
+async function requestCameraWithFallback(primaryConstraints) {
+  const defaultConstraints = getDefaultCameraConstraints();
+  const fallbackConstraints = getFallbackCameraConstraints();
+  const candidates = [primaryConstraints || defaultConstraints, defaultConstraints, fallbackConstraints];
+  const seen = new Set();
+  let lastError = null;
+
+  for (const constraints of candidates) {
+    const key = JSON.stringify(constraints);
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    try {
+      return await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err) {
+      lastError = err;
+      console.warn('[Camera] getUserMedia failed, checking fallback:', {
+        name: err?.name,
+        message: err?.message,
+        constraints,
+      });
+
+      if (!shouldRetryWithFallback(err)) {
+        throw err;
+      }
+    }
+  }
+
+  throw lastError || new Error('Không thể khởi động camera.');
+}
+
 /**
  * Requests webcam access and binds the stream to a video element
  * @param {HTMLVideoElement} videoElement
@@ -83,10 +133,7 @@ export async function startCameraStream(videoElement, customConstraints = null) 
     throw new Error('Trình duyệt không hỗ trợ WebRTC / getUserMedia.');
   }
 
-  const defaultConstraints = getDefaultCameraConstraints();
-
-  const constraints = customConstraints || defaultConstraints;
-  const stream = await navigator.mediaDevices.getUserMedia(constraints);
+  const stream = await requestCameraWithFallback(customConstraints);
 
   if (videoElement) {
     await attachStreamToVideo(videoElement, stream);

@@ -2,6 +2,12 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { VisualEffectEngine } from './VisualEffectEngine';
 import { useFaceMesh } from '../../hooks/useFaceMesh';
 import { eyeCoverDetector } from '../../services/cv/eyeCoverDetector';
+import {
+  attachStreamToVideo,
+  getCameraErrorMessage,
+  startCameraStream,
+  stopCameraStream,
+} from '../../services/cameraService';
 
 /**
  * CameraView
@@ -27,6 +33,7 @@ export default function CameraView({
 
   const simAnimIdRef = useRef(null);
   const simCanvasRef = useRef(null);
+  const activeStreamRef = useRef(null);
 
   // Callback refs to keep callbacks fresh without triggering effect cleanups
   const onCameraReadyRef = useRef(onCameraReady);
@@ -47,30 +54,25 @@ export default function CameraView({
   // Initialize camera stream (only runs when requested)
   const initCamera = useCallback(async () => {
     setCameraError(null);
+    setHasCameraStream(false);
     try {
-      const constraints = {
-        video: {
-          facingMode: 'user',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
-        audio: false,
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setHasCameraStream(true);
-        onCameraReadyRef.current?.();
+      if (activeStreamRef.current) {
+        stopCameraStream(activeStreamRef.current, videoRef.current);
+        activeStreamRef.current = null;
       }
+
+      const stream = await startCameraStream(videoRef.current);
+      activeStreamRef.current = stream;
+
+      if (videoRef.current) {
+        await attachStreamToVideo(videoRef.current, stream);
+      }
+
+      setHasCameraStream(true);
+      onCameraReadyRef.current?.();
     } catch (err) {
       console.warn('[CameraView] getUserMedia error:', err);
-      setCameraError(
-        err.name === 'NotAllowedError'
-          ? 'Quyền truy cập camera bị từ chối. Vui lòng cho phép quyền camera trên trình duyệt.'
-          : 'Không thể kích hoạt camera. Hãy kiểm tra kết nối thiết bị.'
-      );
+      setCameraError(getCameraErrorMessage(err));
     }
   }, []);
 
@@ -175,8 +177,11 @@ export default function CameraView({
 
       const stream = simCanvas.captureStream(30);
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(() => {});
+        if (activeStreamRef.current) {
+          stopCameraStream(activeStreamRef.current, videoRef.current);
+        }
+        activeStreamRef.current = stream;
+        attachStreamToVideo(videoRef.current, stream);
         setHasCameraStream(true);
         setCameraError(null);
         onCameraReadyRef.current?.();
@@ -245,6 +250,8 @@ export default function CameraView({
 
   // Request camera when active — clean up ONLY when unmounted or deactivated
   useEffect(() => {
+    const videoEl = videoRef.current;
+
     if (isCameraActive) {
       initCamera();
     }
@@ -254,11 +261,11 @@ export default function CameraView({
         cancelAnimationFrame(simAnimIdRef.current);
         simAnimIdRef.current = null;
       }
-      const videoEl = videoRef.current;
-      if (videoEl?.srcObject) {
-        const tracks = videoEl.srcObject.getTracks?.() || [];
-        tracks.forEach((t) => t.stop());
-        videoEl.srcObject = null;
+      if (activeStreamRef.current) {
+        stopCameraStream(activeStreamRef.current, videoEl);
+        activeStreamRef.current = null;
+      } else if (videoEl?.srcObject) {
+        stopCameraStream(videoEl.srcObject, videoEl);
       }
       if (engineRef.current) {
         engineRef.current.stop();

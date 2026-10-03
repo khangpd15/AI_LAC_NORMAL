@@ -184,19 +184,6 @@ export default function HomePage({
             </button>
           </nav>
 
-          {/* Quick Voice Guide Helper in Nav */}
-          <div className="home-nav-voice-helper">
-            <button
-              type="button"
-              className={`btn-nav-audio ${isAudioPlaying && currentSpokenId === 'welcome' ? 'active-pulse' : ''}`}
-              onClick={() => playVoice('welcome', voiceScripts.welcome)}
-              aria-label="Nghe hướng dẫn bằng giọng nói"
-              title="Bấm để nghe Iris hướng dẫn"
-            >
-              <IconSpeakerWave size={20} isPlaying={isAudioPlaying && currentSpokenId === 'welcome'} />
-              <span className="audio-label">Hướng dẫn</span>
-            </button>
-          </div>
         </div>
       </header>
 

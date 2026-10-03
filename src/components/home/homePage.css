@@ -203,43 +203,6 @@
   letter-spacing: 0.04em;
 }
 
-/* Quick Voice Guide in Nav */
-.home-nav-voice-helper {
-  display: flex;
-  align-items: center;
-}
-
-.btn-nav-audio {
-  min-height: 48px;
-  padding: 8px 18px;
-  border-radius: var(--remicare-radius-full);
-  background: var(--remicare-teal);
-  color: #ffffff;
-  border: none;
-  font-size: 1.02rem;
-  font-weight: 800;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 14px rgba(8, 127, 120, 0.25);
-  transition: all 0.25s ease;
-}
-
-.btn-nav-audio:hover {
-  background: #066963;
-  transform: scale(1.03);
-}
-
-.btn-nav-audio:active {
-  transform: scale(0.97);
-}
-
-.btn-nav-audio.active-pulse {
-  background: var(--remicare-mint);
-  animation: pulseVoice 1.4s infinite alternate;
-}
-
 /* --------------------------------------------------------------------------
    2. HERO — INTERACTIVE EYE EXPERIENCE
    -------------------------------------------------------------------------- */
@@ -1722,6 +1685,7 @@
     max-width: 100%;
     padding: 8px 12px;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 8px;
   }
 
@@ -1772,23 +1736,6 @@
   }
 
   .nav-btn-dev {
-    display: none;
-  }
-
-  .home-nav-voice-helper {
-    margin-left: auto;
-  }
-
-  .btn-nav-audio {
-    width: 48px;
-    height: 48px;
-    min-height: 48px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 50%;
-  }
-
-  .btn-nav-audio .audio-label {
     display: none;
   }
 
