@@ -5,12 +5,12 @@ export const RESEARCH_SCREENING_FLOW_ENABLED =
 export const RESEARCH_CAMERA_CONFIG = {
   minWidth: 640,
   minHeight: 480,
-  preferredWidth: 1920,
-  preferredHeight: 1080,
-  maxWidth: 2560,
-  maxHeight: 1440,
+  preferredWidth: 1280,
+  preferredHeight: 720,
+  maxWidth: 1920,
+  maxHeight: 1080,
   frameRate: { ideal: 30, max: 60 },
-  facingMode: { ideal: 'environment' },
+  facingMode: { ideal: 'user' },
   retryLimit: null,
   thresholdSource: 'TODO_PILOT',
 };
@@ -78,18 +78,24 @@ export const RESEARCH_QUALITY_CONFIG = {
   },
 };
 
-export function getScreeningCameraConstraints() {
+export function getScreeningCameraConstraints(preferredFacingMode = null) {
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+  const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
+
+  // On desktop / laptop, there is no rear camera; always use 'user'.
+  // On mobile, default to 'user' for front-facing position check so the user can see the alignment box.
+  const facing = preferredFacingMode || (isMobile ? { ideal: 'user' } : 'user');
+
   return {
     video: {
-      width: {
-        ideal: RESEARCH_CAMERA_CONFIG.preferredWidth,
-        max: RESEARCH_CAMERA_CONFIG.maxWidth,
-      },
-      height: {
-        ideal: RESEARCH_CAMERA_CONFIG.preferredHeight,
-        max: RESEARCH_CAMERA_CONFIG.maxHeight,
-      },
-      facingMode: RESEARCH_CAMERA_CONFIG.facingMode,
+      width: isPortrait
+        ? { ideal: 720, max: 1080 }
+        : { ideal: 1280, max: 1920 },
+      height: isPortrait
+        ? { ideal: 1080, max: 1920 }
+        : { ideal: 720, max: 1080 },
+      facingMode: facing,
       frameRate: RESEARCH_CAMERA_CONFIG.frameRate,
     },
     audio: false,
@@ -131,18 +137,42 @@ export function getDeviceContext() {
   };
 }
 
-export function validateResearchCameraSettings(settings = {}) {
-  const width = Number(settings.width || 0);
-  const height = Number(settings.height || 0);
-  const valid = width >= RESEARCH_CAMERA_CONFIG.minWidth && height >= RESEARCH_CAMERA_CONFIG.minHeight;
+export function validateResearchCameraSettings(settings = {}, videoElement = null) {
+  const w1 = Number(settings.width || 0);
+  const h1 = Number(settings.height || 0);
+  const w2 = Number(videoElement?.videoWidth || 0);
+  const h2 = Number(videoElement?.videoHeight || 0);
+
+  const rawWidth = w1 || w2;
+  const rawHeight = h1 || h2;
+
+  // If dimensions not yet available (metadata loading), treat as initializing / valid
+  if (rawWidth === 0 && rawHeight === 0) {
+    return {
+      valid: true,
+      width: 0,
+      height: 0,
+      minWidth: RESEARCH_CAMERA_CONFIG.minWidth,
+      minHeight: RESEARCH_CAMERA_CONFIG.minHeight,
+      reason: null,
+      isInitializing: true,
+    };
+  }
+
+  // Support both portrait and landscape orientation
+  const maxDim = Math.max(rawWidth, rawHeight);
+  const minDim = Math.min(rawWidth, rawHeight);
+
+  // Meets standard if long edge >= 640 and short edge >= 480
+  const meetsStandard = maxDim >= RESEARCH_CAMERA_CONFIG.minWidth && minDim >= RESEARCH_CAMERA_CONFIG.minHeight;
 
   return {
-    valid,
-    width,
-    height,
+    valid: meetsStandard,
+    width: rawWidth,
+    height: rawHeight,
     minWidth: RESEARCH_CAMERA_CONFIG.minWidth,
     minHeight: RESEARCH_CAMERA_CONFIG.minHeight,
-    reason: valid ? null : 'CAMERA_RESOLUTION_BELOW_TODO_PILOT_MINIMUM',
+    reason: meetsStandard ? null : 'CAMERA_RESOLUTION_BELOW_TODO_PILOT_MINIMUM',
   };
 }
 

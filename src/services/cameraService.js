@@ -91,8 +91,17 @@ function getFallbackCameraConstraints() {
   };
 }
 
-function shouldRetryWithFallback(error) {
-  return !['NotAllowedError', 'NotFoundError', 'SecurityError'].includes(error?.name);
+function shouldRetryWithFallback(error, isFallbackCandidate = false) {
+  // If user explicitly denied permission or security violation, never retry
+  if (['NotAllowedError', 'SecurityError'].includes(error?.name)) {
+    return false;
+  }
+  // If fallback candidate itself got NotFoundError, no camera available on system
+  if (isFallbackCandidate && error?.name === 'NotFoundError') {
+    return false;
+  }
+  // Otherwise (OverconstrainedError, NotFoundError on specific facingMode/resolution), allow fallback
+  return true;
 }
 
 async function requestCameraWithFallback(primaryConstraints) {
@@ -102,7 +111,8 @@ async function requestCameraWithFallback(primaryConstraints) {
   const seen = new Set();
   let lastError = null;
 
-  for (const constraints of candidates) {
+  for (let i = 0; i < candidates.length; i++) {
+    const constraints = candidates[i];
     const key = JSON.stringify(constraints);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -117,7 +127,8 @@ async function requestCameraWithFallback(primaryConstraints) {
         constraints,
       });
 
-      if (!shouldRetryWithFallback(err)) {
+      const isLastCandidate = i === candidates.length - 1;
+      if (!shouldRetryWithFallback(err, isLastCandidate)) {
         throw err;
       }
     }

@@ -237,6 +237,10 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
 
   const handleSubmit = () => {
     if (!allPreparationChecked) {
+      const firstInvalidIndex = steps.findIndex((s) => !s.isValid());
+      if (firstInvalidIndex !== -1) {
+        setStepIndex(firstInvalidIndex);
+      }
       setShowBlockReason(true);
       return;
     }

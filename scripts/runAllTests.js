@@ -229,3 +229,37 @@ function createSyntheticLandmarks({ eyeOpening = 0.025, yawOffset = 0 } = {}) {
 
 console.log('ALL HIRSCHBERG PRE-SCREENING TESTS PASSED SUCCESSFULLY! ✓');
 
+// ==============================================================================
+// RESEARCH CAMERA RESOLUTION & SETTINGS VALIDATION TESTS
+// ==============================================================================
+import { validateResearchCameraSettings } from '../src/constants/researchScreeningConfig.js';
+
+console.log('\n--- RUNNING RESEARCH CAMERA RESOLUTION TESTS ---');
+
+// Test 10: Mobile portrait orientation (480x640) meets minimum standard
+{
+  const res = validateResearchCameraSettings({ width: 480, height: 640 });
+  assert.equal(res.valid, true);
+  assert.equal(res.width, 480);
+  assert.equal(res.height, 640);
+  console.log('✓ Test 10 Passed: Mobile portrait 480x640 correctly recognized as valid');
+}
+
+// Test 11: Initializing camera (0x0) is treated as initializing/valid, not blocked
+{
+  const res = validateResearchCameraSettings({ width: 0, height: 0 });
+  assert.equal(res.valid, true);
+  assert.equal(res.isInitializing, true);
+  console.log('✓ Test 11 Passed: Initializing camera (0x0) treated as valid to prevent camera shutdown');
+}
+
+// Test 12: Landscape HD (1280x720) meets minimum standard
+{
+  const res = validateResearchCameraSettings({ width: 1280, height: 720 });
+  assert.equal(res.valid, true);
+  assert.equal(res.width, 1280);
+  assert.equal(res.height, 720);
+  console.log('✓ Test 12 Passed: Landscape 1280x720 recognized as valid');
+}
+
+console.log('ALL CAMERA RESOLUTION TESTS PASSED SUCCESSFULLY! ✓\n');

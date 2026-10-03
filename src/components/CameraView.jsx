@@ -76,6 +76,8 @@ export default function CameraView({
 
       if (typeof videoRef === 'function') {
         videoRef(node);
+      } else if (videoRef && typeof videoRef === 'object') {
+        videoRef.current = node;
       }
 
       if (node && stream) {

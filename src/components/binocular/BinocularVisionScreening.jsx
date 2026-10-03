@@ -210,7 +210,7 @@ export default function BinocularVisionScreening() {
 
       const track = activeStream?.getVideoTracks?.()[0] || null;
       const settings = track?.getSettings ? track.getSettings() : {};
-      const validation = validateResearchCameraSettings(settings);
+      const validation = validateResearchCameraSettings(settings, videoEl);
       const torch = await tryEnableTorchForResearch(activeStream, preparationDeviceRef.current);
 
       setSession((prev) => ({
@@ -226,19 +226,20 @@ export default function BinocularVisionScreening() {
         },
       }));
 
-      if (!validation.valid) {
-        stopCam();
-        setCameraValidationError(
-          `Camera ${validation.width}x${validation.height || 0} thấp hơn mức tối thiểu TODO_PILOT ${validation.minWidth}x${validation.minHeight}.`
+      if (!validation.valid && validation.width > 0) {
+        console.warn(
+          `[BinocularVisionScreening] Camera resolution ${validation.width}x${validation.height} is below recommended pilot target (${validation.minWidth}x${validation.minHeight}). Proceeding with current stream.`
         );
-        return;
       }
 
       await startLoop(videoEl);
     } catch (err) {
       console.error('Camera startup error:', err);
+      setCameraValidationError(
+        err?.message || 'Không thể khởi động camera. Vui lòng kiểm tra quyền camera trong trình duyệt.'
+      );
     }
-  }, [isActive, startCam, attachVideo, startLoop, stream, stopCam]);
+  }, [isActive, startCam, attachVideo, startLoop, stream]);
 
   // iOS Safari / Mobile Browser Lifecycle: Handle Home, Control Center, App Switch, and Screen Lock
   useEffect(() => {
