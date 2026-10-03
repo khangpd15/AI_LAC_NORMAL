@@ -74,6 +74,15 @@ export default function CameraView({
     (node) => {
       nodeRef.current = node;
 
+      if (node) {
+        node.muted = true;
+        node.defaultMuted = true;
+        node.playsInline = true;
+        node.setAttribute('playsinline', 'true');
+        node.setAttribute('webkit-playsinline', 'true');
+        node.setAttribute('muted', '');
+      }
+
       if (typeof videoRef === 'function') {
         videoRef(node);
       } else if (videoRef && typeof videoRef === 'object') {

@@ -18,18 +18,30 @@ export async function attachStreamToVideo(videoElement, stream) {
   if (!videoElement || !stream) return false;
 
   try {
-    if (videoElement.srcObject !== stream) {
-      videoElement.srcObject = stream;
-    }
     videoElement.muted = true;
+    videoElement.defaultMuted = true;
     videoElement.playsInline = true;
     videoElement.setAttribute('playsinline', 'true');
     videoElement.setAttribute('webkit-playsinline', 'true');
+    videoElement.setAttribute('muted', '');
 
-    if (videoElement.paused) {
-      await videoElement.play().catch((err) => {
-        console.warn('[Camera] videoElement.play() warning:', err);
-      });
+    if (videoElement.srcObject !== stream) {
+      videoElement.srcObject = stream;
+    }
+
+    const tryPlay = () => {
+      if (videoElement.paused) {
+        return videoElement.play().catch((err) => {
+          console.warn('[Camera] videoElement.play() warning:', err);
+        });
+      }
+      return Promise.resolve();
+    };
+
+    await tryPlay();
+    if (videoElement.readyState < 2) {
+      videoElement.addEventListener('loadedmetadata', tryPlay, { once: true });
+      videoElement.addEventListener('canplay', tryPlay, { once: true });
     }
 
     console.debug('[Camera] Stream attached to video', {
@@ -48,9 +60,21 @@ export async function attachStreamToVideo(videoElement, stream) {
 
 export function getDefaultCameraConstraints() {
   const ua = navigator.userAgent || '';
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
   const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
   const lowMemory = (navigator.deviceMemory || 4) <= 3;
   const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
+
+  if (isIOS) {
+    return {
+      video: {
+        facingMode: { ideal: 'user' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    };
+  }
 
   // CAMERA PERFORMANCE & ORIENTATION
   // Avoid high-resolution capture on mobile/low-end devices.
@@ -107,7 +131,13 @@ function shouldRetryWithFallback(error, isFallbackCandidate = false) {
 async function requestCameraWithFallback(primaryConstraints) {
   const defaultConstraints = getDefaultCameraConstraints();
   const fallbackConstraints = getFallbackCameraConstraints();
-  const candidates = [primaryConstraints || defaultConstraints, defaultConstraints, fallbackConstraints];
+  const candidates = [
+    primaryConstraints || defaultConstraints,
+    defaultConstraints,
+    fallbackConstraints,
+    { video: { facingMode: { ideal: 'user' } }, audio: false },
+    { video: true, audio: false },
+  ];
   const seen = new Set();
   let lastError = null;
 

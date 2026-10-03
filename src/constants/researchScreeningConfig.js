@@ -81,11 +81,25 @@ export const RESEARCH_QUALITY_CONFIG = {
 export function getScreeningCameraConstraints(preferredFacingMode = null) {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
   const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
 
   // On desktop / laptop, there is no rear camera; always use 'user'.
   // On mobile, default to 'user' for front-facing position check so the user can see the alignment box.
   const facing = preferredFacingMode || (isMobile ? { ideal: 'user' } : 'user');
+
+  // iOS Safari / WebKit WebRTC: hardware sensor reports in landscape (e.g. 1280x720).
+  // Specifying hard min/max constraints or portrait bounds causes OverconstrainedError on Safari.
+  if (isIOS) {
+    return {
+      video: {
+        facingMode: facing,
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    };
+  }
 
   return {
     video: {

@@ -7,9 +7,6 @@ import {
 
 const INITIAL_FORM = {
   guardianConsent: false,
-  ageYears: '',
-  redFlagPresent: false,
-  glassesOn: '',
   phoneFixed: false,
   headStraightReady: false,
   lightingReady: false,
@@ -23,29 +20,79 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
   const [showBlockReason, setShowBlockReason] = useState(false);
   const deviceContext = useMemo(() => getDeviceContext(), []);
 
-  const ageNumber = Number(form.ageYears);
-  const ageMissing = form.ageYears === '';
-  const ageTooYoung = !ageMissing && Number.isFinite(ageNumber) && ageNumber < RESEARCH_ELIGIBILITY_CONFIG.minAgeYears;
-  const ageInvalid = ageMissing || !Number.isFinite(ageNumber) || ageNumber < 0;
-  const hasBlockingClinicalInput = ageTooYoung || form.redFlagPresent;
-  const allPreparationChecked =
-    form.guardianConsent &&
-    !ageInvalid &&
-    !hasBlockingClinicalInput &&
-    form.glassesOn !== '' &&
-    form.phoneFixed &&
-    form.headStraightReady &&
-    form.lightingReady &&
-    form.fixationTargetReady &&
-    form.coverHelperReady;
-
   const lightingInstruction = deviceContext.isAndroid
     ? 'Android: hệ thống sẽ thử bật đèn flash sau khi bạn cấp quyền camera. Nếu trình duyệt không hỗ trợ torch, dùng đèn nhỏ đặt sát camera.'
     : 'iOS hoặc thiết bị không hỗ trợ torch: dùng một đèn nhỏ đặt sát camera, không dùng ring light hay đèn khuếch tán lớn.';
 
+  const checkAllValid = (f) =>
+    Boolean(
+      f.guardianConsent &&
+      f.phoneFixed &&
+      f.headStraightReady &&
+      f.lightingReady &&
+      f.fixationTargetReady &&
+      f.coverHelperReady
+    );
+
+  const handleSubmit = (targetForm = form) => {
+    if (!checkAllValid(targetForm)) {
+      const firstInvalidIndex = steps.findIndex((s) => !s.isValid(targetForm));
+      if (firstInvalidIndex !== -1) {
+        setStepIndex(firstInvalidIndex);
+      }
+      setShowBlockReason(true);
+      return;
+    }
+
+    const metadata = {
+      schemaVersion: 'research-precheck-v0',
+      completedAt: new Date().toISOString(),
+      eligibility: {
+        guardianConsent: targetForm.guardianConsent,
+        ageYears: null,
+        minAgeYears: RESEARCH_ELIGIBILITY_CONFIG.minAgeYears,
+        maxAgeYears: RESEARCH_ELIGIBILITY_CONFIG.maxAgeYears,
+        redFlagPresent: false,
+        redFlagQuestions: RESEARCH_ELIGIBILITY_CONFIG.redFlagQuestions,
+      },
+      selfReported: {
+        glassesOn: null,
+        phoneFixed: targetForm.phoneFixed,
+        headStraightReady: targetForm.headStraightReady,
+        lightingReady: targetForm.lightingReady,
+        fixationTargetReady: targetForm.fixationTargetReady,
+        coverHelperReady: targetForm.coverHelperReady,
+      },
+      device: deviceContext,
+      cameraPlan: {
+        facingMode: 'user',
+        minWidth: RESEARCH_CAMERA_CONFIG.minWidth,
+        minHeight: RESEARCH_CAMERA_CONFIG.minHeight,
+        thresholdSource: RESEARCH_CAMERA_CONFIG.thresholdSource,
+      },
+      lightingPlan: {
+        source: deviceContext.isAndroid ? 'torch_or_external' : 'external',
+        instruction: lightingInstruction,
+      },
+      warnings: [
+        'selfReported fields are metadata only and do not replace automatic quality gates',
+      ],
+    };
+
+    onComplete?.(metadata);
+  };
+
   const update = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    const nextForm = { ...form, [key]: value };
+    setForm(nextForm);
     setShowBlockReason(false);
+
+    // Khi đánh dấu tích ở bước cuối cùng, tự động chuyển ngay sang luồng 2 (Vị trí / Camera)
+    if (stepIndex === steps.length - 1 && value === true) {
+      if (checkAllValid(nextForm)) {
+        handleSubmit(nextForm);
+      }
+    }
   };
 
   const steps = [
@@ -64,73 +111,13 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
           <span>Phụ huynh/người giám hộ đồng ý thực hiện bài sàng lọc nghiên cứu.</span>
         </label>
       ),
-      isValid: () => form.guardianConsent,
+      isValid: (f = form) => f.guardianConsent,
       invalidText: 'Cần xác nhận đồng ý trước khi tiếp tục.',
-    },
-    {
-      id: 'age',
-      title: 'Tuổi của trẻ',
-      subtitle: `Phạm vi hiện tại: từ ${RESEARCH_ELIGIBILITY_CONFIG.minAgeYears} tuổi. Giới hạn trên: UNKNOWN.`,
-      art: 'M 18 50 C 24 34 42 34 48 50 M 20 20 H 54 M 20 32 H 42',
-      content: (
-        <label className="prep-field prep-single-control">
-          <span>Nhập tuổi</span>
-          <input
-            type="number"
-            min="0"
-            inputMode="numeric"
-            value={form.ageYears}
-            onChange={(e) => update('ageYears', e.target.value)}
-            placeholder={`Tối thiểu ${RESEARCH_ELIGIBILITY_CONFIG.minAgeYears} tuổi`}
-          />
-        </label>
-      ),
-      isValid: () => !ageInvalid && !ageTooYoung,
-      invalidText: ageTooYoung
-        ? `Tuổi dưới ${RESEARCH_ELIGIBILITY_CONFIG.minAgeYears}: nên dừng bài test trong phạm vi nghiên cứu này.`
-        : 'Vui lòng nhập tuổi hợp lệ.',
-    },
-    {
-      id: 'redFlag',
-      title: 'Dấu hiệu cần khám ngay',
-      subtitle: 'Danh sách red flag đang chờ bác sĩ duyệt; nếu có dấu hiệu bất thường, dừng test và đi khám.',
-      art: 'M 36 14 L 62 58 H 10 Z M 36 28 V 42 M 36 50 V 52',
-      content: (
-        <label className="prep-check-row prep-alert-row prep-single-control">
-          <input
-            type="checkbox"
-            checked={form.redFlagPresent}
-            onChange={(e) => update('redFlagPresent', e.target.checked)}
-          />
-          <span>Có dấu hiệu cần khám ngay theo danh sách bác sĩ cung cấp.</span>
-        </label>
-      ),
-      isValid: () => !form.redFlagPresent,
-      invalidText: 'Có red flag tự khai: dừng bài test và nên đi khám chuyên khoa.',
-      allowSkipLabel: 'Không có dấu hiệu này',
-    },
-    {
-      id: 'glasses',
-      title: 'Trẻ có đeo kính không?',
-      subtitle: 'Chính sách cho phép hay không vẫn chờ bác sĩ duyệt; lựa chọn này chỉ lưu metadata.',
-      art: 'M 12 38 C 12 28 28 28 28 38 C 28 48 12 48 12 38 M 44 38 C 44 28 60 28 60 38 C 60 48 44 48 44 38 M 28 38 H 44',
-      content: (
-        <label className="prep-field prep-single-control">
-          <span>Chọn tình trạng kính</span>
-          <select value={form.glassesOn} onChange={(e) => update('glassesOn', e.target.value)}>
-            <option value="">Chọn một mục</option>
-            <option value="yes">Có đeo kính</option>
-            <option value="no">Không đeo kính</option>
-          </select>
-        </label>
-      ),
-      isValid: () => form.glassesOn !== '',
-      invalidText: 'Vui lòng chọn tình trạng kính.',
     },
     {
       id: 'phoneFixed',
       title: 'Cố định điện thoại',
-      subtitle: 'Dùng giá đỡ hoặc tripod. Bước camera sau sẽ xin quyền ở màn kế tiếp.',
+      subtitle: 'Dùng giá đỡ hoặc tripod, đặt thẳng tầm mắt của trẻ.',
       art: 'M 26 10 H 46 V 58 H 26 Z M 22 62 H 50 M 36 58 V 62',
       content: (
         <label className="prep-check-row prep-single-control">
@@ -139,10 +126,10 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
             checked={form.phoneFixed}
             onChange={(e) => update('phoneFixed', e.target.checked)}
           />
-          <span>Điện thoại đã cố định trên giá đỡ/tripod, dùng camera sau.</span>
+          <span>Điện thoại đã cố định trên giá đỡ/tripod, hướng camera trước về phía trẻ.</span>
         </label>
       ),
-      isValid: () => form.phoneFixed,
+      isValid: (f = form) => f.phoneFixed,
       invalidText: 'Cần cố định điện thoại trước khi bật camera.',
     },
     {
@@ -160,7 +147,7 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
           <span>Trẻ ngồi thẳng lưng, đầu song song với điện thoại.</span>
         </label>
       ),
-      isValid: () => form.headStraightReady,
+      isValid: (f = form) => f.headStraightReady,
       invalidText: 'Cần chuẩn bị tư thế trước khi tiếp tục.',
     },
     {
@@ -178,7 +165,7 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
           <span>{lightingInstruction}</span>
         </label>
       ),
-      isValid: () => form.lightingReady,
+      isValid: (f = form) => f.lightingReady,
       invalidText: 'Cần chuẩn bị nguồn sáng trước khi bật camera.',
     },
     {
@@ -196,7 +183,7 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
           <span>Có vật nhỏ làm target đặt sát ống kính để trẻ nhìn vào.</span>
         </label>
       ),
-      isValid: () => form.fixationTargetReady,
+      isValid: (f = form) => f.fixationTargetReady,
       invalidText: 'Cần chuẩn bị target nhìn trước khi tiếp tục.',
     },
     {
@@ -214,7 +201,7 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
           <span>Người lớn đã sẵn sàng che mắt theo hướng dẫn.</span>
         </label>
       ),
-      isValid: () => form.coverHelperReady,
+      isValid: (f = form) => f.coverHelperReady,
       invalidText: 'Cần có người lớn hỗ trợ che mắt.',
     },
   ];
@@ -223,66 +210,16 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
   const isLastStep = stepIndex === steps.length - 1;
 
   const goNext = () => {
-    if (!current.isValid()) {
+    if (!current.isValid(form)) {
       setShowBlockReason(true);
       return;
     }
     setShowBlockReason(false);
     if (isLastStep) {
-      handleSubmit();
+      handleSubmit(form);
       return;
     }
     setStepIndex((prev) => Math.min(prev + 1, steps.length - 1));
-  };
-
-  const handleSubmit = () => {
-    if (!allPreparationChecked) {
-      const firstInvalidIndex = steps.findIndex((s) => !s.isValid());
-      if (firstInvalidIndex !== -1) {
-        setStepIndex(firstInvalidIndex);
-      }
-      setShowBlockReason(true);
-      return;
-    }
-
-    const metadata = {
-      schemaVersion: 'research-precheck-v0',
-      completedAt: new Date().toISOString(),
-      eligibility: {
-        guardianConsent: form.guardianConsent,
-        ageYears: ageNumber,
-        minAgeYears: RESEARCH_ELIGIBILITY_CONFIG.minAgeYears,
-        maxAgeYears: RESEARCH_ELIGIBILITY_CONFIG.maxAgeYears,
-        redFlagPresent: form.redFlagPresent,
-        redFlagQuestions: RESEARCH_ELIGIBILITY_CONFIG.redFlagQuestions,
-      },
-      selfReported: {
-        glassesOn: form.glassesOn === 'yes',
-        phoneFixed: form.phoneFixed,
-        headStraightReady: form.headStraightReady,
-        lightingReady: form.lightingReady,
-        fixationTargetReady: form.fixationTargetReady,
-        coverHelperReady: form.coverHelperReady,
-      },
-      device: deviceContext,
-      cameraPlan: {
-        facingMode: 'environment',
-        minWidth: RESEARCH_CAMERA_CONFIG.minWidth,
-        minHeight: RESEARCH_CAMERA_CONFIG.minHeight,
-        thresholdSource: RESEARCH_CAMERA_CONFIG.thresholdSource,
-      },
-      lightingPlan: {
-        source: deviceContext.isAndroid ? 'torch_or_external' : 'external',
-        instruction: lightingInstruction,
-      },
-      warnings: [
-        'selfReported fields are metadata only and do not replace automatic quality gates',
-        'red flag list is a placeholder pending clinical review',
-        'glasses policy is TODO_CLINICAL_REVIEW',
-      ],
-    };
-
-    onComplete?.(metadata);
   };
 
   React.useEffect(() => {
@@ -336,11 +273,6 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
             <p>{current.subtitle}</p>
           </div>
           {current.content}
-          {current.id === 'glasses' && (
-            <p className="preparation-note">
-              Chính sách kính: TODO_CLINICAL_REVIEW. Lựa chọn này chưa quyết định trẻ có được kết luận hay không.
-            </p>
-          )}
         </section>
       </div>
 
@@ -352,7 +284,7 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
 
       <div className="preparation-footer">
         <div className="preparation-device">
-          Thiết bị: {deviceContext.os} / {deviceContext.browser}. Camera sẽ xin `facingMode: environment`.
+          Thiết bị: {deviceContext.os} / {deviceContext.browser}.
         </div>
         <div className="preparation-actions">
           {stepIndex > 0 && (
