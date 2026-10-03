@@ -33,6 +33,7 @@ export default function PositionCheck({
   isLoading = false,
   error = null,
   onVideoReady,
+  onCameraActivate,
   speak = null,
   isVoiceEnabled = true,
 }) {
@@ -140,7 +141,71 @@ export default function PositionCheck({
       <div className="position-check-layout">
         {/* Left Column: Camera Preview with Live Landmarking & Face Bounding Box */}
         <div className="cam-column" style={{ position: 'relative' }}>
-          <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden' }}>
+
+          {/* Camera Activate Button: shown before camera starts. Uses user gesture to avoid iOS Safari block. */}
+          {!isActive && !isLoading && !error && (onCameraActivate || onVideoReady) && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px',
+                padding: '24px',
+                background: 'var(--color-pale-teal, #f0f9f8)',
+                borderRadius: '12px',
+                border: '2px dashed var(--color-soft-mint, #b8e8df)',
+                marginBottom: '12px',
+                minHeight: '160px',
+              }}
+            >
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ opacity: 0.5 }}>
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center' }}>Camera chưa được bật</p>
+              <button
+                id="btn-activate-camera-position"
+                type="button"
+                className="btn btn-primary"
+                onClick={() => (onCameraActivate || onVideoReady)?.(null)}
+                style={{ minWidth: '160px' }}
+              >
+                📷 Bật camera
+              </button>
+            </div>
+          )}
+
+          {/* Camera error retry button */}
+          {error && (onCameraActivate || onVideoReady) && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                padding: '20px',
+                background: 'var(--color-error-bg, #fff0f0)',
+                borderRadius: '12px',
+                border: '1.5px solid var(--color-error, #e55)',
+                marginBottom: '12px',
+              }}
+            >
+              <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--color-error, #c33)', textAlign: 'center', fontWeight: 600 }}>Lỗi camera</p>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', textAlign: 'center' }}>{error}</p>
+              <button
+                id="btn-retry-camera-position"
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => (onCameraActivate || onVideoReady)?.(null)}
+              >
+                🔄 Thử lại
+              </button>
+            </div>
+          )}
+
+          <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', display: (isActive || isLoading) ? 'block' : 'none' }}>
             <CameraView
               videoRef={videoRef}
               stream={stream}
@@ -149,8 +214,8 @@ export default function PositionCheck({
               quality={positionReport?.quality}
               isActive={isActive}
               isLoading={isLoading}
-              error={error}
-              onVideoReady={onVideoReady}
+              error={null}
+              onVideoReady={undefined}
               speak={speak}
               voiceEnabled={isVoiceEnabled}
             />

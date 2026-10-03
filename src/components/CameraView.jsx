@@ -94,12 +94,12 @@ export default function CameraView({
       }
 
       syncDimensions(node);
-
-      if (node && onVideoReady) {
-        Promise.resolve().then(() => onVideoReady(node));
-      }
+      // NOTE: onVideoReady is intentionally NOT called here automatically.
+      // Camera initialization must be triggered by an explicit user gesture
+      // (button tap) to satisfy iOS Safari's getUserMedia requirement.
+      // The "Bật camera" button in the parent (PositionCheck) handles this.
     },
-    [videoRef, stream, onVideoReady, syncDimensions]
+    [videoRef, stream, syncDimensions]
   );
 
   // Expose the owned video node through React's ref lifecycle.

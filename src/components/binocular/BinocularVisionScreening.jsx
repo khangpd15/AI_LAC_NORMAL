@@ -525,7 +525,7 @@ export default function BinocularVisionScreening() {
             isActive={isActive}
             isLoading={isCamLoading}
             error={cameraValidationError || camError}
-            onVideoReady={initCamera}
+            onCameraActivate={initCamera}
             speak={speak}
             isVoiceEnabled={isVoiceEnabled}
           />
@@ -560,7 +560,7 @@ export default function BinocularVisionScreening() {
             isActive={isActive}
             isLoading={isCamLoading}
             error={cameraValidationError || camError}
-            onVideoReady={initCamera}
+            onCameraActivate={initCamera}
             speak={speak}
             isVoiceEnabled={isVoiceEnabled}
           />
