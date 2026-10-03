@@ -17,7 +17,6 @@ import {
 import {
   createBinocularSession,
   updatePreparationData,
-  updateGazePositionCheckData,
   updateGazeTrackingData,
   updateCoverPositionCheckData,
   updateCoverTestData,
@@ -387,21 +386,8 @@ export default function BinocularVisionScreening() {
       ...prev,
       preparation: metadata,
     }));
-    setCurrentStep('GAZE_POSITION');
-  }, [session]);
-
-  // Handler: Proceed from Hirschberg position check (20–25 cm) to Hirschberg capture.
-  const handleGazePositionProceed = useCallback(() => {
-    if (!session || !positionReport || positionReport.status !== 'READY') return;
-
-    updateGazePositionCheckData(session.sessionId, positionReport);
-    logScreeningEvent(session.sessionId, 'GAZE_POSITION_READY', {
-      estimatedDistanceCm: positionReport.estimatedDistanceCm,
-      stableDistanceCm: positionReport.stableDistanceCm,
-    });
-
     setCurrentStep('GAZE_4_DIRECTIONS');
-  }, [session, positionReport]);
+  }, [session]);
 
   // Handler: Complete Hirschberg capture and transition to Cover Test Position Check (33–40 cm)
   const handleGaze4DirectionsComplete = useCallback((gazeData) => {
@@ -484,7 +470,7 @@ export default function BinocularVisionScreening() {
     setSession(newSession);
     setPositionReport(null);
     setCameraValidationError(null);
-    setCurrentStep(RESEARCH_SCREENING_FLOW_ENABLED ? 'PRECHECK' : 'GAZE_POSITION');
+    setCurrentStep(RESEARCH_SCREENING_FLOW_ENABLED ? 'PRECHECK' : 'GAZE_4_DIRECTIONS');
   }, [cancelSpeech]);
 
   return (
@@ -512,26 +498,7 @@ export default function BinocularVisionScreening() {
           />
         )}
 
-        {(currentStep === 'GAZE_POSITION' || currentStep === 'GAZE_POSITION_CHECK') && (
-          <PositionCheck
-            testType="GAZE_4_DIRECTIONS"
-            videoRef={videoRef}
-            stream={stream}
-            landmarks={rawLandmarks}
-            features={features}
-            positionReport={positionReport}
-            onProceed={handleGazePositionProceed}
-            onRetry={handlePositionRetry}
-            isActive={isActive}
-            isLoading={isCamLoading}
-            error={cameraValidationError || camError}
-            onCameraActivate={initCamera}
-            speak={speak}
-            isVoiceEnabled={isVoiceEnabled}
-          />
-        )}
-
-        {currentStep === 'GAZE_4_DIRECTIONS' && (
+        {(currentStep === 'GAZE_4_DIRECTIONS') && (
           <Gaze4DirectionsStep
             videoRef={videoRef}
             stream={stream}
