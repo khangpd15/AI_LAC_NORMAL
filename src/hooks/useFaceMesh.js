@@ -111,18 +111,69 @@ export function useFaceMesh(onResults, options = {}) {
     }
   }, [options]);
 
+  const onStaleFrameRef = useRef(options?.onStaleFrame);
+  useEffect(() => {
+    onStaleFrameRef.current = options?.onStaleFrame;
+  }, [options?.onStaleFrame]);
+
   const videoElementRef = useRef(null);
   const isSendingRef = useRef(false);
   const lastSendTimeRef = useRef(0);
   const lastProcessedFrameTimestampRef = useRef(-Infinity);
   const rvfcIdRef = useRef(null);
   const lastFrameTimestampRef = useRef(0);
+  const lastFreshFrameTimeRef = useRef(performance.now());
+  const lastVideoCurrentTimeRef = useRef(-1);
+  const loopGenerationRef = useRef(0);
+  const isPausedRef = useRef(false);
+
+  // Listen to visibilitychange to immediately suspend MediaPipe/ONNX execution in background
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        isPausedRef.current = true;
+      } else {
+        isPausedRef.current = false;
+        lastFreshFrameTimeRef.current = performance.now();
+        // Resume video playback if needed
+        if (videoElementRef.current?.paused && videoElementRef.current?.srcObject) {
+          videoElementRef.current.play().catch(() => {});
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
+  // Frame freshness watchdog (runs every 600ms to detect frozen video frames)
+  useEffect(() => {
+    const freshnessTimer = setInterval(() => {
+      if (
+        isLoopRunningRef.current &&
+        !isPausedRef.current &&
+        typeof document !== 'undefined' &&
+        !document.hidden
+      ) {
+        const v = videoElementRef.current;
+        if (v && v.readyState >= 2 && !v.paused) {
+          const now = performance.now();
+          if (now - lastFreshFrameTimeRef.current > 2400) {
+            console.warn('[FaceMesh] Stale frame detected (> 2.4s without advance). Triggering recovery.');
+            lastFreshFrameTimeRef.current = now - 1000; // throttle repeated alarms
+            onStaleFrameRef.current?.();
+          }
+        }
+      }
+    }, 600);
+    return () => clearInterval(freshnessTimer);
+  }, []);
 
   // Check support for requestVideoFrameCallback (Chrome 83+, Edge 83+, Firefox 132+)
   // Safari iOS < 18 requires requestAnimationFrame fallback
   const supportsRVFC = typeof HTMLVideoElement !== 'undefined' && 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
 
   const stopLoop = useCallback(() => {
+    loopGenerationRef.current += 1;
     isLoopRunningRef.current = false;
     isSendingRef.current = false;
     if (rafIdRef.current) {
@@ -138,21 +189,19 @@ export function useFaceMesh(onResults, options = {}) {
   const startLoop = useCallback(async (videoElement) => {
     if (!videoElement) return;
 
-    // Check if video element is changed or remounted
-    const isNewVideo = videoElementRef.current !== videoElement;
-    videoElementRef.current = videoElement;
+    // Increment loop generation counter: guarantees ONLY ONE ACTIVE DETECTION LOOP
+    loopGenerationRef.current += 1;
+    const currentLoopGen = loopGenerationRef.current;
 
-    if (isNewVideo) {
-      isSendingRef.current = false;
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
-      if (rvfcIdRef.current !== null && videoElementRef.current?.cancelVideoFrameCallback) {
-        videoElementRef.current.cancelVideoFrameCallback(rvfcIdRef.current);
-        rvfcIdRef.current = null;
-      }
-      isLoopRunningRef.current = false;
+    videoElementRef.current = videoElement;
+    isSendingRef.current = false;
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    if (rvfcIdRef.current !== null && videoElement.cancelVideoFrameCallback) {
+      videoElement.cancelVideoFrameCallback(rvfcIdRef.current);
+      rvfcIdRef.current = null;
     }
 
     if (!faceMeshRef.current) {
@@ -161,9 +210,6 @@ export function useFaceMesh(onResults, options = {}) {
 
     setFaceMeshResultsCallback((results) => {
       if (onResultsRef.current) {
-        // Attach browser-decoded frame timestamp to results object
-        // Note: presentationTime is a DOMHighResTimeStamp from the browser compositor,
-        // avoiding JS event loop jitter. It is NOT a camera sensor hardware clock.
         if (results && typeof results === 'object') {
           results.presentationTime = lastFrameTimestampRef.current;
         }
@@ -171,19 +217,39 @@ export function useFaceMesh(onResults, options = {}) {
       }
     });
 
-    if (isLoopRunningRef.current && (rafIdRef.current || rvfcIdRef.current !== null)) {
-      return;
-    }
     isLoopRunningRef.current = true;
-    isSendingRef.current = false;
+    isPausedRef.current = false;
+    lastFreshFrameTimeRef.current = performance.now();
+    lastVideoCurrentTimeRef.current = -1;
+
     if (!metricsRef.current.lastMetricsTime) {
       metricsRef.current.lastMetricsTime = performance.now();
     }
 
     // Common frame dispatch with lock, adaptive pacing, and watchdog
     const processSingleFrame = async (frameTimestamp) => {
+      // Abort immediately if backgrounded, loop stopped, or superseded by newer loop instance
+      if (
+        isPausedRef.current ||
+        (typeof document !== 'undefined' && document.hidden) ||
+        !isLoopRunningRef.current ||
+        loopGenerationRef.current !== currentLoopGen
+      ) {
+        return;
+      }
+
       const currentVideo = videoElementRef.current;
-      if (!currentVideo || !isLoopRunningRef.current) return;
+      if (!currentVideo) return;
+
+      const clockNow = performance.now();
+
+      // Track frame freshness via video.currentTime progress
+      const curTime = currentVideo.currentTime;
+      if (curTime !== lastVideoCurrentTimeRef.current) {
+        lastFreshFrameTimeRef.current = clockNow;
+        lastVideoCurrentTimeRef.current = curTime;
+      }
+
       const metric = metricsRef.current;
       metric.decodedFrames += 1;
 
@@ -232,7 +298,6 @@ export function useFaceMesh(onResults, options = {}) {
       }
 
       // Safety watchdog: if isSending was stuck for > 2000ms, unlock it
-      const clockNow = performance.now();
       if (isSendingRef.current && clockNow - lastSendTimeRef.current > 2000) {
         console.warn('[FaceMesh] Watchdog: Resetting stuck isSending lock');
         isSendingRef.current = false;
@@ -284,9 +349,11 @@ export function useFaceMesh(onResults, options = {}) {
     if (supportsRVFC && typeof videoElement.requestVideoFrameCallback === 'function') {
       // Progressive enhancement: requestVideoFrameCallback
       const tickRVFC = async (now, metadata) => {
-        if (!isLoopRunningRef.current) return;
+        if (!isLoopRunningRef.current || loopGenerationRef.current !== currentLoopGen) return;
         const currentVideo = videoElementRef.current;
         if (!currentVideo) return;
+
+        lastFreshFrameTimeRef.current = performance.now();
 
         // Extract presentationTime from metadata when available
         const frameTimestamp = (metadata && typeof metadata.presentationTime === 'number')
@@ -295,7 +362,7 @@ export function useFaceMesh(onResults, options = {}) {
 
         await processSingleFrame(frameTimestamp);
 
-        if (isLoopRunningRef.current && currentVideo?.requestVideoFrameCallback) {
+        if (isLoopRunningRef.current && loopGenerationRef.current === currentLoopGen && currentVideo?.requestVideoFrameCallback) {
           rvfcIdRef.current = currentVideo.requestVideoFrameCallback(tickRVFC);
         }
       };
@@ -304,14 +371,14 @@ export function useFaceMesh(onResults, options = {}) {
     } else {
       // Fallback: requestAnimationFrame
       const tickRAF = async (rafTimestamp) => {
-        if (!isLoopRunningRef.current) return;
+        if (!isLoopRunningRef.current || loopGenerationRef.current !== currentLoopGen) return;
         const currentVideo = videoElementRef.current;
         if (!currentVideo) return;
 
         const frameTimestamp = typeof rafTimestamp === 'number' ? rafTimestamp : performance.now();
         await processSingleFrame(frameTimestamp);
 
-        if (isLoopRunningRef.current) {
+        if (isLoopRunningRef.current && loopGenerationRef.current === currentLoopGen) {
           rafIdRef.current = requestAnimationFrame(tickRAF);
         }
       };

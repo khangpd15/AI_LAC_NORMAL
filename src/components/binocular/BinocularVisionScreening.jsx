@@ -27,6 +27,7 @@ import {
   POSITION_STATUS,
 } from '../../constants/binocularScreeningConfig.js';
 import { finalizeScreeningSample, setScreeningImage } from '../../services/screeningDatasetService.js';
+import { verifyFrameFreshness } from '../../services/cameraService.js';
 
 /**
  * BinocularVisionScreening Component
@@ -47,9 +48,20 @@ export default function BinocularVisionScreening() {
   const videoRef = useRef(null);
   const coverTrackingContextRef = useRef({ phase: null, coveredEye: null, trackedEye: null });
   const lastDetectionTimeRef = useRef(0);
+  const isRecoveringRef = useRef(false);
 
   // Vision, Hardware & Assistant Hooks
-  const { stream, isActive, isLoading: isCamLoading, error: camError, start: startCam, stop: stopCam, attachVideo } = useCamera();
+  const {
+    stream,
+    isActive,
+    isLoading: isCamLoading,
+    error: camError,
+    start: startCam,
+    stop: stopCam,
+    attachVideo,
+    checkHealth,
+    recover: recoverCam,
+  } = useCamera();
   const { quality, features, latestFeaturesRef, latestQualityRef, rawLandmarks, processResults } = useEyeTracking();
   const { speak, cancel: cancelSpeech, isVoiceEnabled, toggleSound } = useSpeech(true);
   const { smoothedPrediction, processFrameAI, inferenceFps, avgInferenceLatencyMs } = useStrabismusAI();
@@ -135,7 +147,32 @@ export default function BinocularVisionScreening() {
     return () => clearInterval(watchdog);
   }, [currentStep, isActive, isCamLoading, stream]);
 
-  const { startLoop, stopLoop, metrics: faceMeshMetrics } = useFaceMesh((r) => handleResults.current?.(r));
+  // Recovery handler for frozen/stale frames detected by useFaceMesh
+  const handleStaleFrame = useCallback(async () => {
+    if (isRecoveringRef.current) return;
+    const videoEl = videoRef.current;
+    if (!videoEl || !isActive) return;
+
+    isRecoveringRef.current = true;
+    console.warn('[BinocularVisionScreening] Stale frame detected. Attempting recovery...');
+    stopLoop();
+
+    try {
+      const recoveredStream = await recoverCam(videoEl);
+      if (recoveredStream && videoEl) {
+        await startLoop(videoEl);
+      }
+    } catch (err) {
+      console.error('[BinocularVisionScreening] Stale frame recovery failed:', err);
+    } finally {
+      isRecoveringRef.current = false;
+    }
+  }, [isActive, recoverCam, startLoop, stopLoop]);
+
+  const { startLoop, stopLoop, metrics: faceMeshMetrics } = useFaceMesh(
+    (r) => handleResults.current?.(r),
+    { onStaleFrame: handleStaleFrame }
+  );
 
   // Initialize camera or attach existing stream to newly mounted video node
   const initCamera = useCallback(async (videoNode = null) => {
@@ -153,6 +190,126 @@ export default function BinocularVisionScreening() {
       console.error('Camera startup error:', err);
     }
   }, [isActive, startCam, attachVideo, startLoop]);
+
+  // iOS Safari / Mobile Browser Lifecycle: Handle Home, Control Center, App Switch, and Screen Lock
+  useEffect(() => {
+    let foregroundDebounceTimer = null;
+
+    const handleBackground = () => {
+      console.log('[BinocularVisionScreening] Background event: pausing detection loop.');
+      if (foregroundDebounceTimer) {
+        clearTimeout(foregroundDebounceTimer);
+        foregroundDebounceTimer = null;
+      }
+      // 1. Pause detection loop so MediaPipe/ONNX do not execute in background
+      stopLoop();
+    };
+
+    const handleForeground = () => {
+      console.log('[BinocularVisionScreening] Foreground event: verifying camera & stream health.');
+      if (foregroundDebounceTimer) clearTimeout(foregroundDebounceTimer);
+
+      foregroundDebounceTimer = setTimeout(async () => {
+        if (isRecoveringRef.current) return;
+        const videoEl = videoRef.current;
+        if (!videoEl) return;
+
+        isRecoveringRef.current = true;
+        try {
+          // Step 1 - 5: Check MediaStream, tracks, readyState, enabled, muted, video dimensions
+          const health = checkHealth();
+          console.debug('[BinocularVisionScreening] Foreground camera health:', health);
+
+          if (health.healthy) {
+            // Step 6: Verify frame update
+            await attachVideo(videoEl);
+            if (videoEl.paused) {
+              await videoEl.play().catch(() => {});
+            }
+            const isFresh = await verifyFrameFreshness(videoEl, 500);
+
+            if (isFresh) {
+              console.log('[BinocularVisionScreening] Camera is healthy and frames are updating. Resuming loop.');
+              await startLoop(videoEl);
+            } else {
+              console.warn('[BinocularVisionScreening] Stream is live but frames stalled. Recovering camera...');
+              stopLoop();
+              const recovered = await recoverCam(videoEl);
+              if (recovered) {
+                await startLoop(videoEl);
+              }
+            }
+          } else if (health.needsRestart || health.reason === 'TRACK_ENDED' || health.reason === 'STREAM_NULL') {
+            // Step 8: Unhealthy -> restart camera (max 3 retries) -> attach stream -> wait for frame -> resume
+            console.log('[BinocularVisionScreening] Camera unhealthy. Initiating restart recovery...');
+            stopLoop();
+            const recovered = await recoverCam(videoEl);
+            if (recovered) {
+              await startLoop(videoEl);
+            }
+          } else if (health.reason === 'TRACK_MUTED') {
+            // iOS Safari temporary mute: wait up to 400ms for unmute
+            console.log('[BinocularVisionScreening] Track temporarily muted on iOS Safari. Waiting for unfreeze...');
+            await new Promise((r) => setTimeout(r, 350));
+            const recheck = checkHealth();
+            if (recheck.healthy) {
+              await attachVideo(videoEl);
+              await startLoop(videoEl);
+            } else {
+              const recovered = await recoverCam(videoEl);
+              if (recovered) {
+                await startLoop(videoEl);
+              }
+            }
+          } else {
+            // Re-attach video and start loop
+            await attachVideo(videoEl);
+            await startLoop(videoEl);
+          }
+        } catch (err) {
+          console.error('[BinocularVisionScreening] Foreground recovery error:', err);
+        } finally {
+          isRecoveringRef.current = false;
+        }
+      }, 150);
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        handleBackground();
+      } else {
+        handleForeground();
+      }
+    };
+
+    const onPageHide = () => handleBackground();
+    const onPageShow = () => handleForeground();
+    const onWindowBlur = () => {
+      if (document.hidden) {
+        handleBackground();
+      }
+    };
+    const onWindowFocus = () => {
+      if (!document.hidden) {
+        handleForeground();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('pageshow', onPageShow);
+    window.addEventListener('blur', onWindowBlur);
+    window.addEventListener('focus', onWindowFocus);
+
+    return () => {
+      if (foregroundDebounceTimer) clearTimeout(foregroundDebounceTimer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('pageshow', onPageShow);
+      window.removeEventListener('blur', onWindowBlur);
+      window.removeEventListener('focus', onWindowFocus);
+    };
+  }, [checkHealth, attachVideo, recoverCam, startLoop, stopLoop]);
 
   // Cleanup on unmount
   useEffect(() => {

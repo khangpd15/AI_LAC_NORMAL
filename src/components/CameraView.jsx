@@ -148,8 +148,8 @@ export default function CameraView({
         className="camera-frame"
         style={{
           '--camera-aspect-ratio':
-            (nodeRef.current?.videoWidth || actualDimensions.width) && (nodeRef.current?.videoHeight || actualDimensions.height)
-              ? `${nodeRef.current?.videoWidth || actualDimensions.width} / ${nodeRef.current?.videoHeight || actualDimensions.height}`
+            actualDimensions.width && actualDimensions.height
+              ? `${actualDimensions.width} / ${actualDimensions.height}`
               : undefined,
         }}
       >
@@ -183,8 +183,8 @@ export default function CameraView({
             features={features}
             featuresRef={featuresRef}
             quality={quality}
-            videoWidth={nodeRef.current?.videoWidth || actualDimensions.width}
-            videoHeight={nodeRef.current?.videoHeight || actualDimensions.height}
+            videoWidth={actualDimensions.width}
+            videoHeight={actualDimensions.height}
             isTrackingValid={quality ? quality.isValid : Boolean(landmarks)}
             isMirrored={isMirrored}
             showDebug={showDebug}

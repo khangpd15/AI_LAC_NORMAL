@@ -7,6 +7,8 @@ import {
   getCameraErrorMessage,
   startCameraStream,
   stopCameraStream,
+  checkCameraHealth,
+  verifyFrameFreshness,
 } from '../../services/cameraService';
 
 /**
@@ -273,6 +275,63 @@ export default function CameraView({
       }
     };
   }, [isCameraActive, initCamera]);
+
+  // Lifecycle Management for iOS Safari: Pause in background, recover upon foreground
+  useEffect(() => {
+    let foregroundDebounce = null;
+
+    const handleBackground = () => {
+      if (foregroundDebounce) clearTimeout(foregroundDebounce);
+      engineRef.current?.stop();
+      stopLoop();
+    };
+
+    const handleForeground = () => {
+      if (foregroundDebounce) clearTimeout(foregroundDebounce);
+      foregroundDebounce = setTimeout(async () => {
+        const videoEl = videoRef.current;
+        if (!videoEl || !isCameraActive) return;
+
+        const health = checkCameraHealth(activeStreamRef.current, videoEl);
+        if (health.healthy) {
+          if (videoEl.paused) {
+            await videoEl.play().catch(() => {});
+          }
+          const isFresh = await verifyFrameFreshness(videoEl, 500);
+          if (isFresh) {
+            engineRef.current?.start();
+            if (hasCameraStream) {
+              startLoop(videoEl).catch(() => {});
+            }
+          } else {
+            console.warn('[ExperienceVision/CameraView] Video frame stalled after foreground, re-initializing camera...');
+            await initCamera();
+          }
+        } else {
+          console.warn('[ExperienceVision/CameraView] Camera stream unhealthy after foreground, re-initializing camera...');
+          await initCamera();
+        }
+      }, 150);
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) handleBackground();
+      else handleForeground();
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', handleBackground);
+    window.addEventListener('pageshow', handleForeground);
+    window.addEventListener('blur', () => { if (document.hidden) handleBackground(); });
+    window.addEventListener('focus', () => { if (!document.hidden) handleForeground(); });
+
+    return () => {
+      if (foregroundDebounce) clearTimeout(foregroundDebounce);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', handleBackground);
+      window.removeEventListener('pageshow', handleForeground);
+    };
+  }, [isCameraActive, hasCameraStream, initCamera, startLoop, stopLoop]);
 
   // Setup VisualEffectEngine ONCE when camera stream becomes ready
   useEffect(() => {

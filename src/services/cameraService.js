@@ -155,11 +155,6 @@ export async function startCameraStream(videoElement, customConstraints = null) 
   return stream;
 }
 
-/**
- * Stops all tracks in a MediaStream and detaches from video element
- * @param {MediaStream} stream
- * @param {HTMLVideoElement} videoElement
- */
 export function stopCameraStream(stream, videoElement = null) {
   if (stream) {
     const tracks = stream.getTracks();
@@ -173,6 +168,109 @@ export function stopCameraStream(stream, videoElement = null) {
   }
 
   if (videoElement) {
+    try {
+      videoElement.pause();
+    } catch {
+      // ignore
+    }
     videoElement.srcObject = null;
   }
+}
+
+/**
+ * Evaluates live stream and video element health on iOS and Android.
+ * Checks tracks, readyState, enabled, muted, paused, and dimensions.
+ * @param {MediaStream|null} stream
+ * @param {HTMLVideoElement|null} videoElement
+ * @returns {{ healthy: boolean, needsRestart: boolean, reason: string, track: MediaStreamTrack|null }}
+ */
+export function checkCameraHealth(stream, videoElement = null) {
+  if (!stream) {
+    return { healthy: false, needsRestart: true, reason: 'STREAM_NULL', track: null };
+  }
+  if (!stream.active) {
+    return { healthy: false, needsRestart: true, reason: 'STREAM_INACTIVE', track: null };
+  }
+
+  const tracks = stream.getVideoTracks();
+  if (!tracks || tracks.length === 0) {
+    return { healthy: false, needsRestart: true, reason: 'NO_VIDEO_TRACKS', track: null };
+  }
+
+  const track = tracks[0];
+  if (track.readyState === 'ended') {
+    return { healthy: false, needsRestart: true, reason: 'TRACK_ENDED', track };
+  }
+  if (!track.enabled) {
+    return { healthy: false, needsRestart: true, reason: 'TRACK_DISABLED', track };
+  }
+
+  if (videoElement) {
+    if (videoElement.srcObject !== stream) {
+      return { healthy: false, needsRestart: false, reason: 'SRC_OBJECT_MISMATCH', track };
+    }
+    if (videoElement.ended) {
+      return { healthy: false, needsRestart: true, reason: 'VIDEO_ENDED', track };
+    }
+    if (videoElement.readyState < 2) {
+      return { healthy: false, needsRestart: false, reason: 'VIDEO_NOT_READY', track };
+    }
+    if (videoElement.videoWidth === 0 || videoElement.videoHeight === 0) {
+      return { healthy: false, needsRestart: false, reason: 'ZERO_DIMENSIONS', track };
+    }
+  }
+
+  // iOS Safari temporary mute when backgrounded
+  if (track.muted) {
+    return { healthy: false, needsRestart: false, reason: 'TRACK_MUTED', track };
+  }
+
+  return { healthy: true, needsRestart: false, reason: 'HEALTHY', track };
+}
+
+/**
+ * Checks if video element is actively rendering fresh frames.
+ * Returns true if video.currentTime advances or new video frame is received within timeoutMs.
+ * @param {HTMLVideoElement} videoElement
+ * @param {number} timeoutMs
+ * @returns {Promise<boolean>}
+ */
+export async function verifyFrameFreshness(videoElement, timeoutMs = 600) {
+  if (!videoElement || videoElement.readyState < 2) return false;
+
+  const startCurrentTime = videoElement.currentTime;
+
+  return new Promise((resolve) => {
+    let resolved = false;
+    let rvfcId = null;
+    let timer = null;
+
+    const cleanup = () => {
+      if (timer) clearTimeout(timer);
+      if (rvfcId !== null && videoElement.cancelVideoFrameCallback) {
+        videoElement.cancelVideoFrameCallback(rvfcId);
+      }
+    };
+
+    if (typeof videoElement.requestVideoFrameCallback === 'function') {
+      rvfcId = videoElement.requestVideoFrameCallback(() => {
+        if (!resolved) {
+          resolved = true;
+          cleanup();
+          resolve(true);
+        }
+      });
+    }
+
+    timer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        cleanup();
+        const progressed =
+          videoElement.currentTime > startCurrentTime ||
+          (videoElement.readyState >= 2 && !videoElement.paused && videoElement.videoWidth > 0);
+        resolve(progressed);
+      }
+    }, timeoutMs);
+  });
 }

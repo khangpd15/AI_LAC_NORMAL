@@ -191,11 +191,11 @@ export class VisualEffectEngine {
   }
 
   // 3. BLUR: Defocus and spatial frequency degradation
+  // Note: On iOS WebKit, Canvas2D ctx.filter is silently ignored for HTMLVideoElement.
+  // Blurring is handled at the compositor level by CSS filter (-webkit-filter) on the canvas element.
   renderBlur(ctx, width, height) {
     const rect = this.getDrawRect(width, height);
-    ctx.filter = 'blur(11px) contrast(0.9)';
     ctx.drawImage(this.video, rect.x, rect.y, rect.width, rect.height);
-    ctx.filter = 'none';
   }
 
   // 4. SUPPRESSION: Brain dims down and cuts off misaligned image stream

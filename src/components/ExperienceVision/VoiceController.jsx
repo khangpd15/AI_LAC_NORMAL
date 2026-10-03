@@ -44,12 +44,14 @@ export default function VoiceController({
 
       try {
         await audioService.speak(voiceText);
-      } catch (err) {
-        console.warn('[VoiceController] Playback error or canceled:', err);
-      } finally {
         if (!cancelled) {
           setIsSpeaking(false);
           onVoiceCompleteRef.current?.();
+        }
+      } catch (err) {
+        console.warn('[VoiceController] Playback error or canceled:', err);
+        if (!cancelled) {
+          setIsSpeaking(false);
         }
       }
     };
@@ -72,7 +74,6 @@ export default function VoiceController({
       console.warn('[VoiceController] Replay error:', err);
     } finally {
       setIsSpeaking(false);
-      onVoiceCompleteRef.current?.();
     }
   };
 
