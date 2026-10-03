@@ -26,6 +26,7 @@ export function useStrabismusAI(modelUrl = '/models/strabismus_model.onnx') {
     signalLabel: 'Đang theo dõi',
   });
   const [inferenceFps, setInferenceFps] = useState(0);
+  const [avgInferenceLatencyMs, setAvgInferenceLatencyMs] = useState(0);
 
   // High-frequency mutable refs (Prevents expensive re-renders on every frame)
   const sessionRef = useRef(null);
@@ -124,6 +125,7 @@ export function useStrabismusAI(modelUrl = '/models/strabismus_model.onnx') {
       if (now - lastFpsCalcTimeRef.current >= 1000) {
         const fps = Math.round((frameCountRef.current * 1000) / (now - lastFpsCalcTimeRef.current));
         setInferenceFps(fps);
+        setAvgInferenceLatencyMs(Number(avgInferenceLatencyRef.current.toFixed(1)));
         frameCountRef.current = 0;
         lastFpsCalcTimeRef.current = now;
 
@@ -151,6 +153,9 @@ export function useStrabismusAI(modelUrl = '/models/strabismus_model.onnx') {
     };
     latestSmoothedRef.current = initial;
     setSmoothedPrediction(initial);
+    setInferenceFps(0);
+    setAvgInferenceLatencyMs(0);
+    avgInferenceLatencyRef.current = 0;
   }, []);
 
   return {
@@ -161,6 +166,7 @@ export function useStrabismusAI(modelUrl = '/models/strabismus_model.onnx') {
     latestSmoothedRef,
     latestRawRef,
     inferenceFps,
+    avgInferenceLatencyMs,
     processFrameAI,
     reset,
   };

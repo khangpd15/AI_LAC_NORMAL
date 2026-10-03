@@ -1,4 +1,4 @@
-import { calculateEyeRoi, cropRollAlignedEye } from './cv/eyeRoiService.js';
+import { getEyeROI, cropRollAlignedEye } from './cv/eyeRoiService.js';
 
 export const IMAGE_CAPTURE_STATUS = Object.freeze({ CAPTURED: 'CAPTURED', FAILED: 'FAILED' });
 
@@ -68,7 +68,7 @@ export async function captureEyeRegionCrop(video, landmarks, targetEye = 'LEFT')
   }
 
   // 1. Calculate precise anatomical ocular ROI
-  const roi = calculateEyeRoi(landmarks, normTarget, 1.8, 2.0);
+  const roi = getEyeROI(landmarks, normTarget);
 
   if (!roi || !roi.isValid) {
     return {

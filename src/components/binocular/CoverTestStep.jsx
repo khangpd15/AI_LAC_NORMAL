@@ -48,6 +48,7 @@ export default function CoverTestStep({
   onVideoReady,
   positionReport = null,
   faceMeshMetrics = null,
+  aiMetrics = null,
   onImageCaptured,
   onTrackingContextChange,
 }) {
@@ -852,6 +853,7 @@ export default function CoverTestStep({
           rejectedSamples={telemetry.rejectedSamples}
           validSampleRatio={telemetry.validSampleRatio}
           faceMeshMetrics={faceMeshMetrics}
+          aiMetrics={aiMetrics}
         />
         {/* Full-viewport camera background (Section 35.1) */}
         <div className="fullscreen-camera-background">
@@ -866,6 +868,8 @@ export default function CoverTestStep({
             onVideoReady={onVideoReady}
             occluderEye={coveredEye}
             trackedEye={trackedEye}
+            speak={speak}
+            voiceEnabled={isVoiceEnabled}
           />
         </div>
 
@@ -1265,6 +1269,8 @@ export default function CoverTestStep({
             isActive={true}
             cleanMode={false}
             onVideoReady={onVideoReady}
+            speak={speak}
+            voiceEnabled={isVoiceEnabled}
           />
         </div>
 

@@ -115,6 +115,147 @@ export class BlinkTemporalBuffer {
 
 export const sharedBlinkBuffer = new BlinkTemporalBuffer();
 
+const clampNumber = (value, min, max) => Math.min(max, Math.max(min, value));
+const isFinitePoint = (point) => (
+  point &&
+  Number.isFinite(point.x) &&
+  Number.isFinite(point.y) &&
+  point.x >= 0 &&
+  point.x <= 1 &&
+  point.y >= 0 &&
+  point.y <= 1
+);
+
+function scoreFrameQuality({
+  faceDetected,
+  leftEyeDetected,
+  rightEyeDetected,
+  leftIrisDetected,
+  rightIrisDetected,
+  headPoseStatus,
+  distanceValid,
+  fps,
+  blinkDetected,
+  occlusionDetected,
+}) {
+  let score = 0;
+  if (faceDetected) score += 20;
+  if (leftEyeDetected && rightEyeDetected) score += 20;
+  if (leftIrisDetected && rightIrisDetected) score += 20;
+  if (headPoseStatus === 'GOOD') score += 10;
+  else if (headPoseStatus === 'WARNING') score += 6;
+  if (distanceValid !== false) score += 10;
+  if (!Number.isFinite(fps) || fps >= 20) score += 10;
+  else if (fps >= 12) score += 5;
+  if (!blinkDetected) score += 5;
+  if (!occlusionDetected) score += 5;
+  return clampNumber(Math.round(score), 0, 100);
+}
+
+function resolveCompactStatus(gate) {
+  if (!gate.faceDetected) return { label: 'Đưa mặt vào giữa', voice: 'Đưa mặt vào giữa.' };
+  if (!gate.leftEyeDetected || !gate.rightEyeDetected || !gate.leftIrisDetected || !gate.rightIrisDetected) {
+    return { label: 'Mắt chưa rõ', voice: 'Mở mắt và nhìn thẳng.' };
+  }
+  if (gate.blinkDetected) return { label: 'Mở mắt', voice: 'Mở mắt và nhìn thẳng.' };
+  if (gate.distanceHint === 'TOO_FAR') return { label: 'Gần hơn', voice: 'Gần hơn một chút.' };
+  if (gate.distanceHint === 'TOO_CLOSE') return { label: 'Xa hơn', voice: 'Xa hơn một chút.' };
+  if (gate.headPoseStatus === 'WARNING' || gate.headPoseStatus === 'INVALID' || gate.fpsLow) {
+    return { label: 'Giữ yên', voice: 'Giữ yên.' };
+  }
+  return { label: 'Ổn', voice: null };
+}
+
+/**
+ * QUALITY GATE
+ * Merges landmark visibility, blink, occlusion, distance, FPS, and phase context
+ * into one permissive frame contract. Bad frames are dropped by consumers; a
+ * single bad frame must never fail a full screening session.
+ */
+export function buildFrameQualityGate(baseQuality, features, options = {}) {
+  const coveredEye = options.coveredEye || null;
+  const trackedEye = options.trackedEye || null;
+  const fps = Number.isFinite(options.fps) ? options.fps : null;
+  const leftIrisDetected = Boolean(baseQuality?.leftIrisDetected ?? baseQuality?.leftEyeDetected);
+  const rightIrisDetected = Boolean(baseQuality?.rightIrisDetected ?? baseQuality?.rightEyeDetected);
+  const blinkDetected = Boolean(features?.isBlinkMasked || features?.isBlinking);
+  const leftBlink = Boolean(features?.isBlinkMaskedLeft || features?.isBlinkLeft);
+  const rightBlink = Boolean(features?.isBlinkMaskedRight || features?.isBlinkRight);
+  const leftExpectedCovered = coveredEye === 'left';
+  const rightExpectedCovered = coveredEye === 'right';
+  const leftUnexpectedOcclusion = !leftExpectedCovered && baseQuality?.eyeVisibility?.left === 'LOST';
+  const rightUnexpectedOcclusion = !rightExpectedCovered && baseQuality?.eyeVisibility?.right === 'LOST';
+  const occlusionDetected = Boolean(leftUnexpectedOcclusion || rightUnexpectedOcclusion);
+
+  const distanceCm = features?.estimatedDistanceCm;
+  let distanceHint = null;
+  if (Number.isFinite(distanceCm)) {
+    if (distanceCm > 90) distanceHint = 'TOO_FAR';
+    else if (distanceCm < 25) distanceHint = 'TOO_CLOSE';
+  }
+  const distanceValid = distanceHint === null;
+
+  const requiresLeft = trackedEye === 'left' || (!trackedEye && !leftExpectedCovered);
+  const requiresRight = trackedEye === 'right' || (!trackedEye && !rightExpectedCovered);
+  const requiredEyesValid =
+    (!requiresLeft || (baseQuality?.leftEyeDetected && leftIrisDetected && !leftBlink)) &&
+    (!requiresRight || (baseQuality?.rightEyeDetected && rightIrisDetected && !rightBlink));
+  const fpsLow = Number.isFinite(fps) && fps < 12;
+
+  const qualityScore = scoreFrameQuality({
+    faceDetected: Boolean(baseQuality?.faceDetected),
+    leftEyeDetected: Boolean(baseQuality?.leftEyeDetected),
+    rightEyeDetected: Boolean(baseQuality?.rightEyeDetected),
+    leftIrisDetected,
+    rightIrisDetected,
+    headPoseStatus: baseQuality?.headPoseStatus || (baseQuality?.headPoseValid === false ? 'INVALID' : 'GOOD'),
+    distanceValid,
+    fps,
+    blinkDetected,
+    occlusionDetected,
+  });
+
+  const frameValid = Boolean(
+    baseQuality?.faceDetected &&
+      requiredEyesValid &&
+      baseQuality?.headPoseStatus !== 'INVALID' &&
+      !blinkDetected &&
+      !occlusionDetected
+  );
+
+  const enriched = {
+    ...baseQuality,
+    leftIrisDetected,
+    rightIrisDetected,
+    blinkDetected,
+    occlusionDetected,
+    distanceValid,
+    distanceHint,
+    estimatedDistanceCm: Number.isFinite(distanceCm) ? distanceCm : null,
+    fps,
+    fpsLow,
+    trackingConfidence: typeof baseQuality?.score === 'number' ? baseQuality.score : 0,
+    qualityScore,
+    score: typeof baseQuality?.score === 'number' ? baseQuality.score : qualityScore / 100,
+    isValid: frameValid,
+    frameValid,
+    aiFrameEligible: Boolean(
+      frameValid &&
+        baseQuality?.leftEyeDetected &&
+        baseQuality?.rightEyeDetected &&
+        leftIrisDetected &&
+        rightIrisDetected &&
+        !coveredEye
+    ),
+  };
+  const compact = resolveCompactStatus(enriched);
+  return {
+    ...enriched,
+    uiStatus: compact.label,
+    voicePrompt: compact.voice,
+  };
+}
+
 /**
  * Post-processing helper that applies full retrospective Blink Blanking Window
  * to a trajectory array of recorded frames.
@@ -226,22 +367,21 @@ export function validateEyeTrackingQuality(multiFaceLandmarks, options = {}) {
     };
   }
 
+  // IRIS TRACKING
   // Check left eye landmarks (362, 263, 473)
+  const leftIrisDetected = isFinitePoint(lm[LANDMARKS.LEFT_IRIS_CENTER]);
   const leftEyeOk = Boolean(
     lm[LANDMARKS.LEFT_INNER_CORNER] &&
     lm[LANDMARKS.LEFT_OUTER_CORNER] &&
-    lm[LANDMARKS.LEFT_IRIS_CENTER] &&
-    Number.isFinite(lm[LANDMARKS.LEFT_IRIS_CENTER].x) &&
-    Number.isFinite(lm[LANDMARKS.LEFT_IRIS_CENTER].y)
+    leftIrisDetected
   );
 
   // Check right eye landmarks (133, 33, 468)
+  const rightIrisDetected = isFinitePoint(lm[LANDMARKS.RIGHT_IRIS_CENTER]);
   const rightEyeOk = Boolean(
     lm[LANDMARKS.RIGHT_INNER_CORNER] &&
     lm[LANDMARKS.RIGHT_OUTER_CORNER] &&
-    lm[LANDMARKS.RIGHT_IRIS_CENTER] &&
-    Number.isFinite(lm[LANDMARKS.RIGHT_IRIS_CENTER].x) &&
-    Number.isFinite(lm[LANDMARKS.RIGHT_IRIS_CENTER].y)
+    rightIrisDetected
   );
 
   const leftExpectedCovered = coveredEye === 'left';
@@ -266,23 +406,35 @@ export function validateEyeTrackingQuality(multiFaceLandmarks, options = {}) {
       faceDetected: true,
       leftEyeDetected: leftEyeOk,
       rightEyeDetected: rightEyeOk,
+      leftIrisDetected,
+      rightIrisDetected,
       irisValid: false,
       eyeVisibility,
     };
   }
 
-  // Engineering head-motion gate for live Cover Test sampling.
+  // HEAD POSE
+  // Engineering head-motion gate for live Cover Test sampling. Mild drift is a
+  // WARNING, not an immediate session blocker.
   const leftEar = lm[LANDMARKS.LEFT_EAR_TRAGUS];
   const rightEar = lm[LANDMARKS.RIGHT_EAR_TRAGUS];
   const nose = lm[LANDMARKS.NOSE_TIP];
   let headPoseValid = true;
+  let headPoseStatus = 'GOOD';
   let headRollDeg = null;
   let headYawDeg = null;
   if (leftEar && rightEar && nose) {
     headRollDeg = Math.atan2(leftEar.y - rightEar.y, leftEar.x - rightEar.x) * 180 / Math.PI;
     const earMidX = (leftEar.x + rightEar.x) / 2;
     headYawDeg = (nose.x - earMidX) * 100;
-    headPoseValid = Math.abs(headRollDeg) <= 12 && Math.abs(headYawDeg) <= 15;
+    const absRoll = Math.abs(headRollDeg);
+    const absYaw = Math.abs(headYawDeg);
+    if (absRoll > 24 || absYaw > 25) {
+      headPoseStatus = 'INVALID';
+    } else if (absRoll > 12 || absYaw > 15) {
+      headPoseStatus = 'WARNING';
+    }
+    headPoseValid = headPoseStatus !== 'INVALID';
   }
 
   if (!headPoseValid) {
@@ -294,8 +446,11 @@ export function validateEyeTrackingQuality(multiFaceLandmarks, options = {}) {
       faceDetected: true,
       leftEyeDetected: leftEyeOk,
       rightEyeDetected: rightEyeOk,
+      leftIrisDetected,
+      rightIrisDetected,
       irisValid: leftEyeOk || rightEyeOk,
       headPoseValid,
+      headPoseStatus,
       headRollDeg,
       headYawDeg,
       eyeVisibility,
@@ -311,14 +466,17 @@ export function validateEyeTrackingQuality(multiFaceLandmarks, options = {}) {
 
   return {
     isValid: true,
-    status: bothVisible ? 'GOOD' : 'WARNING',
-    score,
-    reason: null,
+    status: headPoseStatus === 'WARNING' || !bothVisible ? 'WARNING' : 'GOOD',
+    score: headPoseStatus === 'WARNING' ? Math.min(score, 0.75) : score,
+    reason: headPoseStatus === 'WARNING' ? 'HEAD_POSE_WARNING' : null,
     faceDetected: true,
     leftEyeDetected: leftEyeOk,
     rightEyeDetected: rightEyeOk,
+    leftIrisDetected,
+    rightIrisDetected,
     irisValid: leftEyeOk || rightEyeOk,
     headPoseValid,
+    headPoseStatus,
     headRollDeg,
     headYawDeg,
     eyeVisibility,

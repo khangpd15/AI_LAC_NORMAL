@@ -41,6 +41,37 @@ export async function attachStreamToVideo(videoElement, stream) {
   }
 }
 
+function getDefaultCameraConstraints() {
+  const ua = navigator.userAgent || '';
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+  const lowMemory = (navigator.deviceMemory || 4) <= 3;
+
+  // CAMERA PERFORMANCE
+  // Avoid high-resolution capture on mobile/low-end devices; iris tracking uses
+  // landmarks and eye ROI, not 4K full-frame pixels.
+  if (isMobile || lowMemory) {
+    return {
+      video: {
+        width: { ideal: 640, max: 960 },
+        height: { ideal: 480, max: 720 },
+        facingMode: 'user',
+        frameRate: { ideal: 30, max: 30 },
+      },
+      audio: false,
+    };
+  }
+
+  return {
+    video: {
+      width: { ideal: 960, max: 1280 },
+      height: { ideal: 540, max: 720 },
+      facingMode: 'user',
+      frameRate: { ideal: 30, max: 60 },
+    },
+    audio: false,
+  };
+}
+
 /**
  * Requests webcam access and binds the stream to a video element
  * @param {HTMLVideoElement} videoElement
@@ -52,15 +83,7 @@ export async function startCameraStream(videoElement, customConstraints = null) 
     throw new Error('Trình duyệt không hỗ trợ WebRTC / getUserMedia.');
   }
 
-  const defaultConstraints = {
-    video: {
-      width: { ideal: 640, max: 1280 },
-      height: { ideal: 480, max: 720 },
-      facingMode: 'user',
-      frameRate: { ideal: 30, max: 60 },
-    },
-    audio: false,
-  };
+  const defaultConstraints = getDefaultCameraConstraints();
 
   const constraints = customConstraints || defaultConstraints;
   const stream = await navigator.mediaDevices.getUserMedia(constraints);

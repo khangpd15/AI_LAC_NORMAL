@@ -20,6 +20,7 @@ export default function CoverTestDebugPanel({
   rejectedSamples = null,
   validSampleRatio = null,
   faceMeshMetrics = null,
+  aiMetrics = null,
 }) {
   if (!import.meta.env.DEV) return null;
   const eyeWidthValid = quality?.isValid && quality?.leftEyeDetected && quality?.rightEyeDetected;
@@ -47,6 +48,13 @@ export default function CoverTestDebugPanel({
       <span>Landmark: {faceMeshMetrics?.landmarkFps ? `${faceMeshMetrics.landmarkFps} FPS` : '-- FPS'}</span>
       <span>Landmark latency: {faceMeshMetrics?.avgLandmarkLatencyMs ? `${faceMeshMetrics.avgLandmarkLatencyMs}ms` : '--'}</span>
       <span>Dropped: {faceMeshMetrics?.droppedFramePercent != null ? `${faceMeshMetrics.droppedFramePercent}%` : '--'}</span>
+      <span>AI: {aiMetrics?.inferenceFps != null ? `${aiMetrics.inferenceFps} FPS` : '-- FPS'}</span>
+      <span>Inference: {aiMetrics?.avgInferenceLatencyMs ? `${aiMetrics.avgInferenceLatencyMs}ms` : '--'}</span>
+      <span>Q Score: {quality?.qualityScore != null ? quality.qualityScore : '--'}</span>
+      <span>Blink: {quality?.blinkDetected ? 'YES' : 'NO'}</span>
+      <span>Occlusion: {quality?.occlusionDetected ? 'YES' : 'NO'}</span>
+      <span>Yaw: {quality?.headYawDeg != null ? `${Number(quality.headYawDeg).toFixed(1)}°` : '--'}</span>
+      <span>Roll: {quality?.headRollDeg != null ? `${Number(quality.headRollDeg).toFixed(1)}°` : '--'}</span>
       <span>Dataset: {datasetSampleRateHz} Hz</span>
       <span>Frames: {totalFrames ?? '--'}</span>
       <span>Saved: {savedSamples ?? '--'}</span>

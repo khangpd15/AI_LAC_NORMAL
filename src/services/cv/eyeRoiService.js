@@ -124,6 +124,18 @@ export function calculateEyeRoi(landmarks, eyeSide = 'LEFT', expansionX = 1.7, e
 }
 
 /**
+ * EYE / IRIS ROI CROP
+ * Public compatibility wrapper requested by the CV pipeline contract.
+ * @param {Array<{x: number, y: number}>} landmarks
+ * @param {'LEFT'|'RIGHT'|'left'|'right'} side
+ * @returns {ReturnType<typeof calculateEyeRoi>}
+ */
+export function getEyeROI(landmarks, side = 'LEFT') {
+  const normalizedSide = String(side).toUpperCase() === 'RIGHT' ? 'RIGHT' : 'LEFT';
+  return calculateEyeRoi(landmarks, normalizedSide, 1.8, 2.0);
+}
+
+/**
  * Extracts a roll-aligned ocular crop from an active video element onto an HTML Canvas.
  * Directly applies affine rotation around the anatomical eye center without clipping.
  * 

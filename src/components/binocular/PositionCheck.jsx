@@ -114,6 +114,8 @@ export default function PositionCheck({
               isLoading={isLoading}
               error={error}
               onVideoReady={onVideoReady}
+              speak={speak}
+              voiceEnabled={isVoiceEnabled}
             />
 
             {/* Safe zone for the center point of the detected face. */}

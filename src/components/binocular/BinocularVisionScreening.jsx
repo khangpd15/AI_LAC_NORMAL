@@ -50,7 +50,7 @@ export default function BinocularVisionScreening() {
   const { stream, isActive, isLoading: isCamLoading, error: camError, start: startCam, stop: stopCam, attachVideo } = useCamera();
   const { quality, features, latestFeaturesRef, latestQualityRef, rawLandmarks, processResults } = useEyeTracking();
   const { speak, cancel: cancelSpeech, isVoiceEnabled, toggleSound } = useSpeech(true);
-  const { smoothedPrediction, processFrameAI } = useStrabismusAI();
+  const { smoothedPrediction, processFrameAI, inferenceFps, avgInferenceLatencyMs } = useStrabismusAI();
 
   // Frame results receiver (Runs MediaPipe Face Mesh, throttled AI, and active test distance calibration)
   const handleResults = useRef(null);
@@ -63,10 +63,7 @@ export default function BinocularVisionScreening() {
       });
       const aiFrameUsable =
         res?.features &&
-        res?.quality?.isValid &&
-        res.quality.leftEyeDetected &&
-        res.quality.rightEyeDetected &&
-        !res.features.isBlinkMasked &&
+        res?.quality?.aiFrameEligible &&
         currentStep !== 'COVER';
       if (aiFrameUsable) {
         processFrameAI(res.features);
@@ -312,6 +309,7 @@ export default function BinocularVisionScreening() {
             onVideoReady={initCamera}
             positionReport={positionReport}
             faceMeshMetrics={faceMeshMetrics}
+            aiMetrics={{ inferenceFps, avgInferenceLatencyMs }}
             onImageCaptured={handleCoverImageCaptured}
             onTrackingContextChange={handleCoverTrackingContextChange}
           />

@@ -589,6 +589,54 @@ button {
   border-radius: var(--radius-full);
 }
 
+.camera-quality-status {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 11;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  max-width: min(72%, 260px);
+  padding: 5px 11px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
+  background: rgba(0, 84, 93, 0.88);
+  border: 1px solid rgba(184, 232, 223, 0.45);
+  box-shadow: 0 6px 18px rgba(0, 84, 93, 0.18);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+
+.camera-quality-status.ok {
+  color: #ffffff;
+  background: rgba(38, 122, 120, 0.92);
+  border-color: rgba(0, 171, 155, 0.72);
+}
+
+.camera-quality-status.warn {
+  color: #2b1900;
+  background: rgba(242, 198, 109, 0.94);
+  border-color: rgba(112, 72, 0, 0.28);
+}
+
+.camera-quality-status.guide {
+  color: #ffffff;
+  background: rgba(0, 84, 93, 0.90);
+}
+
+.quality-status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 .camera-debug-status-pill {
   position: absolute;
   bottom: 8px;
@@ -4678,6 +4726,15 @@ textarea:focus {
     left: 8px;
     padding: 3px 8px;
     font-size: 0.72rem;
+  }
+
+  .camera-quality-status {
+    top: 8px;
+    left: 8px;
+    min-height: 28px;
+    max-width: calc(100% - 16px);
+    padding: 4px 9px;
+    font-size: 0.76rem;
   }
 
   .distance-gauge-container {

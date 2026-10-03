@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef, useImperativeHandle } from 'react';
 import EyeOverlay from './EyeOverlay';
+import CameraQualityStatus from './CameraQualityStatus';
 import { attachStreamToVideo } from '../services/cameraService';
 import {
   getOccluderScreenClass,
@@ -36,6 +37,8 @@ export default function CameraView({
   compact = false,
   isMirrored = true,  // Default true for webcam mirror view
   showDebug = false,
+  speak = null,
+  voiceEnabled = false,
 }) {
   const nodeRef = useRef(null);
   const [actualDimensions, setActualDimensions] = useState({ width: propWidth, height: propHeight });
@@ -216,15 +219,17 @@ export default function CameraView({
           </div>
         )}
 
-        {/* Quality status badge & Debug pill (Hidden in child-friendly cleanMode) */}
-        {!cleanMode && isActive && quality && (
-          <div className={`tracking-badge ${quality.isValid ? 'valid' : 'invalid'}`}>
-            <span className="badge-dot" />
-            <span>{quality.isValid ? 'Nhận diện tốt (468/473)' : quality.reason || 'Đang dò tìm'}</span>
-          </div>
+        {/* UI QUALITY STATUS */}
+        {isActive && (
+          <CameraQualityStatus
+            quality={quality}
+            speak={speak}
+            voiceEnabled={voiceEnabled}
+            active={isActive}
+          />
         )}
 
-        {!cleanMode && (
+        {!cleanMode && import.meta.env.DEV && (
           <div className="camera-debug-status-pill" title="Trạng thái camera runtime">
             {cameraStatus}
           </div>
