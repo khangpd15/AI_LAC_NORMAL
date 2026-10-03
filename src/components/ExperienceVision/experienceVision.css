@@ -1189,3 +1189,283 @@
   background: rgba(255, 255, 255, 0.22);
 }
 
+/* --------------------------------------------------------------------------
+   Mobile HUD compression.
+   Keep the camera immersive and let voice carry long explanations.
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .experience-fullscreen-container,
+  .experience-fullscreen-container * {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .experience-fullscreen-container {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .btn-fullscreen-exit {
+    top: max(10px, env(safe-area-inset-top));
+    right: 10px;
+    min-height: 40px;
+    padding: 7px 12px;
+    font-size: 0.78rem;
+    z-index: 120;
+  }
+
+  .fullscreen-welcome-backdrop {
+    padding: 16px 12px;
+  }
+
+  .welcome-cinematic-card {
+    gap: 12px;
+  }
+
+  .welcome-tag {
+    font-size: 0.7rem;
+    padding: 4px 10px;
+  }
+
+  .welcome-headline {
+    font-size: 1.45rem;
+    line-height: 1.25;
+  }
+
+  .welcome-camera-icon {
+    width: 68px;
+    height: 68px;
+    font-size: 2.4rem;
+  }
+
+  .welcome-subtext {
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+
+  .btn-cinematic-primary,
+  .btn-cinematic-cta {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 16px;
+    justify-content: center;
+    font-size: 1rem;
+    border-radius: 14px;
+  }
+
+  .hud-top-bar {
+    padding: max(10px, env(safe-area-inset-top)) 10px 28px;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .hud-minimal-indicator {
+    padding: 5px 10px;
+    font-size: 0.78rem;
+  }
+
+  .voice-hud-indicator {
+    max-width: calc(100vw - 92px);
+    padding: 4px 8px;
+    gap: 6px;
+  }
+
+  .voice-status-text {
+    display: none;
+  }
+
+  .voice-actions-row {
+    gap: 2px;
+  }
+
+  .btn-voice-hud {
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0;
+  }
+
+  .hud-middle-zone {
+    top: 54px;
+    bottom: 128px;
+    padding: 8px 10px;
+    justify-content: flex-start;
+  }
+
+  .stage7-hud-wrapper {
+    max-width: 100%;
+  }
+
+  .stage7-instruction-box,
+  .stage7-active-simulation-card,
+  .hud-conclusion-panel {
+    width: 100%;
+    max-width: 100%;
+    padding: 14px;
+    border-radius: 16px;
+    gap: 8px;
+  }
+
+  .stage7-instruction-tag,
+  .stage7-disclaimer-note {
+    display: none;
+  }
+
+  .stage7-instruction-title,
+  .stage7-sim-title,
+  .conclusion-headline {
+    font-size: 1.18rem;
+    line-height: 1.25;
+  }
+
+  .stage7-instruction-sub,
+  .stage7-sim-desc,
+  .conclusion-subtext {
+    font-size: 0.86rem;
+    line-height: 1.35;
+    max-height: 3.6em;
+    overflow: hidden;
+  }
+
+  .stage7-status-pill,
+  .stage7-simulation-badge,
+  .stage7-pending-cue {
+    max-width: 100%;
+    padding: 7px 10px;
+    font-size: 0.78rem;
+    border-radius: 12px;
+  }
+
+  .hud-question-card {
+    max-width: 100%;
+    max-height: calc(100vh - 190px);
+    padding: 12px;
+    border-radius: 16px;
+    gap: 8px;
+  }
+
+  .hud-question-header {
+    align-items: flex-start;
+  }
+
+  .question-badge,
+  .speaking-indicator {
+    font-size: 0.68rem;
+    padding: 3px 8px;
+  }
+
+  .speaking-indicator {
+    display: none;
+  }
+
+  .hud-question-text {
+    font-size: 0.95rem;
+    line-height: 1.25;
+  }
+
+  .hud-options-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .btn-check-option {
+    min-height: 48px;
+    padding: 8px 10px;
+    border-radius: 12px;
+  }
+
+  .option-color-chip {
+    font-size: 0.65rem;
+  }
+
+  .option-text {
+    font-size: 0.85rem;
+  }
+
+  .hud-explanation-card {
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  .explanation-icon,
+  .explanation-badge-pill,
+  .explanation-detail {
+    display: none;
+  }
+
+  .explanation-title {
+    font-size: 0.88rem;
+  }
+
+  .explanation-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .btn-replay-explanation,
+  .btn-confirm-understood,
+  .btn-reopen-question {
+    min-height: 42px;
+    justify-content: center;
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 0.76rem;
+  }
+
+  .hud-bottom-stage-bar {
+    gap: 8px;
+    padding: 14px 10px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .stage-caption-box {
+    gap: 2px;
+  }
+
+  .stage-prefix {
+    font-size: 0.68rem;
+  }
+
+  .stage-title {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+
+  .stage-prompt-text {
+    font-size: 0.8rem;
+    line-height: 1.3;
+    max-height: 2.6em;
+    overflow: hidden;
+  }
+
+  .stage-nav-two-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stage-nav-two-buttons > .btn-hud-next:only-child,
+  .stage-nav-two-buttons > .stage7-pending-cue:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .btn-hud-nav {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+    justify-content: center;
+    border-radius: 14px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .hud-middle-zone {
+    bottom: 140px;
+  }
+
+  .stage-prompt-text {
+    display: none;
+  }
+}
+

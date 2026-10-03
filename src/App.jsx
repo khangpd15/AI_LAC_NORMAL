@@ -66,9 +66,10 @@ export default function App() {
                 type="button"
                 role="tab"
                 aria-selected={activeTab === 'home'}
-                className="tab-link"
+                className={`tab-link ${activeTab === 'home' ? 'active' : ''}`}
                 onClick={() => setActiveTab('home')}
               >
+                <span className="tab-icon" aria-hidden="true">⌂</span>
                 <span>Trang chủ</span>
               </button>
 
@@ -79,7 +80,8 @@ export default function App() {
                 className={`tab-link ${activeTab === 'experience' ? 'active' : ''}`}
                 onClick={() => setActiveTab('experience')}
               >
-                <span>Trải nghiệm thị giác</span>
+                <span className="tab-icon" aria-hidden="true">◉</span>
+                <span>Trải nghiệm</span>
               </button>
 
               <button
@@ -89,7 +91,8 @@ export default function App() {
                 className={`tab-link ${activeTab === 'screening' ? 'active' : ''}`}
                 onClick={() => setActiveTab('screening')}
               >
-                <span>Sàng lọc hai mắt</span>
+                <span className="tab-icon" aria-hidden="true">▣</span>
+                <span>Sàng lọc</span>
               </button>
 
               <button

@@ -4035,11 +4035,15 @@ textarea:focus {
 
   .screening-progress-nav {
     padding: 8px;
-    overflow-x: auto;
+    overflow: hidden;
   }
 
   .screening-progress-list {
-    min-width: 390px;
+    width: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
   }
 
   .progress-step-item {
@@ -4359,5 +4363,665 @@ textarea:focus {
 
   .gaze-strip-title {
     font-size: 0.7rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Mobile-first responsive audit patch.
+   Phones should behave like a screening app: no horizontal scroll, compact text,
+   camera-first layout, and full-width thumb-friendly controls.
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-size: 16px;
+  }
+
+  body *,
+  body *::before,
+  body *::after {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.15rem; }
+  p { font-size: 0.96rem; }
+
+  .app-header {
+    position: sticky;
+  }
+
+  .header-inner {
+    width: 100%;
+    max-width: 100%;
+    padding: 8px 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .brand-group {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .brand-logo-img {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .brand-title {
+    font-size: 1rem;
+    line-height: 1.1;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+  .header-controls {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .mode-nav {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border-radius: 14px;
+  }
+
+  .tab-link {
+    min-height: 42px;
+    padding: 6px 4px;
+    border-radius: 11px;
+    font-size: 0.78rem;
+    line-height: 1.1;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    white-space: nowrap;
+  }
+
+  .tab-icon {
+    display: inline-block;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .tab-link-disabled {
+    display: none;
+  }
+
+  .app-main {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 12px 24px;
+    overflow-x: hidden;
+  }
+
+  .page-container,
+  .stage-card-main {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 16px;
+    margin-bottom: 14px;
+  }
+
+  .btn,
+  .btn-large,
+  .btn-block,
+  .summary-footer-actions .btn {
+    width: 100%;
+    min-height: 48px;
+    font-size: 1rem;
+    padding: 10px 14px;
+    border-radius: 14px;
+  }
+
+  .audio-button,
+  .btn-sound,
+  .theme-toggle-btn,
+  .sound-toggle-btn {
+    min-width: 48px;
+    min-height: 48px;
+    font-size: 0.9rem;
+    padding: 8px 12px;
+  }
+
+  .app-footer {
+    padding: 12px;
+  }
+
+  .footer-privacy {
+    display: none;
+  }
+
+  .footer-credits {
+    font-size: 0.72rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .binocular-screening-page {
+    width: 100%;
+    max-width: 100%;
+    gap: 10px;
+  }
+
+  .screening-page-header {
+    margin: 0;
+  }
+
+  .screening-page-title {
+    font-size: 1.3rem;
+    line-height: 1.18;
+    margin: 0;
+  }
+
+  .screening-page-subtitle {
+    display: none;
+  }
+
+  .screening-progress-nav {
+    width: 100%;
+    max-width: 100%;
+    padding: 8px;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .screening-progress-list {
+    width: 100%;
+    min-width: 0 !important;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .screening-progress-list::before {
+    display: none;
+  }
+
+  .progress-step-item {
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px 2px;
+    border-radius: 12px;
+    text-align: center;
+  }
+
+  .step-marker {
+    width: 24px;
+    height: 24px;
+    font-size: 0.72rem;
+  }
+
+  .step-label-full {
+    display: none;
+  }
+
+  .step-label-short {
+    display: inline;
+    max-width: 100%;
+    font-size: 0.68rem;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .screening-step-container,
+  .position-check-card,
+  .gaze-4-directions-card,
+  .cover-test-card,
+  .brock-step-card,
+  .screening-summary-card {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .binocular-screening-page .stage-header {
+    margin-bottom: 8px;
+    gap: 4px;
+  }
+
+  .binocular-screening-page .stage-header > div:first-child {
+    flex-wrap: wrap;
+    gap: 6px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .binocular-screening-page .stage-title {
+    font-size: 1.22rem;
+    line-height: 1.2;
+  }
+
+  .binocular-screening-page .stage-subtitle,
+  .binocular-screening-page .stage-header .badge-secondary {
+    display: none !important;
+  }
+
+  .position-check-layout,
+  .cover-running-layout,
+  .brock-running-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .cam-column {
+    order: 1;
+    width: 100%;
+  }
+
+  .position-checklist-column,
+  .instruction-column {
+    order: 2;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .camera-view-container,
+  .camera-frame {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .camera-frame {
+    aspect-ratio: 4 / 3;
+    max-height: 55vh;
+    border-radius: 14px;
+  }
+
+  .camera-placeholder,
+  .camera-loading-overlay,
+  .camera-error-overlay {
+    padding: 12px;
+    gap: 8px;
+    font-size: 0.9rem;
+  }
+
+  .face-bounding-box span {
+    display: none;
+  }
+
+  .tracking-badge {
+    top: 8px;
+    left: 8px;
+    padding: 3px 8px;
+    font-size: 0.72rem;
+  }
+
+  .distance-gauge-container {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  .distance-gauge-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .distance-gauge-header > div:first-child {
+    display: none;
+  }
+
+  .distance-gauge-label {
+    display: inline !important;
+    font-size: 0.82rem;
+  }
+
+  .distance-gauge-value {
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .distance-track {
+    height: 12px;
+    border-radius: 999px;
+  }
+
+  .distance-zone {
+    font-size: 0;
+  }
+
+  .feedback-banner {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: 0.84rem;
+    line-height: 1.25;
+  }
+
+  .checklist-card,
+  .cover-state-machine-box,
+  .live-instruction-panel,
+  .brock-visual-container,
+  .final-screening-section,
+  .gaze-summary-section,
+  .strabismus-ai-card {
+    padding: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  .checklist-title {
+    font-size: 0.98rem;
+  }
+
+  .checklist-items {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .checklist-item {
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 7px;
+    border-radius: 12px;
+  }
+
+  .check-icon {
+    width: 15px;
+    flex: 0 0 15px;
+    font-size: 0.86rem;
+  }
+
+  .check-text strong {
+    font-size: 0.78rem;
+    line-height: 1.15;
+  }
+
+  .check-text span,
+  .checklist-safety-note {
+    display: none !important;
+  }
+
+  .checklist-actions,
+  .stage-actions-next,
+  .summary-footer-actions {
+    display: flex !important;
+    flex-direction: column;
+    gap: 8px !important;
+    margin-top: 10px !important;
+  }
+
+  .cover-state-machine-box h3 {
+    font-size: 1rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  .cover-state-machine-box p,
+  .intro-steps-list div div div {
+    display: none !important;
+  }
+
+  .intro-steps-list {
+    gap: 7px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .intro-steps-list > div {
+    padding: 8px 10px !important;
+    border-radius: 12px !important;
+  }
+
+  .header-sound-btn {
+    align-self: flex-start;
+  }
+
+  .gaze-step-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+    align-items: center;
+    padding-bottom: 8px;
+  }
+
+  .gaze-header-center {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+
+  .gaze-current-direction-title {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+
+  .gaze-camera-viewport {
+    width: 100%;
+    aspect-ratio: 4 / 3 !important;
+    max-height: 55vh !important;
+    border-radius: 14px;
+  }
+
+  .gaze-distance-badge {
+    top: 8px;
+    left: 8px;
+    right: auto;
+    max-width: calc(100% - 16px);
+  }
+
+  .dist-pill {
+    max-width: 100%;
+    padding: 5px 9px;
+    font-size: 0.76rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .gaze-feedback-bottom-bar {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+  }
+
+  .feedback-voice-bubble {
+    max-width: 100%;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+  }
+
+  .feedback-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gaze-capture-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .gaze-strip-card {
+    min-width: 0;
+    padding: 6px 4px;
+    border-radius: 10px;
+  }
+
+  .gaze-strip-thumb,
+  .gaze-strip-img {
+    width: 100% !important;
+    height: 34px !important;
+    max-width: none !important;
+  }
+
+  .target-ring-container {
+    width: 68px;
+    height: 68px;
+  }
+
+  .target-progress-ring {
+    width: 68px;
+    height: 68px;
+  }
+
+  .target-glowing-core {
+    width: 42px;
+    height: 42px;
+  }
+
+  .target-floating-hint {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    max-width: 120px;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .fullscreen-top-bar {
+    top: max(8px, env(safe-area-inset-top));
+    padding: 0 10px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 8px;
+  }
+
+  .fullscreen-instruction-banner {
+    grid-column: 1 / -1;
+    order: 3;
+    max-width: calc(100vw - 20px);
+    padding: 8px 12px;
+    border-radius: 14px;
+  }
+
+  .fullscreen-inst-title {
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .fullscreen-inst-sub,
+  .fullscreen-eye-visual {
+    display: none !important;
+  }
+
+  .fullscreen-pill {
+    padding: 6px 8px;
+    font-size: 0.76rem;
+  }
+
+  .fullscreen-exit-btn,
+  .fullscreen-top-bar .btn-sound {
+    min-height: 40px;
+    width: auto;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  .final-result-banner,
+  .final-screening-result {
+    margin: 8px auto 12px;
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
+
+  .final-result-icon-row {
+    font-size: 2rem;
+    margin-bottom: 6px;
+  }
+
+  .final-result-title {
+    font-size: 1.15rem;
+    line-height: 1.25;
+  }
+
+  .final-result-description,
+  .final-result-disclaimer,
+  .final-screening-medical-note,
+  .section-subtext,
+  .strabismus-summary-text {
+    font-size: 0.86rem !important;
+    line-height: 1.4;
+  }
+
+  .section-header-flex,
+  .strabismus-ai-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+
+  .final-screening-info-row,
+  .screening-info-row,
+  .metric-row {
+    gap: 8px;
+    font-size: 0.84rem;
+  }
+
+  .gaze-photos-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .gaze-photo-meta {
+    display: none;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .metrics-table {
+    min-width: 620px;
+  }
+}
+
+@media (max-width: 360px) {
+  .app-main {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .checklist-items {
+    grid-template-columns: 1fr;
+  }
+
+  .tab-link {
+    font-size: 0.72rem;
+  }
+
+  .step-label-short {
+    font-size: 0.62rem;
   }
 }
