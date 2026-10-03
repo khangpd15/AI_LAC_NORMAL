@@ -22,14 +22,21 @@ export default function VoiceController({
     onVoiceCompleteRef.current = onVoiceComplete;
   }, [onVoiceComplete]);
 
+  const lastPlayedTextRef = useRef('');
+
   useEffect(() => {
     let cancelled = false;
 
     if (!voiceText || !isVoiceEnabled) {
       setIsSpeaking(false);
-      onVoiceCompleteRef.current?.();
       return;
     }
+
+    // Prevent immediate re-triggering of the exact same spoken text
+    if (lastPlayedTextRef.current === voiceText && isSpeaking) {
+      return;
+    }
+    lastPlayedTextRef.current = voiceText;
 
     const startPlayback = async () => {
       audioService.stop();

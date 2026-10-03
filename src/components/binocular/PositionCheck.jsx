@@ -45,9 +45,12 @@ export default function PositionCheck({
   React.useEffect(() => {
     if (isVoiceEnabled && speak && !spokenIntroRef.current) {
       spokenIntroRef.current = true;
-      speak('Ngồi cách camera ba mươi đến bốn mươi xăng-ti-mét, giữ đầu thẳng nghen.');
+      const distPrompt = config.targetRangeLabel
+        ? `Ngồi cách camera khoảng ${config.targetRangeLabel}, giữ đầu thẳng nghen.`
+        : 'Ngồi thẳng người trước camera, giữ đầu thẳng nghen.';
+      speak(distPrompt);
     }
-  }, [isVoiceEnabled, speak]);
+  }, [isVoiceEnabled, speak, config.targetRangeLabel]);
 
   const spokenReadyRef = React.useRef(false);
   React.useEffect(() => {

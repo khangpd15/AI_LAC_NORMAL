@@ -355,7 +355,18 @@ export default function CameraView({
       />
 
       {/* Main Fullscreen Realtime Canvas */}
-      <canvas ref={canvasRef} className="fullscreen-canvas-renderer" />
+      <canvas
+        ref={canvasRef}
+        className={`fullscreen-canvas-renderer ${
+          effect === 'blur'
+            ? 'canvas-effect-blur'
+            : effect === 'amblyopia'
+            ? 'canvas-effect-amblyopia'
+            : effect === 'severeAmblyopia' && effectOptions?.isEyeCovered
+            ? 'canvas-effect-severe'
+            : ''
+        }`}
+      />
 
       {/* Camera Error Prompt */}
       {cameraError && (

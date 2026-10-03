@@ -41,7 +41,13 @@ export default function CameraView({
   voiceEnabled = false,
 }) {
   const nodeRef = useRef(null);
-  const [actualDimensions, setActualDimensions] = useState({ width: propWidth, height: propHeight });
+  const [actualDimensions, setActualDimensions] = useState(() => {
+    const isPortrait = typeof window !== 'undefined' && window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
+    if (isPortrait && propWidth === 640 && propHeight === 480) {
+      return { width: 480, height: 640 };
+    }
+    return { width: propWidth, height: propHeight };
+  });
   const [cameraStatus, setCameraStatus] = useState(isLoading ? 'REQUESTING' : error ? 'ERROR' : isActive ? 'TRACKING' : 'IDLE');
 
   const syncDimensions = useCallback((node) => {
@@ -53,6 +59,15 @@ export default function CameraView({
       });
     }
   }, []);
+
+  // Poll video dimensions periodically to catch iOS Safari WebRTC resolution changes
+  // which occur without firing 'resize' or 'loadedmetadata'.
+  useEffect(() => {
+    const timer = setInterval(() => {
+      syncDimensions(nodeRef.current);
+    }, 250);
+    return () => clearInterval(timer);
+  }, [syncDimensions]);
 
   // Callback ref: stores internal node
   const setVideoNode = useCallback(
@@ -133,8 +148,8 @@ export default function CameraView({
         className="camera-frame"
         style={{
           '--camera-aspect-ratio':
-            actualDimensions.width && actualDimensions.height
-              ? `${actualDimensions.width} / ${actualDimensions.height}`
+            (nodeRef.current?.videoWidth || actualDimensions.width) && (nodeRef.current?.videoHeight || actualDimensions.height)
+              ? `${nodeRef.current?.videoWidth || actualDimensions.width} / ${nodeRef.current?.videoHeight || actualDimensions.height}`
               : undefined,
         }}
       >
@@ -168,8 +183,8 @@ export default function CameraView({
             features={features}
             featuresRef={featuresRef}
             quality={quality}
-            videoWidth={actualDimensions.width}
-            videoHeight={actualDimensions.height}
+            videoWidth={nodeRef.current?.videoWidth || actualDimensions.width}
+            videoHeight={nodeRef.current?.videoHeight || actualDimensions.height}
             isTrackingValid={quality ? quality.isValid : Boolean(landmarks)}
             isMirrored={isMirrored}
             showDebug={showDebug}

@@ -177,16 +177,22 @@ export default function ExperienceVisionPage({
     setCurrentStageIdx(0);
   };
 
+  const questionTriggeredRef = useRef({});
+
   // Voice completion callback
   const handleVoiceComplete = useCallback(() => {
     const stage = activeStageRef.current;
-    // In stages 3 & 6: after stage voice, reveal question if not answered
-    // In stage 7: let user test covering eye first, do NOT auto-reveal here
-    if (stage?.question && !showQuestion && stage.id !== 7 && !userAnswers[stage.id]) {
+    if (!stage?.question || stage.id === 7) return;
+
+    // Guard: each stage question can only be triggered to speak once
+    if (questionTriggeredRef.current[stage.id]) return;
+
+    if (!userAnswers[stage.id]) {
+      questionTriggeredRef.current[stage.id] = true;
       setShowQuestion(true);
       setSpeakingText(stage.question.voiceText);
     }
-  }, [showQuestion, userAnswers]);
+  }, [userAnswers]);
 
   const hasSpokenCoverFeedbackRef = useRef(false);
   useEffect(() => {

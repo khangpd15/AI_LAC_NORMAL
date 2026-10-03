@@ -248,7 +248,23 @@ export function useCameraDisplayRect(videoRef, containerRef = null) {
 
     window.addEventListener('resize', updateRect);
 
+    // iOS Safari WebRTC streams often change resolution (e.g. initial 640x480 SDP -> actual 480x640 portrait stream)
+    // without firing 'resize' or 'loadedmetadata'. Periodic polling ensures displayRect reflects real dimensions.
+    const pollInterval = setInterval(() => {
+      const v = videoRef?.current;
+      if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+        setDisplayRect((prev) => {
+          if (prev.videoWidth !== v.videoWidth || prev.videoHeight !== v.videoHeight) {
+            const cont = containerRef?.current || v.parentElement || null;
+            return getVideoDisplayRect(v, cont);
+          }
+          return prev;
+        });
+      }
+    }, 250);
+
     return () => {
+      clearInterval(pollInterval);
       if (resizeObserver) resizeObserver.disconnect();
       if (video) {
         video.removeEventListener('resize', updateRect);

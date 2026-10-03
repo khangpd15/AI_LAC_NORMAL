@@ -36,6 +36,22 @@
   display: block;
 }
 
+/* iOS Safari & Cross-Browser GPU-Accelerated Visual Defocus Effects */
+.fullscreen-canvas-renderer.canvas-effect-blur {
+  filter: blur(12px) contrast(0.92) !important;
+  -webkit-filter: blur(12px) contrast(0.92) !important;
+}
+
+.fullscreen-canvas-renderer.canvas-effect-amblyopia {
+  filter: blur(14px) contrast(0.65) saturate(0.35) brightness(0.85) !important;
+  -webkit-filter: blur(14px) contrast(0.65) saturate(0.35) brightness(0.85) !important;
+}
+
+.fullscreen-canvas-renderer.canvas-effect-severe {
+  filter: blur(40px) contrast(0.2) brightness(0.15) !important;
+  -webkit-filter: blur(40px) contrast(0.2) brightness(0.15) !important;
+}
+
 /* Subtle Exit Button */
 .btn-fullscreen-exit {
   position: absolute;
