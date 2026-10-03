@@ -7,8 +7,11 @@
  */
 
 export const COVER_TEST_CONFIG = Object.freeze({
+  // Target persistence cadence only. Live camera/landmark processing uses real
+  // frame timestamps and may run at 24/30/60 FPS depending on device capacity.
   datasetSampleRateHz: 15,
-  datasetSampleIntervalMs: 1000 / 15, // ~66.67 ms
+  datasetSampleIntervalMs: 1000 / 15, // target ~66.67 ms for stored research samples
+  datasetSamplingMode: 'TIMESTAMP_DOWNSAMPLED_TARGET',
 });
 
 export const SCREENING_CONFIG = {
@@ -40,7 +43,7 @@ export const SCREENING_CONFIG = {
   EYE_WIDTH_MIN_RATIO: 0.015,      // Minimum plausible eye width relative to face
   EYE_WIDTH_MAX_RATIO: 0.35,       // Maximum plausible eye width relative to face
 
-  // Dataset sampling configuration (15 Hz)
+  // Dataset persistence target; never use this as camera or model FPS.
   DATASET_SAMPLE_RATE_HZ: 15,
   DATASET_SAMPLE_INTERVAL_MS: 1000 / 15,
 

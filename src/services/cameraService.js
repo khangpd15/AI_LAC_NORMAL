@@ -54,10 +54,10 @@ export async function startCameraStream(videoElement, customConstraints = null) 
 
   const defaultConstraints = {
     video: {
-      width: { ideal: 640 },
-      height: { ideal: 480 },
+      width: { ideal: 640, max: 1280 },
+      height: { ideal: 480, max: 720 },
       facingMode: 'user',
-      frameRate: { ideal: 30 },
+      frameRate: { ideal: 30, max: 60 },
     },
     audio: false,
   };
@@ -74,6 +74,7 @@ export async function startCameraStream(videoElement, customConstraints = null) 
       label: t.label,
       enabled: t.enabled,
       readyState: t.readyState,
+      settings: t.getSettings ? t.getSettings() : null,
     })),
   });
 

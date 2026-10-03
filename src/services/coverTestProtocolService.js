@@ -6,6 +6,7 @@ export const COVER_QUALITY_REASONS = Object.freeze({
   NO_FACE: 'NO_FACE', INVALID_IRIS: 'INVALID_IRIS', INVALID_EYE_WIDTH: 'INVALID_EYE_WIDTH',
   BASELINE_UNSTABLE: 'BASELINE_UNSTABLE', HEAD_MOTION: 'HEAD_MOTION', INSUFFICIENT_SAMPLES: 'INSUFFICIENT_SAMPLES',
   TRACKING_LOST: 'TRACKING_LOST', POSITION_UNSTABLE: 'POSITION_UNSTABLE', TIMEOUT: 'TIMEOUT', SESSION_INVALIDATED: 'SESSION_INVALIDATED',
+  BLINK: 'BLINK',
 });
 
 const finitePoint = (x, y) => Number.isFinite(x) && Number.isFinite(y) && x >= 0 && x <= 1 && y >= 0 && y <= 1;
@@ -15,13 +16,39 @@ export function createCoverFrame(features, quality, eye, timestamp, elapsed) {
   if (quality.headPoseValid === false) return { frame: null, reason: COVER_QUALITY_REASONS.HEAD_MOTION };
   const eyeDetected = eye === 'left' ? quality.leftEyeDetected : quality.rightEyeDetected;
   if (!quality.irisValid || !eyeDetected || !features?.raw) return { frame: null, reason: COVER_QUALITY_REASONS.INVALID_IRIS };
+  const blinkMasked = eye === 'left'
+    ? (features.isBlinkMaskedLeft || features.isBlinkLeft)
+    : (features.isBlinkMaskedRight || features.isBlinkRight);
+  if (blinkMasked) return { frame: null, reason: COVER_QUALITY_REASONS.BLINK };
   const x = eye === 'left' ? features.raw.leftIrisX : features.raw.rightIrisX;
   const y = eye === 'left' ? features.raw.leftIrisY : features.raw.rightIrisY;
   const eyeWidth = eye === 'left' ? features.leftEyeWidth : features.rightEyeWidth;
   const normalizedX = eye === 'left' ? features.leftHorizontalRatio : features.rightHorizontalRatio;
+  const normalizedY = eye === 'left' ? features.leftVerticalRatio : features.rightVerticalRatio;
   if (!finitePoint(x, y) || !Number.isFinite(normalizedX)) return { frame: null, reason: COVER_QUALITY_REASONS.INVALID_IRIS };
   if (!Number.isFinite(eyeWidth) || eyeWidth < SCREENING_CONFIG.EYE_WIDTH_MIN_RATIO || eyeWidth > SCREENING_CONFIG.EYE_WIDTH_MAX_RATIO) return { frame: null, reason: COVER_QUALITY_REASONS.INVALID_EYE_WIDTH };
-  return { frame: { timestamp, t: elapsed, x, y, normalizedX, normalizedY: y, eyeWidth, quality: { isValid: true } }, reason: null };
+  return {
+    frame: {
+      timestamp,
+      t: elapsed,
+      x,
+      y,
+      normalizedX,
+      normalizedY: Number.isFinite(normalizedY) ? normalizedY : y,
+      eyeWidth,
+      quality: {
+        isValid: true,
+        status: quality.status || 'GOOD',
+        score: typeof quality.score === 'number' ? quality.score : 0.95,
+        headPose: {
+          rollDeg: quality.headRollDeg ?? null,
+          yawDeg: quality.headYawDeg ?? null,
+          isValid: quality.headPoseValid !== false,
+        },
+      },
+    },
+    reason: null,
+  };
 }
 
 export function validateBaselinePair(baselines) {

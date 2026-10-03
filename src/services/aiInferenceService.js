@@ -32,6 +32,7 @@ if (typeof window !== 'undefined' && ort && ort.env && ort.env.wasm) {
 let cachedSession = null;
 let cachedMetadata = null;
 let sessionLoadingPromise = null;
+let reusableFeatureBuffer = null;
 
 /**
  * Loads metadata specification for the trained model
@@ -133,7 +134,10 @@ export async function runAIInference(eyeFeatures, session = null) {
 
   // 1. Pack feature vector in strict contract order
   const numFeatures = AI_FEATURE_ORDER.length;
-  const floatBuffer = new Float32Array(numFeatures);
+  if (!reusableFeatureBuffer || reusableFeatureBuffer.length !== numFeatures) {
+    reusableFeatureBuffer = new Float32Array(numFeatures);
+  }
+  const floatBuffer = reusableFeatureBuffer;
 
   for (let i = 0; i < numFeatures; i++) {
     const key = AI_FEATURE_ORDER[i];

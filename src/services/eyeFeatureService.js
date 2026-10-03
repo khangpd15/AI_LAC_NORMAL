@@ -192,15 +192,22 @@ export function applyBlinkBlankingToTrajectory(frames, options = {}) {
  *   irisValid: boolean
  * }}
  */
-export function validateEyeTrackingQuality(multiFaceLandmarks, requireBothEyes = false) {
+export function validateEyeTrackingQuality(multiFaceLandmarks, options = {}) {
+  const requireBothEyes = typeof options === 'boolean' ? options : Boolean(options.requireBothEyes);
+  const coveredEye = typeof options === 'object' ? options.coveredEye || null : null;
+  const trackedEye = typeof options === 'object' ? options.trackedEye || null : null;
+
   if (!multiFaceLandmarks || multiFaceLandmarks.length === 0) {
     return {
       isValid: false,
+      status: 'INVALID',
+      score: 0,
       reason: 'Không phát hiện khuôn mặt',
       faceDetected: false,
       leftEyeDetected: false,
       rightEyeDetected: false,
       irisValid: false,
+      eyeVisibility: { left: 'LOST', right: 'LOST' },
     };
   }
 
@@ -208,11 +215,14 @@ export function validateEyeTrackingQuality(multiFaceLandmarks, requireBothEyes =
   if (!lm) {
     return {
       isValid: false,
+      status: 'INVALID',
+      score: 0,
       reason: 'Không nhận diện được khuôn mặt',
       faceDetected: false,
       leftEyeDetected: false,
       rightEyeDetected: false,
       irisValid: false,
+      eyeVisibility: { left: 'LOST', right: 'LOST' },
     };
   }
 
@@ -234,16 +244,30 @@ export function validateEyeTrackingQuality(multiFaceLandmarks, requireBothEyes =
     Number.isFinite(lm[LANDMARKS.RIGHT_IRIS_CENTER].y)
   );
 
-  const isOk = requireBothEyes ? (leftEyeOk && rightEyeOk) : (leftEyeOk || rightEyeOk);
+  const leftExpectedCovered = coveredEye === 'left';
+  const rightExpectedCovered = coveredEye === 'right';
+  const requiredLeftOk = trackedEye === 'left' || (requireBothEyes && !leftExpectedCovered);
+  const requiredRightOk = trackedEye === 'right' || (requireBothEyes && !rightExpectedCovered);
+  const hasRequiredLeft = !requiredLeftOk || leftEyeOk;
+  const hasRequiredRight = !requiredRightOk || rightEyeOk;
+  const hasAnyVisibleEye = leftEyeOk || rightEyeOk;
+  const isOk = hasAnyVisibleEye && hasRequiredLeft && hasRequiredRight;
+  const eyeVisibility = {
+    left: leftExpectedCovered ? 'OCCLUDED' : (leftEyeOk ? 'VISIBLE' : 'LOST'),
+    right: rightExpectedCovered ? 'OCCLUDED' : (rightEyeOk ? 'VISIBLE' : 'LOST'),
+  };
 
   if (!isOk) {
     return {
       isValid: false,
+      status: 'INVALID',
+      score: hasAnyVisibleEye ? 0.45 : 0.1,
       reason: 'Đang nhận diện mống mắt... Đưa khuôn mặt vào giữa khung hình.',
       faceDetected: true,
       leftEyeDetected: leftEyeOk,
       rightEyeDetected: rightEyeOk,
       irisValid: false,
+      eyeVisibility,
     };
   }
 
@@ -262,11 +286,33 @@ export function validateEyeTrackingQuality(multiFaceLandmarks, requireBothEyes =
   }
 
   if (!headPoseValid) {
-    return { isValid: false, reason: 'HEAD_MOTION', faceDetected: true, leftEyeDetected: leftEyeOk, rightEyeDetected: rightEyeOk, irisValid: leftEyeOk || rightEyeOk, headPoseValid, headRollDeg, headYawDeg };
+    return {
+      isValid: false,
+      status: 'INVALID',
+      score: 0.35,
+      reason: 'HEAD_MOTION',
+      faceDetected: true,
+      leftEyeDetected: leftEyeOk,
+      rightEyeDetected: rightEyeOk,
+      irisValid: leftEyeOk || rightEyeOk,
+      headPoseValid,
+      headRollDeg,
+      headYawDeg,
+      eyeVisibility,
+    };
   }
+
+  const bothVisible = leftEyeOk && rightEyeOk;
+  const expectedCoverValid =
+    !coveredEye ||
+    (coveredEye === 'left' && rightEyeOk) ||
+    (coveredEye === 'right' && leftEyeOk);
+  const score = bothVisible ? 0.95 : expectedCoverValid ? 0.85 : 0.65;
 
   return {
     isValid: true,
+    status: bothVisible ? 'GOOD' : 'WARNING',
+    score,
     reason: null,
     faceDetected: true,
     leftEyeDetected: leftEyeOk,
@@ -275,6 +321,7 @@ export function validateEyeTrackingQuality(multiFaceLandmarks, requireBothEyes =
     headPoseValid,
     headRollDeg,
     headYawDeg,
+    eyeVisibility,
   };
 }
 
@@ -443,6 +490,7 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now(), opt
       leftIrisY: validLeftY,
       rightIrisX: validRightX,
       rightIrisY: validRightY,
+      landmarks: lm,
     },
   };
 }

@@ -1,11 +1,11 @@
 /**
  * COVER TEST TIME-SERIES SERVICE
- * High-performance 15 Hz dataset trajectory sampler and feature summarizer.
+ * High-performance timestamp-downsampled dataset trajectory sampler and feature summarizer.
  * 
  * Clinical & Engineering Design:
  * 1. Realtime MediaPipe processing remains at native FPS (30 - 60 FPS) for landmark tracking,
  *    robust baseline estimation, and saccade kinematic analysis.
- * 2. Dataset persistence is downsampled to 15 Hz (interval ~66.7ms) based on real elapsed time
+ * 2. Dataset persistence is downsampled to a target cadence based on real elapsed time
  *    (performance.now()), preventing huge JSON bloat while retaining high-fidelity trajectory for ML.
  * 3. Preserves signed movements (signedDx, signedDy, relativeX, relativeY).
  * 4. Filters non-finite or missing iris frames with strict quality statistics tracking.
@@ -18,7 +18,7 @@ import { toCanonicalEye } from '../utils/eyeCoordinateMapping.js';
 const isRealNumber = (v) => typeof v === 'number' && Number.isFinite(v);
 
 /**
- * Creates an instance of the 15 Hz time-series recorder for a cycle.
+ * Creates an instance of the timestamp-based time-series recorder for a cycle.
  * Mutable in-memory buffer avoids array allocations and re-renders in the realtime loop.
  * 
  * @param {number} [initialStartTime] - performance.now() of cycle start
@@ -32,6 +32,7 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
   let totalFrames = 0;
   let savedSamples = 0;
   let validSamples = 0;
+  let rejectedSamples = 0;
 
   // Realtime FPS tracking
   let lastFrameTime = performance.now();
@@ -49,6 +50,7 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
     totalFrames = 0;
     savedSamples = 0;
     validSamples = 0;
+    rejectedSamples = 0;
     frameTimeWindow.length = 0;
     realtimeFps = 0;
     lastFrameTime = newStartTime;
@@ -89,7 +91,7 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
       );
     }
 
-    // Dataset Sampling Check: 15 Hz based strictly on real elapsed time, NOT frame counter (Section 2 & 16)
+    // Dataset sampling target based strictly on real elapsed time, NOT frame counter (Section 2 & 16)
     const intervalMs = COVER_TEST_CONFIG.datasetSampleIntervalMs;
     const isFirstSample = lastSampleTime === -Infinity;
     const timeSinceLastSample = now - lastSampleTime;
@@ -101,10 +103,12 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
     // Quality gate for saving sample (Section 8)
     // Reject sample if face missing, iris completely invalid, or coordinates are NaN/Infinity
     if (!quality || quality.faceDetected === false) {
+      rejectedSamples += 1;
       return false;
     }
 
     if (quality.irisValid === false) {
+      rejectedSamples += 1;
       return false;
     }
 
@@ -123,6 +127,7 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
       (rightX != null && !Number.isFinite(rightX)) ||
       (rightY != null && !Number.isFinite(rightY))
     ) {
+      rejectedSamples += 1;
       return false;
     }
 
@@ -174,6 +179,7 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
 
     // Do NOT save if required eye data for this phase is missing (Section 8)
     if (!hasRequiredEyeData) {
+      rejectedSamples += 1;
       return false;
     }
 
@@ -237,6 +243,13 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
       rightY: rightCoordsValid ? Number(rightY.toFixed(4)) : null,
       rightValid,
       trackingQuality,
+      qualityStatus: quality.status || (quality.isValid ? 'GOOD' : 'WARNING'),
+      qualityScore: trackingQuality,
+      headPose: {
+        rollDeg: quality.headRollDeg ?? null,
+        yawDeg: quality.headYawDeg ?? null,
+        isValid: quality.headPoseValid !== false,
+      },
 
       leftEye: {
         x: leftCoordsValid ? Number(leftX.toFixed(4)) : null,
@@ -264,6 +277,8 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
       relativeY,
       signedDx,
       signedDy,
+      timestampMs: Number(now.toFixed(3)),
+      timestampEpochMs: epochTimestamp,
     };
 
     samples.push(sample);
@@ -278,14 +293,22 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
   /**
    * Returns current quality statistics (Section 8)
    */
-  const getQuality = () => ({
-    totalFrames,
-    totalFrameCount: totalFrames,
-    savedSamples,
-    validSamples,
-    validSampleCount: validSamples,
-    validSampleRatio: savedSamples > 0 ? Number((validSamples / savedSamples).toFixed(3)) : 0,
-  });
+  const getQuality = () => {
+    const durationMs = samples.length > 1 ? (samples.at(-1).t - samples[0].t) : Math.max(0, performance.now() - cycleStartTime);
+    const validSampleRatio = savedSamples > 0 ? Number((validSamples / savedSamples).toFixed(3)) : 0;
+    return {
+      totalFrames,
+      totalFrameCount: totalFrames,
+      savedSamples,
+      validSamples,
+      validSampleCount: validSamples,
+      rejectedSamples,
+      invalidSamples: Math.max(0, savedSamples - validSamples),
+      validSampleRatio,
+      validRatio: validSampleRatio,
+      durationMs: Math.round(durationMs),
+    };
+  };
 
   /**
    * Returns live telemetry for Dev Debug Panel (Section 13)
@@ -293,9 +316,12 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
   const getTelemetry = () => ({
     realtimeFps,
     datasetSampleRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
+    datasetSamplingMode: COVER_TEST_CONFIG.datasetSamplingMode,
     totalFrames,
     savedSamples,
     validSamples,
+    rejectedSamples,
+    validSampleRatio: savedSamples > 0 ? Number((validSamples / savedSamples).toFixed(3)) : 0,
   });
 
   /**

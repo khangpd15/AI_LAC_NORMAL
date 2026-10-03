@@ -44,6 +44,7 @@ export default function BinocularVisionScreening() {
 
   // Video element ref
   const videoRef = useRef(null);
+  const coverTrackingContextRef = useRef({ phase: null, coveredEye: null, trackedEye: null });
 
   // Vision, Hardware & Assistant Hooks
   const { stream, isActive, isLoading: isCamLoading, error: camError, start: startCam, stop: stopCam, attachVideo } = useCamera();
@@ -55,8 +56,19 @@ export default function BinocularVisionScreening() {
   const handleResults = useRef(null);
   useEffect(() => {
     handleResults.current = (results) => {
-      const res = processResults(results);
-      if (res && res.features) {
+      const coverContext = currentStep === 'COVER' ? coverTrackingContextRef.current : null;
+      const res = processResults(results, null, {
+        coveredEye: coverContext?.coveredEye || null,
+        trackedEye: coverContext?.trackedEye || null,
+      });
+      const aiFrameUsable =
+        res?.features &&
+        res?.quality?.isValid &&
+        res.quality.leftEyeDetected &&
+        res.quality.rightEyeDetected &&
+        !res.features.isBlinkMasked &&
+        currentStep !== 'COVER';
+      if (aiFrameUsable) {
         processFrameAI(res.features);
       }
 
@@ -83,7 +95,7 @@ export default function BinocularVisionScreening() {
     };
   }, [currentStep, processResults, processFrameAI]);
 
-  const { startLoop, stopLoop } = useFaceMesh((r) => handleResults.current?.(r));
+  const { startLoop, stopLoop, metrics: faceMeshMetrics } = useFaceMesh((r) => handleResults.current?.(r));
 
   // Initialize camera or attach existing stream to newly mounted video node
   const initCamera = useCallback(async (videoNode = null) => {
@@ -201,6 +213,10 @@ export default function BinocularVisionScreening() {
     if (session) setScreeningImage(session.sampleId, 'cover', artifact);
   }, [session]);
 
+  const handleCoverTrackingContextChange = useCallback((context) => {
+    coverTrackingContextRef.current = context || { phase: null, coveredEye: null, trackedEye: null };
+  }, []);
+
   // Handler: Restart entire screening flow
   const handleRestart = useCallback(() => {
     cancelSpeech();
@@ -295,7 +311,9 @@ export default function BinocularVisionScreening() {
             toggleSound={toggleSound}
             onVideoReady={initCamera}
             positionReport={positionReport}
+            faceMeshMetrics={faceMeshMetrics}
             onImageCaptured={handleCoverImageCaptured}
+            onTrackingContextChange={handleCoverTrackingContextChange}
           />
         )}
 

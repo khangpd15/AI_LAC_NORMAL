@@ -25,18 +25,26 @@ export function useEyeTracking() {
   const latestLandmarksRef = useRef(null);
   const latestRawLandmarksRef = useRef(null);
   const latestQualityRef = useRef(quality);
+  const lastStateSyncRef = useRef(0);
 
-  const processResults = useCallback((results, frameTimestamp = null) => {
+  const processResults = useCallback((results, frameTimestamp = null, qualityOptions = {}) => {
     const multiLm = results?.multiFaceLandmarks;
-    const qualityReport = validateEyeTrackingQuality(multiLm);
+    const qualityReport = validateEyeTrackingQuality(multiLm, qualityOptions);
 
+    const previousQuality = latestQualityRef.current;
     latestQualityRef.current = qualityReport;
-    setQuality(qualityReport);
+    const now = performance.now();
+    const becameInvalid = previousQuality?.isValid !== false && qualityReport.isValid === false;
+    const shouldSyncState = now - lastStateSyncRef.current >= 100 || becameInvalid;
 
     if (!multiLm || multiLm.length === 0 || !multiLm[0]) {
-      setFeatures(null);
-      setRawLandmarks(null);
-      setSmoothedLandmarks(null);
+      if (shouldSyncState) {
+        lastStateSyncRef.current = now;
+        setQuality(qualityReport);
+        setFeatures(null);
+        setRawLandmarks(null);
+        setSmoothedLandmarks(null);
+      }
       latestFeaturesRef.current = null;
       latestLandmarksRef.current = null;
       latestRawLandmarksRef.current = null;
@@ -57,9 +65,13 @@ export function useEyeTracking() {
     latestLandmarksRef.current = lm;
     latestRawLandmarksRef.current = lm;
 
-    setFeatures(extracted);
-    setRawLandmarks(lm);
-    setSmoothedLandmarks(lm);
+    if (shouldSyncState) {
+      lastStateSyncRef.current = now;
+      setQuality(qualityReport);
+      setFeatures(extracted);
+      setRawLandmarks(lm);
+      setSmoothedLandmarks(lm);
+    }
 
     return { features: extracted, landmarks: lm, quality: qualityReport, timestamp };
   }, []);

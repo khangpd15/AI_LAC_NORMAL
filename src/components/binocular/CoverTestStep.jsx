@@ -47,7 +47,9 @@ export default function CoverTestStep({
   toggleSound,
   onVideoReady,
   positionReport = null,
+  faceMeshMetrics = null,
   onImageCaptured,
+  onTrackingContextChange,
 }) {
   const imageCaptureAttemptedRef = useRef(false);
   // Master State Machine:
@@ -67,7 +69,7 @@ export default function CoverTestStep({
   const [liveSampleCount, setLiveSampleCount] = useState(0);
   const [_liveDisplacement, setLiveDisplacement] = useState(0);
 
-  // 15 Hz Time-series recording ref (Section 14: no array recreation in realtime loop)
+  // Timestamp-downsampled time-series recording ref (no array recreation in realtime loop)
   const timeSeriesRecorderRef = useRef(createTimeSeriesRecorder());
   const [telemetry, setTelemetry] = useState({
     realtimeFps: 0,
@@ -199,6 +201,7 @@ export default function CoverTestStep({
           testType: 'cover_test',
           createdAt: new Date().toISOString(),
           samplingRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
+          samplingMode: COVER_TEST_CONFIG.datasetSamplingMode,
           protocolVersion: 'cover-test-v1',
           camera: { mirrored: true },
         },
@@ -362,8 +365,17 @@ export default function CoverTestStep({
   useEffect(() => {
     return () => {
       invalidateActiveRun();
+      onTrackingContextChange?.(null);
     };
-  }, [invalidateActiveRun]);
+  }, [invalidateActiveRun, onTrackingContextChange]);
+
+  useEffect(() => {
+    onTrackingContextChange?.({
+      phase: coverState,
+      coveredEye,
+      trackedEye,
+    });
+  }, [coverState, coveredEye, trackedEye, onTrackingContextChange]);
 
   // Lock body scroll in FullScreen Test Mode (Section 35.9)
   useEffect(() => {
@@ -478,7 +490,7 @@ export default function CoverTestStep({
               }
             }
 
-            // Downsampled 15 Hz time-series recording (Sections 2, 3, 4, 7, 8, 14, 16)
+            // Timestamp-downsampled time-series recording (Sections 2, 3, 4, 7, 8, 14, 16)
             timeSeriesRecorderRef.current.processFrame(
               now,
               state,
@@ -581,7 +593,7 @@ export default function CoverTestStep({
     for (let c = 1; c <= SCREENING_CONFIG.CYCLES; c++) {
       if (!runIsCurrent()) return;
       setCycleIndex(c);
-      // Reset 15 Hz time-series recorder for new cycle
+      // Reset timestamp-based time-series recorder for new cycle
       timeSeriesRecorderRef.current.reset(performance.now());
 
       // Phase 1: Robust Baseline Fixation (4.0s)
@@ -735,7 +747,7 @@ export default function CoverTestStep({
 
       if (!runIsCurrent()) return;
 
-      // Record Cycle Result with 15 Hz time-series trajectory and summary (Sections 10, 11)
+      // Record Cycle Result with timestamp-downsampled trajectory and summary (Sections 10, 11)
       const rawTrajectory = timeSeriesRecorderRef.current.getSamples();
       const datasetQuality = timeSeriesRecorderRef.current.getQuality();
       const cycleRecord = createCycleRecord(
@@ -837,6 +849,9 @@ export default function CoverTestStep({
           totalFrames={telemetry.totalFrames}
           savedSamples={telemetry.savedSamples}
           validSamples={telemetry.validSamples}
+          rejectedSamples={telemetry.rejectedSamples}
+          validSampleRatio={telemetry.validSampleRatio}
+          faceMeshMetrics={faceMeshMetrics}
         />
         {/* Full-viewport camera background (Section 35.1) */}
         <div className="fullscreen-camera-background">
@@ -1126,7 +1141,7 @@ export default function CoverTestStep({
                   {/* Metadata section */}
                   <div style={{ background: 'rgba(0, 84, 93, 0.04)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-dim)', lineHeight: '1.6', border: '1px solid var(--border-subtle)' }}>
                     <div>• <strong>Mô hình:</strong> {cleanLabel} ({cleanVersion}, 14 đặc trưng kỹ thuật)</div>
-                    <div>• <strong>Domain shift:</strong> <span style={{ color: '#8c5a00', fontWeight: 700 }}>WARNING</span> (Korean IR Eye-tracker 60Hz → RemiCare Webcam 15Hz)</div>
+                    <div>• <strong>Domain shift:</strong> <span style={{ color: '#8c5a00', fontWeight: 700 }}>WARNING</span> (Korean IR Eye-tracker 60Hz → RemiCare webcam timestamp sampling)</div>
                     <div>• <strong>Ý nghĩa lâm sàng:</strong> None (Clinical meaning: null)</div>
                     <div>• <strong>Research-only output:</strong> Probability is model output and has not been clinically validated for RemiCare webcam data.</div>
                   </div>
@@ -1171,7 +1186,7 @@ export default function CoverTestStep({
                   ✅ Đã lưu raw sampling thành công!
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  Đã ghi nhận <strong>{sessionSaveState.sampleCount}</strong> mẫu dữ liệu chuỗi thời gian (15 Hz) phục vụ đào tạo và nghiên cứu AI.
+                  Đã ghi nhận <strong>{sessionSaveState.sampleCount}</strong> mẫu dữ liệu chuỗi thời gian theo timestamp phục vụ đào tạo và nghiên cứu AI.
                 </div>
               </div>
             )}

@@ -15,6 +15,7 @@ import { generateUUIDv4 } from './coverTestProtocolService.js';
 import { getApiBaseUrl, apiClient } from '../api/client.js';
 import { transferStrabismusApi } from '../api/transferApi.js';
 import { checkBackendHealthApi } from '../api/healthApi.js';
+import { COVER_TEST_CONFIG } from '../constants/screeningConfig.js';
 
 const DEFAULT_TIMEOUT_MS = 60000;
 
@@ -78,7 +79,8 @@ export function buildTransferPayload(coverSummary, sampleId = null) {
     source: {
       device: 'WEBCAM',
       tracker: 'MEDIAPIPE_IRIS',
-      samplingRateHz: coverSummary?.datasetSampleRateHz || 15,
+      samplingRateHz: coverSummary?.datasetSampleRateHz || COVER_TEST_CONFIG.datasetSampleRateHz,
+      samplingMode: coverSummary?.datasetSamplingMode || COVER_TEST_CONFIG.datasetSamplingMode,
     },
     cycles,
   };

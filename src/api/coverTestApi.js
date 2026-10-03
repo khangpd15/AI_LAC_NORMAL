@@ -5,6 +5,7 @@
  */
 
 import { apiClient } from './client.js';
+import { COVER_TEST_CONFIG } from '../constants/screeningConfig.js';
 
 const PERSISTENCE_TIMEOUT_MS = 60000;
 
@@ -43,7 +44,8 @@ export async function saveCoverTestSessionApi({
   const sessionMetaPayload = {
     sessionId,
     cycleCount: cycles.length,
-    samplingRateHz: 15.0,
+    samplingRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
+    samplingMode: COVER_TEST_CONFIG.datasetSamplingMode,
     sourceDevice: 'WEBCAM',
     tracker: 'MEDIAPIPE_IRIS',
     rawSchemaVersion: '1.0.0',
@@ -61,7 +63,8 @@ export async function saveCoverTestSessionApi({
       cycle: cycleNum,
       coveredEye: String(cycle.coveredEye || (cycleNum % 2 === 1 ? 'LEFT' : 'RIGHT')).toUpperCase(),
       trackedEye: String(cycle.trackedEye || (cycleNum % 2 === 1 ? 'RIGHT' : 'LEFT')).toUpperCase(),
-      samplingRateHz: 15.0,
+      samplingRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
+      samplingMode: COVER_TEST_CONFIG.datasetSamplingMode,
       durationMs: cycle.durationMs || 0,
       samples: rawSamples,
     };

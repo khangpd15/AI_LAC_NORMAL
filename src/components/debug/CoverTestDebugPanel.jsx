@@ -17,6 +17,9 @@ export default function CoverTestDebugPanel({
   totalFrames = null,
   savedSamples = null,
   validSamples = null,
+  rejectedSamples = null,
+  validSampleRatio = null,
+  faceMeshMetrics = null,
 }) {
   if (!import.meta.env.DEV) return null;
   const eyeWidthValid = quality?.isValid && quality?.leftEyeDetected && quality?.rightEyeDetected;
@@ -40,10 +43,16 @@ export default function CoverTestDebugPanel({
       <span>Quality: {quality?.isValid ? 'GOOD' : 'INCONCLUSIVE'}</span>
       {/* Dev Debug Telemetry (Section 13) */}
       <span>Realtime: {realtimeFps != null ? `${realtimeFps} FPS` : '-- FPS'}</span>
+      <span>Camera: {faceMeshMetrics?.cameraFps ? `${faceMeshMetrics.cameraFps} FPS` : '-- FPS'}</span>
+      <span>Landmark: {faceMeshMetrics?.landmarkFps ? `${faceMeshMetrics.landmarkFps} FPS` : '-- FPS'}</span>
+      <span>Landmark latency: {faceMeshMetrics?.avgLandmarkLatencyMs ? `${faceMeshMetrics.avgLandmarkLatencyMs}ms` : '--'}</span>
+      <span>Dropped: {faceMeshMetrics?.droppedFramePercent != null ? `${faceMeshMetrics.droppedFramePercent}%` : '--'}</span>
       <span>Dataset: {datasetSampleRateHz} Hz</span>
       <span>Frames: {totalFrames ?? '--'}</span>
       <span>Saved: {savedSamples ?? '--'}</span>
       <span>Valid: {validSamples ?? '--'}</span>
+      <span>Rejected: {rejectedSamples ?? '--'}</span>
+      <span>Valid ratio: {validSampleRatio != null ? `${Math.round(validSampleRatio * 100)}%` : '--'}</span>
       <span>Session: {sessionId}</span>
     </aside>
   );

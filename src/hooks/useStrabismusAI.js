@@ -6,6 +6,8 @@ import {
 
 const INFERENCE_THROTTLE_MS = 100; // ~10 FPS target (range 5-15 FPS)
 const SMOOTHING_WINDOW_SIZE = 8;    // moving average over last 8 predictions
+const MIN_INFERENCE_INTERVAL_MS = 50; // allow up to 20 Hz on fast devices
+const MAX_INFERENCE_INTERVAL_MS = 160; // back off to ~6 Hz under sustained latency
 
 /**
  * Custom hook for managing ONNX AI model lifecycle, throttled real-time inference, and smoothing
@@ -34,6 +36,7 @@ export function useStrabismusAI(modelUrl = '/models/strabismus_model.onnx') {
   const lastFpsCalcTimeRef = useRef(0);
   const latestRawRef = useRef(null);
   const latestSmoothedRef = useRef(smoothedPrediction);
+  const avgInferenceLatencyRef = useRef(0);
 
   // 1. Initialize ONNX Model once on mount
   useEffect(() => {
@@ -70,8 +73,12 @@ export function useStrabismusAI(modelUrl = '/models/strabismus_model.onnx') {
 
     const now = performance.now();
 
-    // Throttle to 5-15 FPS (default 10 FPS = 100ms interval)
-    if (now - lastInferenceTimeRef.current < INFERENCE_THROTTLE_MS) {
+    const adaptiveThrottleMs = Math.min(
+      MAX_INFERENCE_INTERVAL_MS,
+      Math.max(MIN_INFERENCE_INTERVAL_MS, INFERENCE_THROTTLE_MS + avgInferenceLatencyRef.current * 1.5)
+    );
+
+    if (now - lastInferenceTimeRef.current < adaptiveThrottleMs) {
       return latestSmoothedRef.current;
     }
 
@@ -84,6 +91,9 @@ export function useStrabismusAI(modelUrl = '/models/strabismus_model.onnx') {
 
     try {
       const pred = await runAIInference(eyeFeatures, sessionRef.current);
+      avgInferenceLatencyRef.current = avgInferenceLatencyRef.current === 0
+        ? pred.inferenceTimeMs
+        : avgInferenceLatencyRef.current * 0.85 + pred.inferenceTimeMs * 0.15;
       latestRawRef.current = pred;
 
       // Maintain circular buffer for moving average smoothing
