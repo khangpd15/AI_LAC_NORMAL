@@ -253,6 +253,16 @@ export default function CameraView({
               <circle cx="12" cy="13" r="4" />
             </svg>
             <p>Camera chưa được kích hoạt</p>
+            {onVideoReady && (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => onVideoReady(nodeRef.current)}
+                style={{ marginTop: '12px', zIndex: 10 }}
+              >
+                📷 Bật camera
+              </button>
+            )}
           </div>
         )}
 
@@ -267,6 +277,16 @@ export default function CameraView({
           <div className="camera-error-overlay">
             <p className="error-title">Lỗi kết nối camera</p>
             <p className="error-desc">{error}</p>
+            {onVideoReady && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => onVideoReady(nodeRef.current)}
+                style={{ marginTop: '10px', zIndex: 10 }}
+              >
+                🔄 Thử lại
+              </button>
+            )}
           </div>
         )}
 

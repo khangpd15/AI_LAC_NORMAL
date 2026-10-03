@@ -83,16 +83,8 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
   };
 
   const update = (key, value) => {
-    const nextForm = { ...form, [key]: value };
-    setForm(nextForm);
+    setForm((prev) => ({ ...prev, [key]: value }));
     setShowBlockReason(false);
-
-    // Khi đánh dấu tích ở bước cuối cùng, tự động chuyển ngay sang luồng 2 (Vị trí / Camera)
-    if (stepIndex === steps.length - 1 && value === true) {
-      if (checkAllValid(nextForm)) {
-        handleSubmit(nextForm);
-      }
-    }
   };
 
   const steps = [
@@ -293,7 +285,7 @@ export default function ScreeningPreparationStep({ onComplete, speak, isVoiceEna
             </button>
           )}
           <button type="button" className="btn btn-primary btn-large" onClick={goNext}>
-            {isLastStep ? 'Tiếp tục và bật camera' : 'Tiếp tục'}
+            {isLastStep ? 'Tiếp tục sang bước vị trí' : 'Tiếp tục'}
           </button>
         </div>
       </div>
