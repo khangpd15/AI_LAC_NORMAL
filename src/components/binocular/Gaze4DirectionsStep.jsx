@@ -81,7 +81,7 @@ export default function Gaze4DirectionsStep({
     async (captureRecord) => {
       let hirschbergResult = null;
 
-      if (captureRecord?.originalFrame && captureRecord?.researchLandmarks?.length >= 478) {
+      if (captureRecord?.originalFrame) {
         try {
           setIsAnalyzing(true);
           setAnalysisError(null);
@@ -90,7 +90,7 @@ export default function Gaze4DirectionsStep({
 
           hirschbergResult = await measureResearchGeometry(
             buildResearchMeasurementPayload(captureRecord),
-            { signal: controller.signal, timeoutMs: 20000 }
+            { signal: controller.signal, timeoutMs: 25000 }
           );
         } catch (err) {
           if (err.name === 'AbortError') return;
@@ -110,12 +110,12 @@ export default function Gaze4DirectionsStep({
       } else {
         hirschbergResult = {
           status: 'INCONCLUSIVE',
-          result: 'INVALID_LANDMARKS',
-          reasonCodes: ['ORIGINAL_FRAME_OR_LANDMARKS_MISSING'],
+          result: 'INVALID_FRAME',
+          reasonCodes: ['ORIGINAL_FRAME_MISSING'],
           measurements: {},
           quality: captureRecord?.researchQuality || {},
           experimental: true,
-          message: 'Không đủ ảnh gốc hoặc landmarks để đo Hirschberg.',
+          message: 'Không tìm thấy ảnh chụp để phân tích.',
         };
       }
 
@@ -128,10 +128,11 @@ export default function Gaze4DirectionsStep({
         captures: { hirschberg: captureRecord },
         hirschbergResult,
         strabismusResult: {
-          status: 'INCONCLUSIVE',
-          prediction: 'INCONCLUSIVE',
-          confidence: null,
-          screening_status: 'HIRSCHBERG_MEASUREMENT_ONLY',
+          status: hirschbergResult?.aiPrediction?.predictedClass ? 'COMPLETED' : 'INCONCLUSIVE',
+          prediction: hirschbergResult?.aiPrediction?.predictedClass || 'INCONCLUSIVE',
+          confidence: hirschbergResult?.aiPrediction?.confidence ?? null,
+          probabilities: hirschbergResult?.aiPrediction?.probabilities ?? null,
+          screening_status: hirschbergResult?.aiPrediction ? 'HIRSCHBERG_AI_PREDICTION' : 'HIRSCHBERG_MEASUREMENT_ONLY',
           hirschbergResult,
         },
       });
@@ -224,9 +225,9 @@ export default function Gaze4DirectionsStep({
     []
   );
 
-  // Confirm: send acceptable image to backend
+  // Confirm: send image to backend
   const handleConfirmReview = useCallback(async () => {
-    if (!reviewCandidate?.captureRecord || !reviewCandidate?.validation?.isAcceptable) return;
+    if (!reviewCandidate?.captureRecord) return;
     await handleFinalizeStep(reviewCandidate.captureRecord);
   }, [handleFinalizeStep, reviewCandidate]);
 

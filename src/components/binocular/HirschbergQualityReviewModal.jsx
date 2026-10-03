@@ -28,6 +28,15 @@ export default function HirschbergQualityReviewModal({
       <div className="card hirschberg-review-card">
         {/* Top Header */}
         <div className="hirschberg-review-header">
+          <button
+            type="button"
+            className="modal-close-btn"
+            onClick={onRetake}
+            title="Đóng / Trở lại hướng dẫn"
+            aria-label="Đóng"
+          >
+            ✕
+          </button>
           <div className="header-badge-row">
             {isInspecting ? (
               <span className="badge badge-info animate-pulse">
@@ -39,7 +48,7 @@ export default function HirschbergQualityReviewModal({
               </span>
             ) : (
               <span className="badge badge-danger">
-                ⚠️ Ảnh chưa đạt chuẩn - Cần chụp hoặc tải ảnh khác
+                ⚠️ Ảnh chưa tối ưu - Khuyên chụp lại hoặc vẫn gửi AI thử nghiệm
               </span>
             )}
           </div>
@@ -182,34 +191,42 @@ export default function HirschbergQualityReviewModal({
 
         {/* Bottom Actions Bar */}
         <div className="hirschberg-review-actions">
-          {/* If unacceptable: Prompt user to retake or re-upload, block confirm button */}
+          {/* If unacceptable: Prompt user to retake or re-upload, or allow sending to AI with advisory notice */}
           {!isAcceptable && !isInspecting && (
             <div className="review-action-row">
-              <button
-                type="button"
-                className="btn btn-primary btn-action-retake"
-                onClick={onRetake}
-                disabled={isAnalyzing}
-              >
-                📸 Chụp lại ảnh khác
-              </button>
-
               <button
                 type="button"
                 className="btn btn-secondary btn-action-reupload"
                 onClick={onReupload}
                 disabled={isAnalyzing}
               >
-                📁 Chọn ảnh khác từ thiết bị
+                📁 Chọn ảnh khác
               </button>
 
               <button
                 type="button"
-                className="btn btn-disabled"
-                disabled
-                title="Vui lòng chụp lại ảnh đạt chuẩn để tiếp tục"
+                className="btn btn-primary btn-action-retake"
+                onClick={onRetake}
+                disabled={isAnalyzing}
               >
-                🔒 Chưa thể gửi phân tích
+                📸 Chụp lại
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-action-override"
+                onClick={onConfirm}
+                disabled={isAnalyzing}
+                title="Vẫn gửi ảnh này cho AI backend kiểm tra và đo đạc"
+              >
+                {isAnalyzing ? (
+                  <span className="btn-loading-flex">
+                    <span className="btn-mini-spinner" />
+                    Đang gửi AI phân tích...
+                  </span>
+                ) : (
+                  '🚀 Vẫn gửi phân tích AI'
+                )}
               </button>
             </div>
           )}

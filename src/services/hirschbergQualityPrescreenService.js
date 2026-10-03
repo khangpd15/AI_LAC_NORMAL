@@ -78,10 +78,10 @@ export function validateHirschbergQuality({
   // 1. Face detection
   const hasFace = Array.isArray(landmarks) && landmarks.length >= 468;
   if (!hasFace) {
-    errors.push({
-      code: 'FACE_NOT_FOUND',
-      label: 'Không tìm thấy khuôn mặt rõ trong ảnh',
-      tip: 'Vui lòng chụp hoặc tải ảnh rõ toàn bộ khuôn mặt ở góc nhìn trực diện.',
+    warnings.push({
+      code: 'FACE_LANDMARKS_UNAVAILABLE',
+      label: 'Chưa quét được toàn bộ khuôn mặt trên trình duyệt (hoặc ảnh chụp cận vùng mắt)',
+      tip: 'AI trên máy chủ sẽ nhận diện chi tiết vùng mắt, đồng tử và phản xạ giác mạc.',
     });
   } else {
     passedChecks.push({
@@ -95,23 +95,25 @@ export function validateHirschbergQuality({
   const hasRightIris = Boolean(landmarks?.[473]);
   const eyeOpen = checkEyeOpenness(landmarks);
 
-  if (!hasFace || !hasLeftIris || !hasRightIris) {
-    errors.push({
-      code: 'EYES_NOT_VISIBLE',
-      label: 'Không phát hiện rõ hai mắt hoặc mống mắt',
-      tip: 'Đảm bảo mắt không bị che bởi tóc, bóng râm hoặc gọng kính dày.',
-    });
-  } else if (!eyeOpen.isOpen) {
-    errors.push({
-      code: 'EYES_CLOSED_OR_BLINKING',
-      label: 'Mắt đang nhắm hoặc chớp mắt khi chụp',
-      tip: 'Vui lòng mở to mắt và nhìn thẳng vào chấm sáng camera.',
-    });
-  } else {
-    passedChecks.push({
-      code: 'EYES_OPEN_AND_CLEAR',
-      label: 'Hai mắt mở rõ, thấy rõ mống mắt',
-    });
+  if (hasFace) {
+    if (!hasLeftIris || !hasRightIris) {
+      warnings.push({
+        code: 'EYES_NOT_VISIBLE',
+        label: 'Mống mắt chưa phát hiện rõ qua camera',
+        tip: 'Đảm bảo mắt không bị che bởi tóc, bóng râm hoặc gọng kính dày.',
+      });
+    } else if (!eyeOpen.isOpen) {
+      warnings.push({
+        code: 'EYES_CLOSED_OR_BLINKING',
+        label: 'Mắt có thể đang chớp nhẹ hoặc chưa mở hết',
+        tip: 'Khuyên nên mở to mắt và nhìn thẳng vào chấm sáng camera.',
+      });
+    } else {
+      passedChecks.push({
+        code: 'EYES_OPEN_AND_CLEAR',
+        label: 'Hai mắt mở rõ, thấy rõ mống mắt',
+      });
+    }
   }
 
   // 3. Head pose (Yaw, Pitch, Roll)
@@ -364,7 +366,22 @@ export async function inspectHirschbergImage(fileOrDataUrl, options = {}) {
   let landmarks = options.landmarks || null;
   if (!landmarks || landmarks.length < 468) {
     try {
-      const results = await processSingleImageWithFaceMesh(img);
+      // Scale down large images (e.g. 12MP phone photos) to max 1280px for fast WebGL FaceMesh inference
+      const origW = img.naturalWidth || img.width;
+      const origH = img.naturalHeight || img.height;
+      let meshTarget = img;
+
+      if (origW > 1280 || origH > 1280) {
+        const scale = Math.min(1280 / origW, 1280 / origH);
+        const cvs = document.createElement('canvas');
+        cvs.width = Math.round(origW * scale);
+        cvs.height = Math.round(origH * scale);
+        const ctx = cvs.getContext('2d');
+        ctx.drawImage(img, 0, 0, cvs.width, cvs.height);
+        meshTarget = cvs;
+      }
+
+      const results = await processSingleImageWithFaceMesh(meshTarget);
       landmarks = results?.multiFaceLandmarks?.[0] || null;
     } catch (err) {
       console.warn('FaceMesh processing on uploaded image failed:', err);

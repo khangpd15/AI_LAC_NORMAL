@@ -5993,37 +5993,78 @@ textarea:focus {
   padding-top: 4px;
 }
 
-/* Review Overlay Modal */
+/* Review Overlay Modal - Full viewport overlay */
 .hirschberg-review-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 99999;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  background: rgba(15, 23, 42, 0.72);
-  backdrop-filter: blur(6px);
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   overflow-y: auto;
 }
 
 .hirschberg-review-card {
   width: 100%;
-  max-width: 820px;
+  max-width: 860px;
   max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(226, 232, 240, 0.9);
   overflow: hidden;
+  margin: auto;
+  animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .hirschberg-review-header {
+  position: relative;
   padding: 18px 24px 14px;
   border-bottom: 1px solid #f1f5f9;
   background: #f8fafc;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
 }
 
 .header-badge-row {
@@ -6312,6 +6353,17 @@ textarea:focus {
 
 .btn-action-confirm:hover {
   background: #059669;
+}
+
+.btn-action-override {
+  background: #f59e0b;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+}
+
+.btn-action-override:hover {
+  background: #d97706;
 }
 
 .btn-disabled {
