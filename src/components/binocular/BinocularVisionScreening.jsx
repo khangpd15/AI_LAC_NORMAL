@@ -500,17 +500,12 @@ export default function BinocularVisionScreening() {
 
         {(currentStep === 'GAZE_4_DIRECTIONS') && (
           <Gaze4DirectionsStep
-            videoRef={videoRef}
-            stream={stream}
-            landmarks={rawLandmarks}
-            positionReport={positionReport}
             preparationData={session?.preparation}
             sessionId={session?.sessionId}
             onComplete={handleGaze4DirectionsComplete}
             speak={speak}
             isVoiceEnabled={isVoiceEnabled}
             toggleSound={toggleSound}
-            onVideoReady={initCamera}
           />
         )}
 
