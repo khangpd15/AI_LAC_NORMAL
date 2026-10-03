@@ -34,6 +34,28 @@ export function generateSessionId() {
 }
 
 /**
+ * Logs a discrete screening lifecycle event for session auditing
+ * @param {string} sessionId
+ * @param {string} eventType
+ * @param {Object} [details={}]
+ */
+export function logScreeningEvent(sessionId, eventType, details = {}) {
+  const session = sessionsMap.get(sessionId);
+  if (!session) return;
+
+  const eventRecord = {
+    timestamp: new Date().toISOString(),
+    sessionId,
+    step: session.currentState,
+    eventType,
+    quality: details.quality || session.positionCheck.quality?.status || 'UNKNOWN',
+    details,
+  };
+
+  session.events.push(eventRecord);
+}
+
+/**
  * Creates and initializes a new Binocular Vision Screening Session
  * @returns {Object} Initialized session state
  */
@@ -125,27 +147,6 @@ export function createBinocularSession() {
   return session;
 }
 
-/**
- * Logs a discrete screening lifecycle event for session auditing
- * @param {string} sessionId
- * @param {string} eventType
- * @param {Object} [details={}]
- */
-export function logScreeningEvent(sessionId, eventType, details = {}) {
-  const session = sessionsMap.get(sessionId);
-  if (!session) return;
-
-  const eventRecord = {
-    timestamp: new Date().toISOString(),
-    sessionId,
-    step: session.currentState,
-    eventType,
-    quality: details.quality || session.positionCheck.quality?.status || 'UNKNOWN',
-    details,
-  };
-
-  session.events.push(eventRecord);
-}
 
 /**
  * Updates Position Check telemetry in the session for a specific test type

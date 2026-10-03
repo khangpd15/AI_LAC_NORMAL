@@ -10,6 +10,17 @@ const STATUS_FOLDERS = Object.freeze({
 const samples = new Map();
 const listeners = new Set();
 const finiteOrNull = (value) => Number.isFinite(value) ? value : null;
+export function getDatasetCounts() {
+  const result = { total: 0, normal: 0, attention: 0, inconclusive: 0 };
+  for (const draft of samples.values()) {
+    const label = draft.finalized?.classification;
+    if (!label) continue;
+    result.total += 1;
+    result[label.toLowerCase()] += 1;
+  }
+  return result;
+}
+
 const notify = () => listeners.forEach((listener) => listener(getDatasetCounts()));
 
 export function generateSampleId() {
@@ -138,16 +149,6 @@ export function attachIndependentClinicalReference(sampleId, reference) {
   return sample;
 }
 
-export function getDatasetCounts() {
-  const result = { total: 0, normal: 0, attention: 0, inconclusive: 0 };
-  for (const draft of samples.values()) {
-    const label = draft.finalized?.classification;
-    if (!label) continue;
-    result.total += 1;
-    result[label.toLowerCase()] += 1;
-  }
-  return result;
-}
 
 export function subscribeDatasetCounts(listener) { listeners.add(listener); return () => listeners.delete(listener); }
 

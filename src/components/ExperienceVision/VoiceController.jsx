@@ -23,17 +23,23 @@ export default function VoiceController({
   }, [onVoiceComplete]);
 
   const lastPlayedTextRef = useRef('');
+  const isSpeakingRef = useRef(false);
+
+  useEffect(() => {
+    isSpeakingRef.current = isSpeaking;
+  }, [isSpeaking]);
 
   useEffect(() => {
     let cancelled = false;
 
     if (!voiceText || !isVoiceEnabled) {
       setIsSpeaking(false);
+      isSpeakingRef.current = false;
       return;
     }
 
-    // Prevent immediate re-triggering of the exact same spoken text
-    if (lastPlayedTextRef.current === voiceText && isSpeaking) {
+    // Prevent re-triggering playback of the exact same spoken text across re-renders
+    if (lastPlayedTextRef.current === voiceText) {
       return;
     }
     lastPlayedTextRef.current = voiceText;
@@ -41,17 +47,20 @@ export default function VoiceController({
     const startPlayback = async () => {
       audioService.stop();
       setIsSpeaking(true);
+      isSpeakingRef.current = true;
 
       try {
         await audioService.speak(voiceText);
         if (!cancelled) {
           setIsSpeaking(false);
+          isSpeakingRef.current = false;
           onVoiceCompleteRef.current?.();
         }
       } catch (err) {
         console.warn('[VoiceController] Playback error or canceled:', err);
         if (!cancelled) {
           setIsSpeaking(false);
+          isSpeakingRef.current = false;
         }
       }
     };

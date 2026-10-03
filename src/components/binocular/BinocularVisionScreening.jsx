@@ -147,6 +147,9 @@ export default function BinocularVisionScreening() {
     return () => clearInterval(watchdog);
   }, [currentStep, isActive, isCamLoading, stream]);
 
+  const startLoopRef = useRef(null);
+  const stopLoopRef = useRef(null);
+
   // Recovery handler for frozen/stale frames detected by useFaceMesh
   const handleStaleFrame = useCallback(async () => {
     if (isRecoveringRef.current) return;
@@ -155,24 +158,29 @@ export default function BinocularVisionScreening() {
 
     isRecoveringRef.current = true;
     console.warn('[BinocularVisionScreening] Stale frame detected. Attempting recovery...');
-    stopLoop();
+    stopLoopRef.current?.();
 
     try {
       const recoveredStream = await recoverCam(videoEl);
       if (recoveredStream && videoEl) {
-        await startLoop(videoEl);
+        await startLoopRef.current?.(videoEl);
       }
     } catch (err) {
       console.error('[BinocularVisionScreening] Stale frame recovery failed:', err);
     } finally {
       isRecoveringRef.current = false;
     }
-  }, [isActive, recoverCam, startLoop, stopLoop]);
+  }, [isActive, recoverCam]);
 
   const { startLoop, stopLoop, metrics: faceMeshMetrics } = useFaceMesh(
     (r) => handleResults.current?.(r),
     { onStaleFrame: handleStaleFrame }
   );
+
+  useEffect(() => {
+    startLoopRef.current = startLoop;
+    stopLoopRef.current = stopLoop;
+  }, [startLoop, stopLoop]);
 
   // Initialize camera or attach existing stream to newly mounted video node
   const initCamera = useCallback(async (videoNode = null) => {
