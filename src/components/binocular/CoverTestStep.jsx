@@ -61,9 +61,9 @@ export default function CoverTestStep({
   // Active instructions & active eyes
   const [coveredEye, setCoveredEye] = useState(null); // 'left' | 'right' | null
   const [trackedEye, setTrackedEye] = useState(null); // 'left' | 'right' | null
-  const [instructionTitle, setInstructionTitle] = useState('Nghiệm pháp Che mắt (Cover Test)');
+  const [instructionTitle, setInstructionTitle] = useState('Cover Test');
   const [_instructionText, setInstructionText] = useState('Sẵn sàng kiểm tra 3 chu kỳ che mở mắt.');
-  const [instructionSubtext, setInstructionSubtext] = useState('Giữ đầu thẳng, nhìn vào chấm đỏ trung tâm, làm theo hướng dẫn bằng giọng nói.');
+  const [instructionSubtext, setInstructionSubtext] = useState('Nhìn chấm đỏ và nghe hướng dẫn.');
 
   // Live real-time telemetry (internal tracking)
   const [liveSampleCount, setLiveSampleCount] = useState(0);
@@ -601,7 +601,7 @@ export default function CoverTestStep({
         state: 'BASELINE',
         title: 'Nhìn vào chấm tròn ở giữa',
         text: 'Cố định ánh nhìn vào chấm đỏ.',
-        subtext: 'Giữ yên đầu và nhìn thẳng.',
+        subtext: 'Giữ đầu yên.',
         coverEye: null,
         trackEye: null,
         durationMs: 4000,
@@ -683,7 +683,7 @@ export default function CoverTestStep({
         state: 'TRACKING',
         title: 'Nhìn thẳng vào chấm',
         text: 'Cố định ánh nhìn vào chấm đỏ ở giữa.',
-        subtext: 'Mắt nhìn thẳng vào tâm chấm.',
+        subtext: 'Giữ yên.',
         coverEye: null,
         trackEye: 'right',
         durationMs: 3500,
@@ -737,7 +737,7 @@ export default function CoverTestStep({
         state: 'TRACKING',
         title: 'Nhìn thẳng vào chấm',
         text: 'Cố định ánh nhìn vào chấm đỏ ở giữa.',
-        subtext: 'Mắt nhìn thẳng vào tâm chấm.',
+        subtext: 'Giữ yên.',
         coverEye: null,
         trackEye: 'left',
         durationMs: 3500,
@@ -942,7 +942,7 @@ export default function CoverTestStep({
               onClick={handleAbortTest}
               aria-label="Dừng bài kiểm tra"
             >
-              ✕ Dừng
+              Dừng
             </button>
           </div>
         </div>
@@ -1239,7 +1239,7 @@ export default function CoverTestStep({
     <div className="card stage-card-main cover-test-card">
       <div className="stage-header">
         <span className="badge badge-primary">Bước 2 / 4</span>
-        <h2 className="stage-title">Nghiệm pháp Che mắt (Cover Test)</h2>
+        <h2 className="stage-title">Cover Test</h2>
         <div className="header-sound-btn">
           <button
             type="button"
@@ -1275,31 +1275,31 @@ export default function CoverTestStep({
               Hướng dẫn thực hiện Cover Test
             </h3>
             <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '14px' }}>
-              Hệ thống sẽ thực hiện <strong>3 chu kỳ che mở từng mắt</strong>. Khi bắt đầu, màn hình sẽ chuyển sang chế độ <strong>Toàn màn hình</strong> để bé tập trung nhìn vào tâm điểm.
+              3 chu kỳ che - mở mắt. Chỉ cần nhìn chấm đỏ và nghe giọng nói.
             </p>
 
             <div className="intro-steps-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '10px' }}>
                 <span style={{ fontSize: '1.4rem' }}>🔴</span>
                 <div style={{ fontSize: '0.88rem' }}>
-                  <strong style={{ color: 'var(--color-deep-teal)' }}>Nhìn vào chấm đỏ ở giữa màn hình</strong>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Giữ đầu thẳng và mắt nhìn cố định vào tâm chấm.</div>
+                  <strong style={{ color: 'var(--color-deep-teal)' }}>Nhìn chấm đỏ</strong>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Giữ đầu yên.</div>
                 </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '10px' }}>
                 <span style={{ fontSize: '1.4rem' }}>✋</span>
                 <div style={{ fontSize: '0.88rem' }}>
-                  <strong style={{ color: 'var(--color-deep-teal)' }}>Che mắt theo hiệu lệnh</strong>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Dùng lòng bàn tay hoặc miếng che che mắt trái/phải theo giọng nói.</div>
+                  <strong style={{ color: 'var(--color-deep-teal)' }}>Che đúng bên</strong>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Làm theo giọng nói.</div>
                 </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '10px' }}>
                 <span style={{ fontSize: '1.4rem' }}>👀</span>
                 <div style={{ fontSize: '0.88rem' }}>
-                  <strong style={{ color: 'var(--color-deep-teal)' }}>Bỏ che mắt &amp; tiếp tục nhìn thẳng</strong>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Hạ tay xuống và giữ ánh nhìn cố định vào chấm đỏ.</div>
+                  <strong style={{ color: 'var(--color-deep-teal)' }}>Bỏ che</strong>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Vẫn nhìn chấm đỏ.</div>
                 </div>
               </div>
             </div>
@@ -1311,7 +1311,7 @@ export default function CoverTestStep({
               className="btn btn-primary btn-large btn-block"
               onClick={startCoverTestProtocol}
             >
-              ▶ BẮT ĐẦU 3 CHU KỲ COVER TEST (TOÀN MÀN HÌNH)
+              BẮT ĐẦU COVER TEST
             </button>
           </div>
         </div>

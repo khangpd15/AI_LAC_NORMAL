@@ -366,6 +366,11 @@ export default function Gaze4DirectionsStep({
   const radius = 36;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - progressRatio * circumference;
+  const compactFeedback = isOrienting
+    ? activeConfig.voiceText
+    : isPassing
+      ? 'Giữ yên...'
+      : feedbackMessage || activeConfig.voiceText;
 
   return (
     <div className="card stage-card-main gaze-4-directions-card">
@@ -403,13 +408,13 @@ export default function Gaze4DirectionsStep({
       {/* Header bar with direction and step counter */}
       <div className="gaze-step-header">
         <div className="gaze-header-left">
-          <span className="badge badge-primary">BƯỚC 1 • CHỤP 4 HƯỚNG MẮT</span>
+          <span className="badge badge-primary">Chụp 4 hướng</span>
           <span className="badge badge-secondary">{activeConfig.stepNumber}</span>
         </div>
 
         <div className="gaze-header-center">
           <h2 className="gaze-current-direction-title">
-            HƯỚNG: <span className="highlight-dir">{activeConfig.label}</span>
+            <span className="highlight-dir">{activeConfig.label}</span>
           </h2>
         </div>
 
@@ -508,19 +513,19 @@ export default function Gaze4DirectionsStep({
           {estimatedDistanceCm !== null ? (
             estimatedDistanceCm > 20 ? (
               <span className="dist-pill dist-far">
-                📏 Đưa mặt lại gần camera một chút ({estimatedDistanceCm} cm &gt; 20 cm)
+                Gần hơn ({estimatedDistanceCm} cm)
               </span>
             ) : estimatedDistanceCm < 15 ? (
               <span className="dist-pill dist-close">
-                📏 Lùi ra xa camera một chút ({estimatedDistanceCm} cm &lt; 15 cm)
+                Xa hơn ({estimatedDistanceCm} cm)
               </span>
             ) : (
               <span className="dist-pill dist-ok">
-                ✓ Khoảng cách chuẩn ({estimatedDistanceCm} cm)
+                ✓ {estimatedDistanceCm} cm
               </span>
             )
           ) : (
-            <span className="dist-pill dist-detecting">Đang xác định cự ly 15–20 cm...</span>
+            <span className="dist-pill dist-detecting">Đang đo cự ly...</span>
           )}
         </div>
 
@@ -528,7 +533,7 @@ export default function Gaze4DirectionsStep({
         <div className="gaze-feedback-bottom-bar">
           <div className="feedback-voice-bubble">
             <span className="voice-icon">🔊</span>
-            <span className="feedback-text">{feedbackMessage || activeConfig.voiceText}</span>
+            <span className="feedback-text">{compactFeedback}</span>
           </div>
 
           {/* Linear Progress Bar for Hold Stability */}

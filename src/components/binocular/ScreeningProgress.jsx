@@ -7,11 +7,11 @@ import React from 'react';
  */
 export default function ScreeningProgress({ currentStep = 'GAZE_POSITION' }) {
   const steps = [
-    { id: 'GAZE_POSITION', label: '1. Vị trí 4 hướng', shortLabel: 'Vị trí 15-20cm' },
-    { id: 'GAZE_4_DIRECTIONS', label: '2. Chụp 4 hướng', shortLabel: 'Chụp 4 hướng' },
-    { id: 'COVER_POSITION', label: '3. Vị trí Cover Test', shortLabel: 'Vị trí 33-40cm' },
-    { id: 'COVER', label: '4. Cover Test', shortLabel: 'Cover Test' },
-    { id: 'SUMMARY', label: '5. Kết quả', shortLabel: 'Kết quả' },
+    { id: 'GAZE_POSITION', label: 'Vị trí', shortLabel: 'Vị trí' },
+    { id: 'GAZE_4_DIRECTIONS', label: '4 hướng', shortLabel: '4 hướng' },
+    { id: 'COVER_POSITION', label: 'Khoảng cách', shortLabel: 'Cự ly' },
+    { id: 'COVER', label: 'Cover', shortLabel: 'Cover' },
+    { id: 'SUMMARY', label: 'Kết quả', shortLabel: 'KQ' },
   ];
 
   const getStepIndex = (stepId) => {

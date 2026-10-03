@@ -93,9 +93,9 @@ export default function PositionCheck({
           <span className="badge badge-primary">{config.title}</span>
           <span className="badge badge-secondary">Kiểm tra vị trí</span>
         </div>
-        <h2 className="stage-title">{config.title} — Kiểm tra vị trí</h2>
+        <h2 className="stage-title">Đưa mặt vào đúng vị trí</h2>
         <p className="stage-subtitle">
-          {config.instruction}. Giữ đầu thẳng và nhìn vào camera để hệ thống chuẩn bị bài kiểm tra.
+          {config.instruction}. Giữ đầu thẳng, nhìn vào camera.
         </p>
       </div>
       <AudioButton text={`Dạ, cô chú ${config.instruction.toLowerCase()} nghen. Mình giữ đầu thẳng, nhìn thẳng vào camera và chờ hệ thống báo sẵn sàng nha.`} label="Nghe hướng dẫn" />
@@ -217,21 +217,21 @@ export default function PositionCheck({
                 style={{ flex: `${config.minDistanceCm - trackMin}` }}
                 title={`Quá gần (< ${config.minDistanceCm} cm)`}
               >
-                Quá gần
+                Gần
               </div>
               <div
                 className="distance-zone zone-target"
                 style={{ flex: `${config.maxDistanceCm - config.minDistanceCm}` }}
                 title={`Mục tiêu (${config.targetRangeLabel})`}
               >
-                Mục tiêu ({config.targetRangeLabel})
+                Chuẩn
               </div>
               <div
                 className="distance-zone zone-far"
                 style={{ flex: `${trackMax - config.maxDistanceCm}` }}
                 title={`Quá xa (> ${config.maxDistanceCm} cm)`}
               >
-                Quá xa
+                Xa
               </div>
 
               {pinPercent !== null && (
@@ -255,14 +255,14 @@ export default function PositionCheck({
         {/* Right Column: Pre-test Safety Checklist & Strict Gating */}
         <div className="position-checklist-column">
           <div className="checklist-card">
-            <h3 className="checklist-title">Tiêu chuẩn chất lượng vị trí:</h3>
+            <h3 className="checklist-title">Điều kiện bắt đầu</h3>
             <ul className="checklist-items" role="list">
               <li className={`checklist-item ${checks.faceDetected ? 'pass' : 'fail'}`}>
                 <span className="check-icon" aria-hidden="true">
                   {checks.faceDetected ? '✓' : '○'}
                 </span>
                 <div className="check-text">
-                  <strong>Khuôn mặt được phát hiện</strong>
+                  <strong>Thấy khuôn mặt</strong>
                   <span>MediaPipe Face Mesh nhận diện rõ viền mặt</span>
                 </div>
               </li>
@@ -272,7 +272,7 @@ export default function PositionCheck({
                   {checks.faceCentered ? '✓' : '○'}
                 </span>
                 <div className="check-text">
-                  <strong>Khuôn mặt nằm giữa khung hình</strong>
+                  <strong>Mặt ở giữa khung</strong>
                   <span>
                     {positionReport?.faceCentering
                       ? `Lệch ngang ${Math.round(Math.abs(positionReport.faceCentering.offsetX) * 100)}%, dọc ${Math.round(Math.abs(positionReport.faceCentering.offsetY) * 100)}%`
@@ -286,7 +286,7 @@ export default function PositionCheck({
                   {checks.bothEyesDetected ? '✓' : '○'}
                 </span>
                 <div className="check-text">
-                  <strong>Hai mắt nhìn rõ ràng</strong>
+                  <strong>Hai mắt rõ</strong>
                   <span>Khóe mắt trong và ngoài mở đều</span>
                 </div>
               </li>
@@ -296,7 +296,7 @@ export default function PositionCheck({
                   {checks.irisDetected ? '✓' : '○'}
                 </span>
                 <div className="check-text">
-                  <strong>Tâm mống mắt nhận diện rõ</strong>
+                  <strong>Mống mắt rõ</strong>
                   <span>Mống mắt trái (468) & phải (473)</span>
                 </div>
               </li>
@@ -306,7 +306,7 @@ export default function PositionCheck({
                   {checks.headPoseValid ? '✓' : '○'}
                 </span>
                 <div className="check-text">
-                  <strong>Đầu thẳng, nhìn vào camera</strong>
+                  <strong>Đầu thẳng</strong>
                   <span>
                     Nghiêng (Roll): {positionReport?.headPose?.rollDeg ?? 0}°, Quay (Yaw): {positionReport?.headPose?.yawDeg ?? 0}°
                   </span>
@@ -318,7 +318,7 @@ export default function PositionCheck({
                   {checks.distanceValid ? '✓' : '○'}
                 </span>
                 <div className="check-text">
-                  <strong>Khoảng cách phù hợp ({config.targetRangeLabel})</strong>
+                  <strong>Đúng khoảng cách</strong>
                   <span>Ổn định liên tục qua nhiều khung hình</span>
                 </div>
               </li>
@@ -352,7 +352,7 @@ export default function PositionCheck({
                 aria-label={config.buttonLabel}
                 style={{ flex: 1 }}
               >
-                {isReady ? `✓ ${config.buttonLabel}` : 'Chờ vị trí đạt chuẩn...'}
+                {isReady ? `✓ ${config.buttonLabel}` : 'Chưa sẵn sàng'}
               </button>
             </div>
           </div>

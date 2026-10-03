@@ -232,9 +232,9 @@ export default function BinocularVisionScreening() {
       {/* Top Protocol Title Bar */}
       <div className="screening-page-header">
         <div className="screening-header-text">
-          <h1 className="screening-page-title">Digital Binocular Vision Screening</h1>
+          <h1 className="screening-page-title">RemiCare Eye Screening</h1>
           <p className="screening-page-subtitle">
-            Quy trình sàng lọc tích hợp: Chụp 4 hướng mắt (15–20 cm) &rarr; Cover Test (33–40 cm) &rarr; Kết quả tổng hợp
+            Làm theo giọng nói và giữ mắt trong khung camera.
           </p>
         </div>
       </div>

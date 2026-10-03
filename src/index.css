@@ -309,6 +309,36 @@ button {
   box-shadow: var(--shadow-sm);
 }
 
+.stage-card-main {
+  width: 100%;
+  max-width: 1120px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.stage-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.stage-title {
+  margin: 0;
+  color: var(--color-deep-teal);
+  font-size: 1.35rem;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.stage-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  max-width: 64ch;
+}
+
 /* ==========================================================================
    MEDICAL DISCLAIMER
    ========================================================================== */
@@ -3971,4 +4001,363 @@ textarea:focus {
   padding-top: 10px;
   border-top: 1px dashed rgba(255, 255, 255, 0.1);
   line-height: 1.45;
+}
+
+/* --------------------------------------------------------------------------
+   Mobile UX compact mode for the screening flow.
+   The voice assistant carries detailed guidance, so phones prioritize camera,
+   current state, and the main action button.
+   -------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .binocular-screening-page {
+    gap: 10px;
+  }
+
+  .screening-page-header {
+    margin-bottom: 0;
+  }
+
+  .screening-page-title {
+    font-size: 1.12rem;
+    margin-bottom: 0;
+  }
+
+  .screening-page-subtitle,
+  .stage-subtitle,
+  .stage-header .badge-secondary,
+  .check-text span,
+  .checklist-safety-note,
+  .distance-gauge-label,
+  .distance-zone,
+  .gaze-strip-badge {
+    display: none !important;
+  }
+
+  .screening-progress-nav {
+    padding: 8px;
+    overflow-x: auto;
+  }
+
+  .screening-progress-list {
+    min-width: 390px;
+  }
+
+  .progress-step-item {
+    gap: 5px;
+    padding: 3px 6px;
+  }
+
+  .step-marker {
+    width: 24px;
+    height: 24px;
+    font-size: 0.72rem;
+  }
+
+  .card,
+  .position-check-card,
+  .gaze-4-directions-card,
+  .cover-test-card,
+  .brock-step-card,
+  .screening-summary-card {
+    padding: 12px !important;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+
+  .stage-header {
+    margin-bottom: 10px;
+    gap: 5px;
+  }
+
+  .stage-title {
+    font-size: 1.1rem;
+  }
+
+  .position-check-layout,
+  .cover-running-layout {
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .distance-gauge-container {
+    margin-top: 10px;
+    padding: 10px;
+  }
+
+  .distance-gauge-header {
+    justify-content: flex-end !important;
+    margin-bottom: 8px;
+  }
+
+  .distance-gauge-value {
+    font-size: 1rem;
+  }
+
+  .distance-track {
+    height: 16px;
+  }
+
+  .feedback-banner {
+    margin-top: 8px;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    line-height: 1.25;
+  }
+
+  .checklist-card {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .checklist-title {
+    font-size: 0.9rem;
+  }
+
+  .checklist-items {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .checklist-item {
+    align-items: center;
+    gap: 7px;
+    padding: 8px;
+    min-height: 40px;
+  }
+
+  .check-icon {
+    width: 16px;
+    font-size: 0.9rem;
+  }
+
+  .check-text strong {
+    font-size: 0.78rem;
+    line-height: 1.15;
+  }
+
+  .checklist-actions {
+    flex-direction: column;
+    gap: 8px !important;
+    margin-top: 8px !important;
+  }
+
+  .fullscreen-top-bar {
+    padding: 0 10px;
+    top: 10px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: start;
+  }
+
+  .fullscreen-instruction-banner {
+    grid-column: 1 / -1;
+    order: 3;
+    justify-self: center;
+    max-width: calc(100vw - 20px);
+    padding: 8px 14px;
+    border-radius: 14px;
+  }
+
+  .fullscreen-inst-title {
+    font-size: 1.08rem;
+  }
+
+  .fullscreen-inst-sub,
+  .fullscreen-eye-visual {
+    display: none !important;
+  }
+
+  .fullscreen-pills-row {
+    gap: 6px;
+  }
+
+  .fullscreen-pill {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  .fullscreen-exit-btn,
+  .fullscreen-top-bar .btn-sound {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  .cover-running-layout .cam-column {
+    order: 1;
+  }
+
+  .cover-running-layout .instruction-column {
+    order: 2;
+  }
+
+  .cover-test-card .stage-header {
+    position: relative;
+  }
+
+  .cover-test-card .header-sound-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+
+  .cover-test-card .stage-header .btn-sound {
+    padding: 6px 10px;
+    min-height: 34px;
+    font-size: 0.76rem;
+  }
+
+  .cover-state-machine-box {
+    padding: 12px !important;
+  }
+
+  .cover-state-machine-box h3 {
+    font-size: 1rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  .cover-state-machine-box p {
+    font-size: 0.82rem !important;
+    margin-bottom: 10px !important;
+  }
+
+  .intro-steps-list {
+    gap: 7px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .intro-steps-list > div {
+    padding: 8px 10px !important;
+    border-radius: 8px !important;
+    gap: 9px !important;
+  }
+
+  .intro-steps-list > div > span {
+    font-size: 1.1rem !important;
+  }
+
+  .intro-steps-list strong {
+    font-size: 0.82rem;
+  }
+
+  .intro-steps-list div div div {
+    display: none;
+  }
+
+  .btn-large {
+    min-height: 44px;
+    font-size: 0.9rem;
+  }
+
+  .gaze-step-header {
+    gap: 8px;
+    padding-bottom: 8px;
+  }
+
+  .gaze-header-left {
+    gap: 6px;
+  }
+
+  .gaze-header-left .badge-secondary {
+    display: none;
+  }
+
+  .gaze-current-direction-title {
+    font-size: 1rem;
+  }
+
+  .gaze-camera-viewport {
+    aspect-ratio: 3 / 4;
+    max-height: none;
+    border-radius: 12px;
+  }
+
+  .gaze-distance-badge {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+  }
+
+  .dist-pill {
+    max-width: 100%;
+    padding: 5px 9px;
+    font-size: 0.74rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .target-ring-container {
+    width: 72px;
+    height: 72px;
+  }
+
+  .target-progress-ring {
+    width: 72px;
+    height: 72px;
+  }
+
+  .target-glowing-core {
+    width: 44px;
+    height: 44px;
+  }
+
+  .core-counter-text {
+    font-size: 1.35rem;
+  }
+
+  .target-floating-hint {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+  }
+
+  .gaze-feedback-bottom-bar {
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 6px;
+  }
+
+  .feedback-voice-bubble {
+    max-width: 100%;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: 0.76rem;
+  }
+
+  .feedback-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gaze-hold-progress-bar-bg {
+    height: 4px;
+  }
+
+  .gaze-capture-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .gaze-strip-card {
+    min-width: 0;
+    padding: 6px 4px;
+    gap: 3px;
+  }
+
+  .gaze-strip-thumb,
+  .gaze-strip-img {
+    width: 100% !important;
+    height: 34px !important;
+    max-width: none !important;
+  }
+
+  .gaze-strip-title {
+    font-size: 0.7rem;
+  }
 }
