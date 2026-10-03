@@ -38,6 +38,30 @@ export function getOppositeEye(eye) {
 }
 
 /**
+ * Projects 2D point `pt` onto the line segment `start -> end` and returns scalar ratio.
+ * Invariant to 2D in-plane head tilt (canthal roll).
+ * 
+ * @param {{x: number, y: number}} pt
+ * @param {{x: number, y: number}} start
+ * @param {{x: number, y: number}} end
+ * @returns {number} Normalized projection ratio (nominally ~0.5 at center)
+ */
+export function projectPointOntoSegment(pt, start, end) {
+  if (!pt || !start || !end) return 0.5;
+
+  const lineDx = end.x - start.x;
+  const lineDy = end.y - start.y;
+  const ptDx = pt.x - start.x;
+  const ptDy = pt.y - start.y;
+
+  const lineLenSq = lineDx * lineDx + lineDy * lineDy;
+  if (lineLenSq < 1e-8) return 0.5;
+
+  const projection = (ptDx * lineDx + ptDy * lineDy) / lineLenSq;
+  return Number.isFinite(projection) ? projection : 0.5;
+}
+
+/**
  * Maps an anatomical eye to its horizontal screen position class based on camera mirroring.
  * 
  * Coordinate transformation geometry:

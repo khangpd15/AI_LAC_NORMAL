@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ScreeningProgress from './ScreeningProgress';
-import ScreeningPreparationStep from './ScreeningPreparationStep';
+import HirschbergStep from './HirschbergStep.jsx';
+import HirschbergResultStep from './HirschbergResultStep.jsx';
 import PositionCheck from './PositionCheck';
-import Gaze4DirectionsStep from './Gaze4DirectionsStep';
 import CoverTestStep from './CoverTestStep';
-import ScreeningSummary from './ScreeningSummary';
+import FinalScreeningResult from './FinalScreeningResult.jsx';
 import { useCamera } from '../../hooks/useCamera.js';
 import { useFaceMesh } from '../../hooks/useFaceMesh.js';
 import { useEyeTracking } from '../../hooks/useEyeTracking.js';
@@ -16,7 +16,6 @@ import {
 } from '../../services/positionCalibrationService.js';
 import {
   createBinocularSession,
-  updatePreparationData,
   updateGazeTrackingData,
   updateCoverPositionCheckData,
   updateCoverTestData,
@@ -30,7 +29,6 @@ import {
 import { finalizeScreeningSample, setScreeningImage } from '../../services/screeningDatasetService.js';
 import { verifyFrameFreshness } from '../../services/cameraService.js';
 import {
-  RESEARCH_SCREENING_FLOW_ENABLED,
   getScreeningCameraConstraints,
   tryEnableTorchForResearch,
   validateResearchCameraSettings,
@@ -38,15 +36,12 @@ import {
 
 /**
  * BinocularVisionScreening Component
- * Master Orchestrator for the unified Digital Binocular Vision Screening protocol:
- * GAZE_POSITION (20–25 cm) -> HIRSCHBERG PHOTO ->
- * COVER_POSITION (33–40 cm) -> COVER TEST -> BROCK_POSITION (20–25 cm) -> BROCK STRING -> SUMMARY
+ * Master Orchestrator for the unified Digital Strabismus Screening protocol:
+ * B1 (HIRSCHBERG) -> B2 (HIRSCHBERG_RESULT) -> B3 (COVER_GATE) -> B4 (COVER_TEST) -> B5 (COMBINED_RESULT)
  */
 export default function BinocularVisionScreening() {
-  // Global Screening Step: 'GAZE_POSITION' | 'GAZE_4_DIRECTIONS' (Hirschberg) | 'COVER_POSITION' | 'COVER' | 'SUMMARY'
-  const [currentStep, setCurrentStep] = useState(
-    RESEARCH_SCREENING_FLOW_ENABLED ? 'PRECHECK' : 'GAZE_POSITION'
-  );
+  // Global Screening Step: 'HIRSCHBERG' | 'HIRSCHBERG_RESULT' | 'COVER_POSITION' | 'COVER' | 'SUMMARY'
+  const [currentStep, setCurrentStep] = useState('HIRSCHBERG');
   const [session, setSession] = useState(() => createBinocularSession());
   const [positionReport, setPositionReport] = useState(null);
   const [cameraValidationError, setCameraValidationError] = useState(null);
@@ -377,41 +372,47 @@ export default function BinocularVisionScreening() {
     setPositionReport(null);
   }, [currentStep]);
 
-  const handlePreparationComplete = useCallback((metadata) => {
+  // Handler: Complete Hirschberg capture and transition to B2 (Hirschberg Result)
+  const handleHirschbergComplete = useCallback((hirschbergData) => {
     if (!session) return;
 
-    updatePreparationData(session.sessionId, metadata);
-    preparationDeviceRef.current = metadata.device;
+    updateGazeTrackingData(session.sessionId, hirschbergData);
+
     setSession((prev) => ({
       ...prev,
-      preparation: metadata,
+      gazeTracking: hirschbergData,
+      strabismusResult: hirschbergData.strabismusResult || prev?.strabismusResult,
     }));
-    setCurrentStep('GAZE_4_DIRECTIONS');
+
+    setCurrentStep('HIRSCHBERG_RESULT');
   }, [session]);
 
-  // Handler: Complete Hirschberg capture and transition to Cover Test Position Check (33–40 cm)
-  const handleGaze4DirectionsComplete = useCallback((gazeData) => {
-    if (!session) return;
-
-    updateGazeTrackingData(session.sessionId, gazeData);
-
-    setSession((prev) => ({
-      ...prev,
-      gazeTracking: gazeData,
-      strabismusResult: gazeData.strabismusResult || prev?.strabismusResult,
-    }));
-
-    // Switch tracker to Cover Test target range (33–40 cm)
+  // Handler: User opts to proceed to Cover Test from B2
+  const handleProceedToCoverTest = useCallback(() => {
     distanceTrackerRef.current.reset('COVER_TEST');
     setPositionReport(null);
     setCurrentStep('COVER_POSITION');
 
     if (speak) {
-      speak('Giờ mình lùi ra xa một chút nghen.');
+      speak('Bây giờ chúng ta chuẩn bị và điều chỉnh cự ly 30 đến 50 cm cho Cover Test nghen.');
     }
-  }, [session, speak]);
+  }, [speak]);
 
-  // Handler: Proceed from Cover Test Position Check to Cover Test
+  // Handler: User opts to skip Cover Test from B2 and go directly to Combined/Final Result
+  const handleSkipCoverTest = useCallback(() => {
+    if (!session) return;
+
+    const finalSession = generateScreeningSummary(session.sessionId, null);
+    finalizeScreeningSample(finalSession);
+    setSession({
+      ...finalSession,
+      gazeTracking: finalSession?.gazeTracking || session.gazeTracking,
+      strabismusResult: finalSession?.strabismusResult || session.strabismusResult || session.gazeTracking?.strabismusResult,
+    });
+    setCurrentStep('SUMMARY');
+  }, [session]);
+
+  // Handler: Proceed from Cover Test Distance Gate to Cover Test execution
   const handleCoverPositionProceed = useCallback(() => {
     if (!session || !positionReport || positionReport.status !== 'READY') return;
 
@@ -424,7 +425,7 @@ export default function BinocularVisionScreening() {
     setCurrentStep('COVER');
   }, [session, positionReport]);
 
-  // Handler: Complete Step 2 (Cover Test) -> Proceed to Summary with both Gaze 4 Directions and Cover Test results
+  // Handler: Complete Cover Test (B4) -> Proceed to Final Summary (B5)
   const handleCoverTestComplete = useCallback(
     (coverResult) => {
       if (!session) return;
@@ -465,12 +466,12 @@ export default function BinocularVisionScreening() {
   // Handler: Restart entire screening flow
   const handleRestart = useCallback(() => {
     cancelSpeech();
-    distanceTrackerRef.current.reset('GAZE_4_DIRECTIONS');
+    distanceTrackerRef.current.reset('COVER_TEST');
     const newSession = createBinocularSession();
     setSession(newSession);
     setPositionReport(null);
     setCameraValidationError(null);
-    setCurrentStep(RESEARCH_SCREENING_FLOW_ENABLED ? 'PRECHECK' : 'GAZE_4_DIRECTIONS');
+    setCurrentStep('HIRSCHBERG');
   }, [cancelSpeech]);
 
   return (
@@ -478,9 +479,9 @@ export default function BinocularVisionScreening() {
       {/* Top Protocol Title Bar */}
       <div className="screening-page-header">
         <div className="screening-header-text">
-          <h1 className="screening-page-title">RemiCare Eye Screening</h1>
+          <h1 className="screening-page-title">RemiCare Strabismus Screening</h1>
           <p className="screening-page-subtitle">
-            Làm theo giọng nói và giữ mắt trong khung camera.
+            Sàng lọc Esotropia / Exotropia bằng phương pháp Hirschberg &amp; Cover Test
           </p>
         </div>
       </div>
@@ -490,22 +491,24 @@ export default function BinocularVisionScreening() {
 
       {/* Active Step Container */}
       <div className="screening-step-container">
-        {currentStep === 'PRECHECK' && (
-          <ScreeningPreparationStep
-            onComplete={handlePreparationComplete}
-            speak={speak}
-            isVoiceEnabled={isVoiceEnabled}
-          />
-        )}
-
-        {(currentStep === 'GAZE_4_DIRECTIONS') && (
-          <Gaze4DirectionsStep
+        {(currentStep === 'HIRSCHBERG' || currentStep === 'GAZE_4_DIRECTIONS') && (
+          <HirschbergStep
             preparationData={session?.preparation}
             sessionId={session?.sessionId}
-            onComplete={handleGaze4DirectionsComplete}
+            onComplete={handleHirschbergComplete}
             speak={speak}
             isVoiceEnabled={isVoiceEnabled}
             toggleSound={toggleSound}
+          />
+        )}
+
+        {currentStep === 'HIRSCHBERG_RESULT' && (
+          <HirschbergResultStep
+            hirschbergData={session?.gazeTracking}
+            onProceedToCoverTest={handleProceedToCoverTest}
+            onSkipCoverTest={handleSkipCoverTest}
+            speak={speak}
+            isVoiceEnabled={isVoiceEnabled}
           />
         )}
 
@@ -528,7 +531,7 @@ export default function BinocularVisionScreening() {
           />
         )}
 
-        {currentStep === 'COVER' && (
+        {(currentStep === 'COVER' || currentStep === 'COVER_TEST') && (
           <CoverTestStep
             sessionId={session.sessionId}
             videoRef={videoRef}
@@ -551,7 +554,7 @@ export default function BinocularVisionScreening() {
         )}
 
         {currentStep === 'SUMMARY' && (
-          <ScreeningSummary
+          <FinalScreeningResult
             sessionData={session}
             onRestart={handleRestart}
           />

@@ -5,28 +5,32 @@ import React from 'react';
  * Renders step progression bar across:
  * 1. PRECHECK -> 2. HIRSCHBERG -> 3. COVER TEST -> 4. SUMMARY
  */
-export default function ScreeningProgress({ currentStep = 'GAZE_4_DIRECTIONS' }) {
+export default function ScreeningProgress({ currentStep = 'HIRSCHBERG' }) {
   const steps = [
-    { id: 'PRECHECK', label: 'Chuẩn bị', shortLabel: 'Chuẩn bị' },
-    { id: 'GAZE_4_DIRECTIONS', label: 'Hirschberg', shortLabel: 'H' },
-    { id: 'COVER_POSITION', label: 'Khoảng cách', shortLabel: 'Cự ly' },
-    { id: 'COVER', label: 'Cover Test', shortLabel: 'Cover' },
-    { id: 'SUMMARY', label: 'Kết quả', shortLabel: 'KQ' },
+    { id: 'HIRSCHBERG', label: '1. Sàng lọc Hirschberg', shortLabel: 'Hirschberg' },
+    { id: 'HIRSCHBERG_RESULT', label: '2. Kết quả Hirschberg', shortLabel: 'KQ Hirschberg' },
+    { id: 'COVER_GATE', label: '3. Chuẩn bị Cover Test', shortLabel: 'Cự ly 30–50cm' },
+    { id: 'COVER_TEST', label: '4. Nghiệm pháp Che mắt', shortLabel: 'Cover Test' },
+    { id: 'SUMMARY', label: '5. Kết quả Tổng hợp', shortLabel: 'Tổng hợp' },
   ];
 
   const getStepIndex = (stepId) => {
     switch (stepId) {
-      case 'PRECHECK':
-        return 0;
+      case 'HIRSCHBERG':
       case 'GAZE_4_DIRECTIONS':
       case 'GAZE_POSITION':
       case 'GAZE_POSITION_CHECK':
+        return 0;
+      case 'HIRSCHBERG_RESULT':
         return 1;
+      case 'COVER_GATE':
       case 'COVER_POSITION':
       case 'POSITION':
       case 'COVER_TEST_POSITION_CHECK':
+      case 'PRECHECK':
         return 2;
       case 'COVER':
+      case 'COVER_TEST':
       case 'COVER_TEST_RUNNING':
         return 3;
       case 'SUMMARY':

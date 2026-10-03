@@ -42,6 +42,38 @@ export default function PositionCheck({
   const status = isInitializing ? POSITION_STATUS.INITIALIZING : (positionReport?.status || POSITION_STATUS.INITIALIZING);
   const isReady = !isInitializing && status === POSITION_STATUS.READY;
 
+  // Section VI: Pre-test 5-item confirmation checklist
+  const [checklist, setChecklist] = React.useState({
+    hasHelper: true,
+    phoneFixed: true,
+    headStraight: true,
+    goodLighting: true,
+    assistiveLight: true,
+  });
+
+  const isChecklistComplete = Boolean(
+    checklist.hasHelper &&
+    checklist.phoneFixed &&
+    checklist.headStraight &&
+    checklist.goodLighting &&
+    checklist.assistiveLight
+  );
+
+  const toggleChecklistItem = (key) => {
+    setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleAllChecklist = () => {
+    const nextVal = !isChecklistComplete;
+    setChecklist({
+      hasHelper: nextVal,
+      phoneFixed: nextVal,
+      headStraight: nextVal,
+      goodLighting: nextVal,
+      assistiveLight: nextVal,
+    });
+  };
+
   const spokenIntroRef = React.useRef(false);
   React.useEffect(() => {
     if (isVoiceEnabled && speak && !spokenIntroRef.current) {
@@ -55,11 +87,11 @@ export default function PositionCheck({
 
   const spokenReadyRef = React.useRef(false);
   React.useEffect(() => {
-    if (isReady && isVoiceEnabled && speak && !spokenReadyRef.current) {
+    if (isReady && isChecklistComplete && isVoiceEnabled && speak && !spokenReadyRef.current) {
       spokenReadyRef.current = true;
       speak('Vị trí tốt, bấm bắt đầu nghen.');
     }
-  }, [isReady, isVoiceEnabled, speak]);
+  }, [isReady, isChecklistComplete, isVoiceEnabled, speak]);
 
   const checks = isInitializing
     ? {
@@ -428,6 +460,74 @@ export default function PositionCheck({
               </li>
             </ul>
 
+            {/* Section VI: Pre-test confirmation checklist */}
+            <div className="pretest-checklist-box" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <strong style={{ fontSize: '0.9rem', color: '#1e293b' }}>
+                  Xác nhận điều kiện Cover Test
+                </strong>
+                <button
+                  type="button"
+                  onClick={toggleAllChecklist}
+                  style={{ background: 'none', border: 'none', color: '#0284c7', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  {isChecklistComplete ? 'Bỏ chọn' : 'Chọn tất cả'}
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.82rem', color: '#334155' }}>
+                <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', alignItems: 'flex-start' }}>
+                  <input
+                    type="checkbox"
+                    checked={checklist.hasHelper}
+                    onChange={() => toggleChecklistItem('hasHelper')}
+                    style={{ marginTop: '2px' }}
+                  />
+                  <span><strong>1. Người hỗ trợ:</strong> Có người hỗ trợ đứng bên cạnh để thực hiện thao tác cover.</span>
+                </label>
+
+                <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', alignItems: 'flex-start' }}>
+                  <input
+                    type="checkbox"
+                    checked={checklist.phoneFixed}
+                    onChange={() => toggleChecklistItem('phoneFixed')}
+                    style={{ marginTop: '2px' }}
+                  />
+                  <span><strong>2. Cố định máy:</strong> Điện thoại được cố định trên giá đỡ/bàn, không cầm tay.</span>
+                </label>
+
+                <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', alignItems: 'flex-start' }}>
+                  <input
+                    type="checkbox"
+                    checked={checklist.headStraight}
+                    onChange={() => toggleChecklistItem('headStraight')}
+                    style={{ marginTop: '2px' }}
+                  />
+                  <span><strong>3. Đầu thẳng:</strong> Người được test giữ đầu thẳng và hướng về điện thoại.</span>
+                </label>
+
+                <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', alignItems: 'flex-start' }}>
+                  <input
+                    type="checkbox"
+                    checked={checklist.goodLighting}
+                    onChange={() => toggleChecklistItem('goodLighting')}
+                    style={{ marginTop: '2px' }}
+                  />
+                  <span><strong>4. Ánh sáng:</strong> Khu vực kiểm tra đủ sáng, rõ hai mắt.</span>
+                </label>
+
+                <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', alignItems: 'flex-start' }}>
+                  <input
+                    type="checkbox"
+                    checked={checklist.assistiveLight}
+                    onChange={() => toggleChecklistItem('assistiveLight')}
+                    style={{ marginTop: '2px' }}
+                  />
+                  <span><strong>5. Đèn hỗ trợ:</strong> Người hỗ trợ chiếu đèn nhỏ từ phía sau camera theo protocol.</span>
+                </label>
+              </div>
+            </div>
+
             <div className="checklist-safety-note" style={{ background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '8px', marginTop: '12px' }}>
               <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
                 💡 <strong>Ghi chú:</strong> {config.clinicalNote}
@@ -451,12 +551,16 @@ export default function PositionCheck({
               <button
                 type="button"
                 className="btn btn-primary btn-large btn-block"
-                disabled={!isReady}
+                disabled={!isChecklistComplete || !isReady || !checks.distanceValid || !checks.faceDetected || !checks.bothEyesDetected}
                 onClick={onProceed}
                 aria-label={config.buttonLabel}
                 style={{ flex: 1 }}
               >
-                {isReady ? `✓ ${config.buttonLabel}` : 'Chưa sẵn sàng'}
+                {!isChecklistComplete
+                  ? 'Cần xác nhận 5 điều kiện trên'
+                  : isReady && checks.distanceValid && checks.faceDetected && checks.bothEyesDetected
+                  ? '✓ BẮT ĐẦU KIỂM TRA (3 CHU KỲ)'
+                  : 'Đang điều chỉnh cự ly (30–50 cm)'}
               </button>
             </div>
           </div>

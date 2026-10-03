@@ -15,7 +15,6 @@ import {
 } from '../constants/researchScreeningConfig.js';
 import {
   evaluateResearchFrameQuality,
-  detectCornealReflexCandidates,
 } from './cv/researchQualityGate.js';
 import { estimateHeadPose } from './positionCalibrationService.js';
 import { processSingleImageWithFaceMesh } from './faceMeshService.js';
@@ -78,10 +77,10 @@ export function validateHirschbergQuality({
   // 1. Face detection
   const hasFace = Array.isArray(landmarks) && landmarks.length >= 468;
   if (!hasFace) {
-    warnings.push({
-      code: 'FACE_LANDMARKS_UNAVAILABLE',
-      label: 'Chưa quét được toàn bộ khuôn mặt trên trình duyệt (hoặc ảnh chụp cận vùng mắt)',
-      tip: 'AI trên máy chủ sẽ nhận diện chi tiết vùng mắt, đồng tử và phản xạ giác mạc.',
+    errors.push({
+      code: 'FACE_NOT_FOUND',
+      label: 'Không phát hiện khuôn mặt trong ảnh',
+      tip: 'Vui lòng đưa toàn bộ khuôn mặt vào khung ảnh, nhìn thẳng vào camera.',
     });
   } else {
     passedChecks.push({
@@ -97,16 +96,16 @@ export function validateHirschbergQuality({
 
   if (hasFace) {
     if (!hasLeftIris || !hasRightIris) {
-      warnings.push({
+      errors.push({
         code: 'EYES_NOT_VISIBLE',
         label: 'Mống mắt chưa phát hiện rõ qua camera',
         tip: 'Đảm bảo mắt không bị che bởi tóc, bóng râm hoặc gọng kính dày.',
       });
     } else if (!eyeOpen.isOpen) {
-      warnings.push({
+      errors.push({
         code: 'EYES_CLOSED_OR_BLINKING',
-        label: 'Mắt có thể đang chớp nhẹ hoặc chưa mở hết',
-        tip: 'Khuyên nên mở to mắt và nhìn thẳng vào chấm sáng camera.',
+        label: 'Mắt có thể đang chớp hoặc chưa mở hết',
+        tip: 'Vui lòng mở to hai mắt và nhìn thẳng vào camera.',
       });
     } else {
       passedChecks.push({
@@ -318,7 +317,7 @@ export function loadImageElement(dataUrl) {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
-    img.onerror = (err) => reject(new Error('Không thể tải hoặc giải mã ảnh.'));
+    img.onerror = (_err) => reject(new Error('Không thể tải hoặc giải mã ảnh.'));
     img.src = dataUrl;
   });
 }

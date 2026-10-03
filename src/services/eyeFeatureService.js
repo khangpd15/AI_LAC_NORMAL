@@ -4,7 +4,7 @@
 
 import { LANDMARKS, SCREENING_CONFIG } from '../constants/screeningConfig.js';
 import { LandmarkOneEuroFilterManager } from './cv/oneEuroFilter.js';
-import { projectPointOntoSegment } from './cv/gazeTracker.js';
+import { projectPointOntoSegment } from '../utils/eyeCoordinateMapping.js';
 
 // Shared instance of One Euro Filter for live camera stream
 export const sharedLandmarkFilter = new LandmarkOneEuroFilterManager(1.2, 0.008);

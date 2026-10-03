@@ -5,11 +5,15 @@ import HirschbergQualityReviewModal from './HirschbergQualityReviewModal.jsx';
 import { inspectHirschbergImage } from '../../services/hirschbergQualityPrescreenService.js';
 
 /**
- * HirschbergStep (formerly Gaze4DirectionsStep)
- * Upload-only Hirschberg photo submission with AI quality pre-screening.
- * Flow: Guide → Upload → AI inspect quality → Review modal → Confirm → Backend
+ * HirschbergStep (B1 - Hirschberg Screening)
+ *
+ * Primary default screening step:
+ * 1. Instruction: Guide user on camera posture, 30–50 cm distance, head straight, target fixation, lighting.
+ * 2. Upload / Photo Capture: User selects or takes a photo.
+ * 3. Quality Gate: Inspects face, both eyes, openness, blur, lighting, corneal reflex before inference.
+ * 4. AI Analysis: Calls backend research geometry measurement API (/api/v1/research/measurements).
  */
-export default function Gaze4DirectionsStep({
+export default function HirschbergStep({
   preparationData,
   sessionId,
   onComplete,
@@ -39,7 +43,7 @@ export default function Gaze4DirectionsStep({
   // Voice intro
   useEffect(() => {
     if (isVoiceEnabled && speak) {
-      speak('Chụp ảnh theo hướng dẫn rồi tải lên để AI kiểm tra nghen.');
+      speak('Chào mừng bạn đến với RemiCare. Chụp hoặc tải ảnh theo hướng dẫn để AI kiểm tra chất lượng nghen.');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -57,9 +61,9 @@ export default function Gaze4DirectionsStep({
         testType: 'HIRSCHBERG',
         sessionId: sessionId || `client-${Date.now()}`,
         requestId: `hirschberg-${Date.now()}`,
-        distance_bucket: qualityMeta.distanceBucket || 'UNKNOWN',
+        distance_bucket: qualityMeta.distanceBucket || '30_50_CM',
         eligibility: {
-          consent: Boolean(eligibility.guardianConsent),
+          consent: Boolean(eligibility.guardianConsent ?? true),
           ageYears: eligibility.ageYears ?? null,
           redFlag: Boolean(eligibility.redFlagPresent),
         },
@@ -120,7 +124,6 @@ export default function Gaze4DirectionsStep({
       }
 
       setStepStatus('COMPLETED');
-      if (isVoiceEnabled && speak) speak('Giờ mình lùi ra xa một chút nghen.');
 
       onComplete?.({
         method: 'HIRSCHBERG',
@@ -137,7 +140,7 @@ export default function Gaze4DirectionsStep({
         },
       });
     },
-    [buildResearchMeasurementPayload, isVoiceEnabled, speak, onComplete]
+    [buildResearchMeasurementPayload, onComplete]
   );
 
   // File upload handler
@@ -203,7 +206,7 @@ export default function Gaze4DirectionsStep({
           captureRecord: null,
           validation: {
             isAcceptable: false,
-            title: 'Lỗi tải ảnh',
+            title: 'Lỗi đọc tệp ảnh',
             summary: err.message || 'Không thể đọc tệp ảnh đã chọn.',
             errors: [
               {
@@ -244,7 +247,6 @@ export default function Gaze4DirectionsStep({
 
   return (
     <div className="card stage-card-main gaze-4-directions-card">
-
       {/* Hidden file input */}
       <input
         type="file"
@@ -260,8 +262,8 @@ export default function Gaze4DirectionsStep({
           <div className="analyzing-pill-box">
             <div className="analyzing-spinner" />
             <div className="analyzing-text-block">
-              <strong>Đang đo Hirschberg...</strong>
-              <small>Backend nghiên cứu đang đo phản xạ giác mạc trên ảnh gốc</small>
+              <strong>Đang phân tích Hirschberg...</strong>
+              <small>Hệ thống AI đang đo phản xạ giác mạc và phân loại nhãn cầu</small>
             </div>
           </div>
         </div>
@@ -270,12 +272,12 @@ export default function Gaze4DirectionsStep({
       {/* Header */}
       <div className="gaze-step-header">
         <div className="gaze-header-left">
-          <span className="badge badge-primary">Hirschberg</span>
-          <span className="badge badge-secondary">1/1</span>
+          <span className="badge badge-primary">Bước 1: Hirschberg</span>
+          <span className="badge badge-secondary">Sàng lọc phản xạ giác mạc</span>
         </div>
         <div className="gaze-header-center">
           <h2 className="gaze-current-direction-title">
-            <span className="highlight-dir">Chụp ảnh Hirschberg</span>
+            <span className="highlight-dir">Hướng dẫn chụp ảnh Hirschberg</span>
           </h2>
         </div>
         <div className="gaze-header-right">
@@ -294,7 +296,7 @@ export default function Gaze4DirectionsStep({
         <div className="hirschberg-upload-guide fade-in">
           {/* Guide header */}
           <div className="upload-guide-header">
-            <h2 className="upload-guide-title">Cách chụp ảnh đúng chuẩn</h2>
+            <h2 className="upload-guide-title">Cách chụp ảnh sàng lọc đúng chuẩn</h2>
             <p className="upload-guide-subtitle">
               Chụp ảnh theo hướng dẫn bên dưới, sau đó tải lên để AI kiểm tra chất lượng trước khi phân tích.
             </p>
@@ -305,43 +307,43 @@ export default function Gaze4DirectionsStep({
             <div className="guide-step">
               <div className="guide-step-icon">💡</div>
               <div className="guide-step-body">
-                <strong>1. Ánh sáng điểm nhỏ</strong>
-                <p>Dùng đèn pin nhỏ hoặc đèn flash điện thoại khác chiếu thẳng vào mắt từ khoảng 20–25 cm. Không dùng ring light hay đèn tán rộng.</p>
+                <strong>1. Nguồn sáng nhỏ thẳng mắt</strong>
+                <p>Bật đèn pin nhỏ hoặc đèn flash điện thoại khác chiếu nhẹ thẳng về phía mắt để tạo điểm phản quang giác mạc.</p>
               </div>
             </div>
             <div className="guide-step">
               <div className="guide-step-icon">📏</div>
               <div className="guide-step-body">
-                <strong>2. Khoảng cách 20–25 cm</strong>
-                <p>Camera cách mặt trẻ khoảng 20–25 cm. Mặt trẻ phải lấp đầy &gt;50% khung ảnh, thấy rõ cả hai mắt.</p>
+                <strong>2. Khoảng cách 30–50 cm</strong>
+                <p>Giữ điện thoại cách mặt khoảng 30–50 cm. Khuôn mặt chiếm trên 50% khung hình, thấy rõ cả hai mắt.</p>
               </div>
             </div>
             <div className="guide-step">
               <div className="guide-step-icon">👁️</div>
               <div className="guide-step-body">
                 <strong>3. Nhìn thẳng vào ống kính</strong>
-                <p>Trẻ nhìn thẳng vào camera. Đầu thẳng, không nghiêng. Hai mắt mở to, không nhắm.</p>
+                <p>Người được test giữ đầu thẳng, không nghiêng. Hai mắt mở to, nhìn thẳng vào điểm sáng sát camera.</p>
               </div>
             </div>
             <div className="guide-step">
               <div className="guide-step-icon">📸</div>
               <div className="guide-step-body">
                 <strong>4. Chụp rõ nét, không rung</strong>
-                <p>Dùng tay cầm cố định hoặc giá đỡ. Ảnh phải thấy rõ đồng tử, mống mắt và điểm phản quang ánh sáng trên mắt.</p>
+                <p>Cố định tay hoặc dùng giá đỡ. Ảnh chụp cần thấy rõ mống mắt, đồng tử và chấm sáng phản xạ trên giác mạc.</p>
               </div>
             </div>
           </div>
 
           {/* AI auto-check pills */}
           <div className="upload-guide-checklist">
-            <p className="checklist-label">AI sẽ kiểm tra tự động:</p>
+            <p className="checklist-label">Hệ thống AI sẽ kiểm tra tự động (Quality Gate):</p>
             <div className="checklist-pills">
-              <span className="check-pill">✓ Khuôn mặt phát hiện được</span>
-              <span className="check-pill">✓ Cả hai mắt rõ</span>
-              <span className="check-pill">✓ Ảnh đủ nét</span>
-              <span className="check-pill">✓ Ánh sáng phù hợp</span>
-              <span className="check-pill">✓ Điểm phản quang corneal</span>
-              <span className="check-pill">✓ Đầu không nghiêng quá</span>
+              <span className="check-pill">✓ Có khuôn mặt trong ảnh</span>
+              <span className="check-pill">✓ Đủ cả hai mắt & mở rõ</span>
+              <span className="check-pill">✓ Độ sắc nét cao, không mờ</span>
+              <span className="check-pill">✓ Ánh sáng đủ, không chói lóa</span>
+              <span className="check-pill">✓ Phát hiện điểm phản xạ giác mạc</span>
+              <span className="check-pill">✓ Góc đầu thẳng (Yaw/Pitch/Roll)</span>
             </div>
           </div>
 
@@ -352,12 +354,12 @@ export default function Gaze4DirectionsStep({
               type="button"
               className="btn btn-primary btn-large"
               onClick={handleTriggerUpload}
-              style={{ minWidth: '220px', fontSize: '1rem' }}
+              style={{ minWidth: '240px', fontSize: '1.05rem' }}
             >
-              📂 Chọn ảnh để AI kiểm tra
+              📂 Tải ảnh lên để AI phân tích
             </button>
-            <p style={{ margin: '8px 0 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-              Hỗ trợ JPEG, PNG, WebP. Ảnh sẽ được kiểm tra chất lượng trước khi gửi.
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+              Hỗ trợ định dạng JPEG, PNG, WebP. Tự động kiểm tra chất lượng trước khi gửi.
             </p>
           </div>
         </div>
@@ -376,23 +378,6 @@ export default function Gaze4DirectionsStep({
           onReupload={handleTriggerUpload}
         />
       )}
-
-      {/* Thumbnail strip */}
-      <div className="gaze-capture-strip">
-        <div className={`gaze-strip-card active ${stepStatus === 'COMPLETED' ? 'done' : ''}`}>
-          <div className="gaze-strip-thumb">
-            {reviewCandidate?.dataUrl ? (
-              <img src={reviewCandidate.dataUrl} alt="Hirschberg" className="gaze-strip-img" />
-            ) : (
-              <span className="gaze-strip-placeholder">H</span>
-            )}
-          </div>
-          <span className="gaze-strip-title">Hirschberg</span>
-          <span className="gaze-strip-badge">
-            {stepStatus === 'COMPLETED' ? '✓ Đã kiểm tra' : 'Đang thực hiện'}
-          </span>
-        </div>
-      </div>
     </div>
   );
 }
