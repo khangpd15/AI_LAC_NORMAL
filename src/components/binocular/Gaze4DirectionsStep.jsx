@@ -48,7 +48,7 @@ export default function Gaze4DirectionsStep({
   const [stepStatus, setStepStatus] = useState('OBSERVING');
 
   // Input mode: 'CAMERA' | 'UPLOAD'
-  const [inputMode, setInputMode] = useState('CAMERA');
+  const [inputMode, setInputMode] = useState('UPLOAD');
   const fileInputRef = useRef(null);
 
   // Pre-screening review candidate
@@ -612,8 +612,19 @@ export default function Gaze4DirectionsStep({
       {/* Shutter flash overlay */}
       {showShutterFlash && <div className="gaze-shutter-flash" />}
 
-      {/* Hirschberg input mode switcher: Camera vs Upload */}
+      {/* Mode Switcher: Upload (primary) vs Camera (secondary) */}
       <div className="hirschberg-mode-toolbar">
+        <button
+          type="button"
+          className={`btn-mode-tab ${inputMode === 'UPLOAD' ? 'active' : ''}`}
+          onClick={() => {
+            setInputMode('UPLOAD');
+            if (stepStatus === 'REVIEWING') handleRetake();
+          }}
+        >
+          📁 Tải ảnh từ thiết bị
+        </button>
+
         <button
           type="button"
           className={`btn-mode-tab ${inputMode === 'CAMERA' ? 'active' : ''}`}
@@ -625,15 +636,6 @@ export default function Gaze4DirectionsStep({
           📷 Camera trực tiếp
         </button>
 
-        <button
-          type="button"
-          className={`btn-mode-tab ${inputMode === 'UPLOAD' ? 'active' : ''}`}
-          onClick={handleTriggerReupload}
-          title="Chọn ảnh khuôn mặt rõ nét từ thiết bị"
-        >
-          📁 Tải ảnh từ thiết bị
-        </button>
-
         <input
           type="file"
           ref={fileInputRef}
@@ -642,6 +644,81 @@ export default function Gaze4DirectionsStep({
           style={{ display: 'none' }}
         />
       </div>
+
+      {/* UPLOAD MODE: Hướng dẫn chụp ảnh Hirschberg + nút upload */}
+      {inputMode === 'UPLOAD' && stepStatus !== 'REVIEWING' && (
+        <div className="hirschberg-upload-guide fade-in">
+          {/* Guide header */}
+          <div className="upload-guide-header">
+            <span className="badge badge-primary">Hirschberg</span>
+            <h2 className="upload-guide-title">Cách chụp ảnh đúng chuẩn</h2>
+            <p className="upload-guide-subtitle">
+              Chụp ảnh theo hướng dẫn bên dưới, sau đó tải lên để AI kiểm tra chất lượng trước khi phân tích.
+            </p>
+          </div>
+
+          {/* Step-by-step photo guide */}
+          <div className="upload-guide-steps">
+            <div className="guide-step">
+              <div className="guide-step-icon">💡</div>
+              <div className="guide-step-body">
+                <strong>1. Ánh sáng điểm nhỏ</strong>
+                <p>Dùng đèn pin nhỏ hoặc đèn flash điện thoại khác chiếu thẳng vào mắt từ khoảng 20–25 cm. Không dùng ring light hay đèn tán rộng.</p>
+              </div>
+            </div>
+            <div className="guide-step">
+              <div className="guide-step-icon">📏</div>
+              <div className="guide-step-body">
+                <strong>2. Khoảng cách 20–25 cm</strong>
+                <p>Camera cách mặt trẻ khoảng 20–25 cm. Mặt trẻ phải lấp đầy &gt;50% khung ảnh, thấy rõ cả hai mắt.</p>
+              </div>
+            </div>
+            <div className="guide-step">
+              <div className="guide-step-icon">👁️</div>
+              <div className="guide-step-body">
+                <strong>3. Nhìn thẳng vào ống kính</strong>
+                <p>Trẻ nhìn thẳng vào camera. Đầu thẳng, không nghiêng. Hai mắt mở to, không nhắm.</p>
+              </div>
+            </div>
+            <div className="guide-step">
+              <div className="guide-step-icon">📸</div>
+              <div className="guide-step-body">
+                <strong>4. Chụp rõ nét, không rung</strong>
+                <p>Dùng tay cầm cố định hoặc giá đỡ. Ảnh phải thấy rõ đồng tử, mống mắt và điểm phản quang ánh sáng trên mắt.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Example quality checklist */}
+          <div className="upload-guide-checklist">
+            <p className="checklist-label">AI sẽ kiểm tra tự động:</p>
+            <div className="checklist-pills">
+              <span className="check-pill">✓ Khuôn mặt phát hiện được</span>
+              <span className="check-pill">✓ Cả hai mắt rõ</span>
+              <span className="check-pill">✓ Ảnh đủ nét</span>
+              <span className="check-pill">✓ Ánh sáng phù hợp</span>
+              <span className="check-pill">✓ Điểm phản quang corneal</span>
+              <span className="check-pill">✓ Đầu không nghiêng quá</span>
+            </div>
+          </div>
+
+          {/* Upload CTA */}
+          <div className="upload-guide-cta">
+            <button
+              id="btn-hirschberg-upload"
+              type="button"
+              className="btn btn-primary btn-large"
+              onClick={handleTriggerReupload}
+              style={{ minWidth: '220px', fontSize: '1rem' }}
+            >
+              📂 Chọn ảnh để AI kiểm tra
+            </button>
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+              Hỗ trợ JPEG, PNG, WebP. Ảnh sẽ được kiểm tra chất lượng trước khi gửi.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Hirschberg backend measurement overlay */}
       {isAnalyzing && (
@@ -695,21 +772,22 @@ export default function Gaze4DirectionsStep({
         </div>
       </div>
 
-      {/* Main Video Viewport with Fixed Target Overlay */}
-      <div
-        className="gaze-camera-viewport"
-        style={{
-          '--camera-aspect-ratio': videoAspect || undefined,
-        }}
-      >
-        <CameraView
-          videoRef={videoRef}
-          stream={stream}
-          landmarks={landmarks}
-          onVideoReady={handleVideoReady}
-          showLandmarkPoints={false}
-          showMeshConnections={false}
-        />
+      {/* Main Video Viewport: only shown in CAMERA mode */}
+      {inputMode === 'CAMERA' && stepStatus !== 'REVIEWING' && (
+        <div
+          className="gaze-camera-viewport"
+          style={{
+            '--camera-aspect-ratio': videoAspect || undefined,
+          }}
+        >
+          <CameraView
+            videoRef={videoRef}
+            stream={stream}
+            landmarks={landmarks}
+            onVideoReady={handleVideoReady}
+            showLandmarkPoints={false}
+            showMeshConnections={false}
+          />
 
         {/* 1 FIXED NON-MOVING TARGET */}
         {stepStatus === 'OBSERVING' && (
@@ -794,7 +872,8 @@ export default function Gaze4DirectionsStep({
             />
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Pre-screening Review Modal when photo is captured or uploaded */}
       {stepStatus === 'REVIEWING' && reviewCandidate && (
