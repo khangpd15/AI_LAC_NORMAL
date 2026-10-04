@@ -84,6 +84,7 @@ function Gaze4DirectionsSummarySection({ gazeTracking }) {
   const measurement = gazeTracking?.hirschbergResult;
   const measurementResultLabel = {
     SYSTEM_ERROR: 'Lỗi hệ thống',
+    INELIGIBLE: 'Chưa đủ điều kiện',
     INVALID_FRAME: 'Ảnh không hợp lệ',
     MEASUREMENT_ONLY: 'Đã đo nghiên cứu',
     INCONCLUSIVE: 'Chưa đủ dữ liệu',
@@ -200,6 +201,12 @@ function StrabismusAIScreeningSection({ strabismusResult }) {
     bannerClass = 'strabismus-banner strabismus-banner--inconclusive';
     emoji = '⚪';
     statusTitle = 'HIRSCHBERG NGHIÊN CỨU';
+  } else if (strabismusResult?.screening_status === 'HIRSCHBERG_INELIGIBLE') {
+    statusText = strabismusResult.message || strabismusResult?.hirschbergResult?.message || 'Thông tin hiện tại chưa nằm trong phạm vi hỗ trợ của bài sàng lọc này.';
+    badgeClass = 'badge-attention';
+    bannerClass = 'strabismus-banner strabismus-banner--suspicious';
+    emoji = '🟡';
+    statusTitle = 'CHƯA ĐỦ ĐIỀU KIỆN';
   } else if (strabismusResult?.screening_status === 'HIRSCHBERG_AI_PREDICTION') {
     const predictedClass = prediction || strabismusResult?.hirschbergResult?.aiPrediction?.predictedClass;
     if (predictedClass === 'NORMAL') {

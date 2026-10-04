@@ -3,6 +3,11 @@ import AudioButton from '../audio/AudioButton';
 import { measureResearchGeometry } from '../../api/researchMeasurementApi.js';
 import HirschbergQualityReviewModal from './HirschbergQualityReviewModal.jsx';
 import { inspectHirschbergImage } from '../../services/hirschbergQualityPrescreenService.js';
+import {
+  classifyResearchMeasurementError,
+  validateResearchAge,
+} from '../../services/researchMeasurementErrorService.js';
+import { RESEARCH_ELIGIBILITY_CONFIG } from '../../constants/researchScreeningConfig.js';
 
 /**
  * HirschbergStep (B1 - Hirschberg Screening)
@@ -31,7 +36,16 @@ export default function HirschbergStep({
   // Backend analysis state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState(null);
+  const [ageYearsInput, setAgeYearsInput] = useState(() => {
+    const existingAge = preparationData?.eligibility?.ageYears;
+    return existingAge != null ? String(existingAge) : '';
+  });
   const abortControllerRef = useRef(null);
+
+  useEffect(() => {
+    const existingAge = preparationData?.eligibility?.ageYears;
+    if (existingAge != null) setAgeYearsInput(String(existingAge));
+  }, [preparationData?.eligibility?.ageYears]);
 
   // Abort on unmount
   useEffect(() => {
@@ -52,6 +66,10 @@ export default function HirschbergStep({
   const buildResearchMeasurementPayload = useCallback(
     (captureRecord) => {
       const eligibility = preparationData?.eligibility || {};
+      const ageCheck = validateResearchAge(
+        eligibility.ageYears ?? ageYearsInput,
+        RESEARCH_ELIGIBILITY_CONFIG.minAgeYears
+      );
       const qualityMeta = captureRecord?.researchQuality?.metadata || {};
       return {
         schemaVersion: 'remicare-research-quality-v0.1',
@@ -64,7 +82,7 @@ export default function HirschbergStep({
         distance_bucket: qualityMeta.distanceBucket || '30_50_CM',
         eligibility: {
           consent: Boolean(eligibility.guardianConsent ?? true),
-          ageYears: eligibility.ageYears ?? null,
+          ageYears: ageCheck.ageYears,
           redFlag: Boolean(eligibility.redFlagPresent),
         },
         quality: captureRecord?.researchQuality?.checks || {},
@@ -77,15 +95,32 @@ export default function HirschbergStep({
         imageDataUrl: captureRecord?.originalFrame,
       };
     },
-    [preparationData, sessionId]
+    [ageYearsInput, preparationData, sessionId]
   );
 
   // Finalize: send to backend, then call onComplete
   const handleFinalizeStep = useCallback(
     async (captureRecord) => {
       let hirschbergResult = null;
+      const eligibility = preparationData?.eligibility || {};
+      const ageCheck = validateResearchAge(
+        eligibility.ageYears ?? ageYearsInput,
+        RESEARCH_ELIGIBILITY_CONFIG.minAgeYears
+      );
 
-      if (captureRecord?.originalFrame) {
+      if (!ageCheck.valid) {
+        hirschbergResult = {
+          status: 'INCONCLUSIVE',
+          result: 'INELIGIBLE',
+          reasonCodes: ['AGE_OUTSIDE_SUPPORTED_RANGE'],
+          measurements: {},
+          quality: captureRecord?.researchQuality || {},
+          experimental: true,
+          message: ageCheck.message,
+        };
+      }
+
+      if (!hirschbergResult && captureRecord?.originalFrame) {
         try {
           setIsAnalyzing(true);
           setAnalysisError(null);
@@ -99,19 +134,20 @@ export default function HirschbergStep({
         } catch (err) {
           if (err.name === 'AbortError') return;
           console.warn('Hirschberg backend warning:', err);
+          const researchError = classifyResearchMeasurementError(err);
           hirschbergResult = {
             status: 'INCONCLUSIVE',
-            result: 'SYSTEM_ERROR',
-            reasonCodes: ['RESEARCH_BACKEND_UNAVAILABLE'],
+            result: researchError.result,
+            reasonCodes: [researchError.reasonCode],
             measurements: {},
             quality: captureRecord?.researchQuality || {},
             experimental: true,
-            message: err.userMessage || 'Không thể kết nối backend Hirschberg.',
+            message: researchError.message,
           };
         } finally {
           setIsAnalyzing(false);
         }
-      } else {
+      } else if (!hirschbergResult) {
         hirschbergResult = {
           status: 'INCONCLUSIVE',
           result: 'INVALID_FRAME',
@@ -135,12 +171,17 @@ export default function HirschbergStep({
           prediction: hirschbergResult?.aiPrediction?.predictedClass || 'INCONCLUSIVE',
           confidence: hirschbergResult?.aiPrediction?.confidence ?? null,
           probabilities: hirschbergResult?.aiPrediction?.probabilities ?? null,
-          screening_status: hirschbergResult?.aiPrediction ? 'HIRSCHBERG_AI_PREDICTION' : 'HIRSCHBERG_MEASUREMENT_ONLY',
+          screening_status: hirschbergResult?.result === 'INELIGIBLE'
+            ? 'HIRSCHBERG_INELIGIBLE'
+            : hirschbergResult?.aiPrediction
+            ? 'HIRSCHBERG_AI_PREDICTION'
+            : 'HIRSCHBERG_MEASUREMENT_ONLY',
+          message: hirschbergResult?.message || null,
           hirschbergResult,
         },
       });
     },
-    [buildResearchMeasurementPayload, onComplete]
+    [ageYearsInput, buildResearchMeasurementPayload, onComplete, preparationData]
   );
 
   // File upload handler
@@ -345,6 +386,23 @@ export default function HirschbergStep({
               <span className="check-pill">✓ Phát hiện điểm phản xạ giác mạc</span>
               <span className="check-pill">✓ Góc đầu thẳng (Yaw/Pitch/Roll)</span>
             </div>
+          </div>
+
+          <div className="hirschberg-eligibility-panel">
+            <label className="hirschberg-age-label" htmlFor="hirschberg-age-years">
+              Tuổi người được sàng lọc
+            </label>
+            <input
+              id="hirschberg-age-years"
+              className="hirschberg-age-input"
+              type="number"
+              min={RESEARCH_ELIGIBILITY_CONFIG.minAgeYears}
+              step="1"
+              inputMode="numeric"
+              value={ageYearsInput}
+              onChange={(event) => setAgeYearsInput(event.target.value)}
+              placeholder={`Từ ${RESEARCH_ELIGIBILITY_CONFIG.minAgeYears} tuổi`}
+            />
           </div>
 
           {/* Upload CTA */}

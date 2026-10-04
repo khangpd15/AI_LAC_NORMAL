@@ -45,6 +45,11 @@ export default function HirschbergResultStep({
     statusTitle = 'Lỗi hệ thống khi phân tích';
     statusDesc = measurement?.message || 'Hệ thống chưa hoàn tất phân tích Hirschberg. Vui lòng thử lại hoặc kiểm tra kết nối backend.';
     emoji = '🔴';
+  } else if (rawStatus === 'INELIGIBLE') {
+    badgeClass = 'badge-attention';
+    statusTitle = 'Chưa đủ điều kiện sàng lọc';
+    statusDesc = measurement?.message || 'Thông tin hiện tại chưa nằm trong phạm vi hỗ trợ của bài sàng lọc này.';
+    emoji = '🟡';
   }
 
   // Voice announcement
@@ -54,6 +59,8 @@ export default function HirschbergResultStep({
         speak('Ảnh Hirschberg chưa phát hiện dấu hiệu bất thường. Bạn có thể kiểm tra bổ sung bằng Cover Test để chắc chắn hơn.');
       } else if (rawStatus === 'STRABISMUS' || rawStatus === 'SUSPICIOUS') {
         speak('Ảnh Hirschberg có dấu hiệu cần kiểm tra thêm. Khuyến nghị thực hiện Cover Test bổ sung.');
+      } else if (rawStatus === 'INELIGIBLE') {
+        speak('Thông tin hiện tại chưa đủ điều kiện để hệ thống phân tích Hirschberg tự động.');
       } else {
         speak('Đã hoàn thành phân tích Hirschberg.');
       }

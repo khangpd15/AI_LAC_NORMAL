@@ -233,6 +233,10 @@ console.log('ALL HIRSCHBERG PRE-SCREENING TESTS PASSED SUCCESSFULLY! ✓');
 // RESEARCH CAMERA RESOLUTION & SETTINGS VALIDATION TESTS
 // ==============================================================================
 import { validateResearchCameraSettings } from '../src/constants/researchScreeningConfig.js';
+import {
+  classifyResearchMeasurementError,
+  validateResearchAge,
+} from '../src/services/researchMeasurementErrorService.js';
 
 console.log('\n--- RUNNING RESEARCH CAMERA RESOLUTION TESTS ---');
 
@@ -263,3 +267,45 @@ console.log('\n--- RUNNING RESEARCH CAMERA RESOLUTION TESTS ---');
 }
 
 console.log('ALL CAMERA RESOLUTION TESTS PASSED SUCCESSFULLY! ✓\n');
+
+// ==============================================================================
+// RESEARCH MEASUREMENT ERROR MAPPING TESTS
+// ==============================================================================
+
+console.log('--- RUNNING RESEARCH MEASUREMENT ERROR MAPPING TESTS ---');
+
+// Test 13: Backend age eligibility rejection is not shown as SYSTEM_ERROR
+{
+  const mapped = classifyResearchMeasurementError({
+    status: 400,
+    data: {
+      detail: {
+        code: 'INVALID_REQUEST',
+        message: 'Age is outside the supported screening range.',
+      },
+    },
+  });
+  assert.equal(mapped.result, 'INELIGIBLE');
+  assert.equal(mapped.reasonCode, 'INVALID_REQUEST');
+  assert.match(mapped.message, /Độ tuổi hiện tại/);
+  console.log('✓ Test 13 Passed: Age validation maps to INELIGIBLE, not SYSTEM_ERROR');
+}
+
+// Test 14: Missing age is blocked before the Hirschberg backend request
+{
+  const ageCheck = validateResearchAge('', 7);
+  assert.equal(ageCheck.valid, false);
+  assert.equal(ageCheck.ageYears, null);
+  assert.match(ageCheck.message, /nhập tuổi/);
+  console.log('✓ Test 14 Passed: Missing age fails frontend eligibility guard');
+}
+
+// Test 15: Valid age is normalized for the backend payload
+{
+  const ageCheck = validateResearchAge('9', 7);
+  assert.equal(ageCheck.valid, true);
+  assert.equal(ageCheck.ageYears, 9);
+  console.log('✓ Test 15 Passed: Valid age passes eligibility guard');
+}
+
+console.log('ALL RESEARCH MEASUREMENT ERROR MAPPING TESTS PASSED SUCCESSFULLY! ✓\n');
