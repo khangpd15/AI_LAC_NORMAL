@@ -19,6 +19,9 @@ import {
 import { estimateHeadPose } from './positionCalibrationService.js';
 import { processSingleImageWithFaceMesh } from './faceMeshService.js';
 
+const BACKEND_MAX_IMAGE_PIXELS = 2560 * 1440;
+const BACKEND_TARGET_MAX_BYTES = 3.6 * 1024 * 1024;
+
 export const QUALITY_PRESCREEN_STATUS = {
   PASS: 'PASS',
   WARNING: 'WARNING',
@@ -322,6 +325,55 @@ export function loadImageElement(dataUrl) {
   });
 }
 
+function estimateDataUrlBytes(dataUrl) {
+  const commaIndex = dataUrl.indexOf(',');
+  const base64 = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl;
+  return Math.floor((base64.length * 3) / 4);
+}
+
+export function createBackendSafeImageDataUrl(img) {
+  const originalWidth = img.naturalWidth || img.width;
+  const originalHeight = img.naturalHeight || img.height;
+  const originalPixels = originalWidth * originalHeight;
+  const scale = originalPixels > BACKEND_MAX_IMAGE_PIXELS
+    ? Math.sqrt(BACKEND_MAX_IMAGE_PIXELS / originalPixels)
+    : 1;
+
+  let targetWidth = Math.max(1, Math.floor(originalWidth * scale));
+  let targetHeight = Math.max(1, Math.floor(originalHeight * scale));
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  let quality = 0.9;
+  let dataUrl = '';
+
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+    dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+    if (estimateDataUrlBytes(dataUrl) <= BACKEND_TARGET_MAX_BYTES) break;
+
+    if (quality > 0.72) {
+      quality -= 0.08;
+    } else {
+      targetWidth = Math.max(1, Math.floor(targetWidth * 0.86));
+      targetHeight = Math.max(1, Math.floor(targetHeight * 0.86));
+    }
+  }
+
+  return {
+    dataUrl,
+    width: targetWidth,
+    height: targetHeight,
+    originalWidth,
+    originalHeight,
+    resized: targetWidth !== originalWidth || targetHeight !== originalHeight,
+    estimatedBytes: estimateDataUrlBytes(dataUrl),
+  };
+}
+
 /**
  * Reads a File object as Data URL
  * @param {File} file
@@ -393,11 +445,16 @@ export async function inspectHirschbergImage(fileOrDataUrl, options = {}) {
     landmarks,
     distanceCm: options.distanceCm || null,
   });
+  const backendImage = createBackendSafeImageDataUrl(img);
 
   return {
     dataUrl,
+    backendDataUrl: backendImage.dataUrl,
     width: img.naturalWidth || img.width,
     height: img.naturalHeight || img.height,
+    backendWidth: backendImage.width,
+    backendHeight: backendImage.height,
+    backendImage,
     landmarks,
     validation,
   };

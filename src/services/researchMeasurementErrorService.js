@@ -5,6 +5,17 @@ const ELIGIBILITY_ERROR_MESSAGES = {
     'Có dấu hiệu cần khám chuyên khoa trước, hệ thống không thực hiện phân tích tự động.',
 };
 
+const IMAGE_PAYLOAD_ERROR_MESSAGES = {
+  'Image payload exceeds research limit.':
+    'Ảnh tải lên quá lớn. Hệ thống đã giới hạn kích thước ảnh nghiên cứu để xử lý ổn định.',
+  'Image pixel count exceeds research limit.':
+    'Ảnh tải lên có độ phân giải quá lớn. Vui lòng thử lại sau khi hệ thống nén ảnh hoặc chọn ảnh nhỏ hơn.',
+  'imageDataUrl must be an image/* data URL.':
+    'Tệp tải lên không đúng định dạng ảnh được hỗ trợ.',
+  'HIRSCHBERG request requires imageDataUrl or imageBase64.':
+    'Không tìm thấy ảnh Hirschberg để gửi phân tích.',
+};
+
 export function getResearchErrorDetail(error) {
   const detail = error?.data?.detail;
   if (detail && typeof detail === 'object') {
@@ -29,6 +40,14 @@ export function classifyResearchMeasurementError(error) {
     status === 422 ||
     code === 'INVALID_REQUEST' ||
     code === 'FEATURE_CONTRACT_MISMATCH';
+
+  if (code === 'INVALID_REQUEST' && IMAGE_PAYLOAD_ERROR_MESSAGES[message]) {
+    return {
+      result: 'INVALID_FRAME',
+      reasonCode: 'IMAGE_PAYLOAD_INVALID',
+      message: IMAGE_PAYLOAD_ERROR_MESSAGES[message],
+    };
+  }
 
   if (isClientValidation) {
     return {

@@ -288,4 +288,21 @@ console.log('--- RUNNING RESEARCH MEASUREMENT ERROR MAPPING TESTS ---');
   console.log('✓ Test 13 Passed: Client validation maps to INELIGIBLE, not SYSTEM_ERROR');
 }
 
+// Test 14: Backend image-size rejection is shown as image/frame issue, not eligibility
+{
+  const mapped = classifyResearchMeasurementError({
+    status: 400,
+    data: {
+      detail: {
+        code: 'INVALID_REQUEST',
+        message: 'Image pixel count exceeds research limit.',
+      },
+    },
+  });
+  assert.equal(mapped.result, 'INVALID_FRAME');
+  assert.equal(mapped.reasonCode, 'IMAGE_PAYLOAD_INVALID');
+  assert.match(mapped.message, /độ phân giải quá lớn/);
+  console.log('✓ Test 14 Passed: Oversized image maps to INVALID_FRAME, not INELIGIBLE');
+}
+
 console.log('ALL RESEARCH MEASUREMENT ERROR MAPPING TESTS PASSED SUCCESSFULLY! ✓\n');
