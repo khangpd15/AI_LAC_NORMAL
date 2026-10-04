@@ -80,16 +80,17 @@ export async function saveCoverTestSession({
       cyclesSaved: data?.cyclesSaved || cycles.length,
       imagesSaved: data?.imagesSaved || 0,
       aiResult: data?.aiResult || null,
-      message: 'Dữ liệu kiểm tra và ảnh vùng mắt đã được lưu trữ thành công.',
+      message: 'Dữ liệu chuyển động mắt đã được lưu trữ thành công.',
     };
   } catch (err) {
-    if (err.name === 'AbortError' || err.name === 'TimeoutError' || err.isTimeout) {
+    if (err.name === 'AbortError') throw err;
+    if (err.name === 'TimeoutError' || err.isTimeout) {
       return {
         success: false,
         saved: false,
         sessionId,
         error: 'TIMEOUT',
-        message: 'Quá thời gian kết nối máy chủ (1 phút). Vui lòng thử lại.',
+        message: err.message || 'Quá thời gian kết nối máy chủ. Vui lòng thử lại.',
       };
     }
 

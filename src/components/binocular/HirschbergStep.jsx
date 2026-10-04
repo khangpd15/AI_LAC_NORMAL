@@ -94,7 +94,7 @@ export default function HirschbergStep({
 
           hirschbergResult = await measureResearchGeometry(
             buildResearchMeasurementPayload(captureRecord),
-            { signal: controller.signal, timeoutMs: 25000 }
+            { signal: controller.signal }
           );
         } catch (err) {
           if (err.name === 'AbortError') return;

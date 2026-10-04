@@ -17,7 +17,6 @@ import { aggregateCoverCycles, createCoverFrame, createCycleRecord, generateUUID
 import { createTimeSeriesRecorder } from '../../services/coverTestTimeSeriesService.js';
 import { captureScreeningFrame, captureEyeRegionCrop } from '../../services/screeningImageCaptureService.js';
 import { saveCoverTestSession as saveCoverTestCloudSession } from '../../services/coverTest/coverTestPersistenceService.js';
-import { analyzeCoverTest } from '../../services/aiBackendService.js';
 import { toCanonicalEye, getCoverInstruction } from '../../utils/eyeCoordinateMapping.js';
 
 
@@ -138,39 +137,15 @@ export default function CoverTestStep({
   const requestAiTransfer = useCallback(async (summary) => {
     if (!summary || hasSentAiTransferRef.current) return;
     hasSentAiTransferRef.current = true;
-    setAiTransferState({ status: 'loading', result: null, error: null, detail: null });
-
-    try {
-      const response = await analyzeCoverTest(summary, {
-        sampleId: canonicalSessionId,
-        signal: abortControllerRef.current?.signal,
-      });
-
-      if (response && response.status === 'TRANSFER_EXPERIMENT') {
-        setAiTransferState({
-          status: 'success',
-          result: response,
-          error: null,
-          detail: null,
-        });
-      } else {
-        setAiTransferState({
-          status: 'error',
-          result: null,
-          error: response?.message || 'Không thể nhận kết quả từ mô hình AI.',
-          detail: response?.detail || response?.error,
-        });
-      }
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-      setAiTransferState({
-        status: 'error',
-        result: null,
-        error: 'Lỗi kết nối tới hệ thống AI. Vui lòng thử lại.',
-        detail: err?.message,
-      });
-    }
-  }, [canonicalSessionId]);
+    setAiTransferState({
+      status: 'success',
+      result: { status: 'INCONCLUSIVE', prediction: 'INCONCLUSIVE',
+        reason: 'AI_RESULT_UNAVAILABLE', model: { loaded: false },
+        notice: 'Chưa nhận được kết quả AI Cover Test. Bác sĩ cần đánh giá phiên đo này.' },
+      error: null,
+      detail: null,
+    });
+  }, []);
 
   const persistSessionSampling = useCallback(async (currentSessionId, cyclesList, summaryPayload = null) => {
     if (hasSavedSessionRef.current) return;
@@ -230,7 +205,7 @@ export default function CoverTestStep({
           sessionPath: result.storageRoot,
           sampleCount: totalSamples,
           error: null,
-          message: 'Dữ liệu kiểm tra và ảnh vùng mắt đã được lưu trữ an toàn lên Cloud.',
+          message: 'Dữ liệu chuyển động mắt đã được lưu trữ lên Cloud.',
         });
 
         // If backend executed AI inference, fulfill AI transfer state directly without duplicate API call
@@ -1118,28 +1093,12 @@ export default function CoverTestStep({
               const res = aiTransferState.result;
 
               // Extract Korean 10-15 FPS candidate model
-              const candidate15 = res.comparisonModels?.find(
-                (m) =>
-                  m.key === 'korean_15fps_candidate' ||
-                  m.key === 'korean_10_15fps_research_model'
-              ) || (res.comparisonModels && res.comparisonModels.length > 0 && res.comparisonModels[0].key !== 'korean_b2' ? res.comparisonModels[0] : null);
-
-              const modelResult = candidate15 || {
-                label: res.label || 'Korean 10–15 FPS candidate',
-                prediction: res.prediction,
-                classProbability: res.classProbability || res.classProbabilities,
-                model: res.model || {
-                  name: 'Korean 10-15 FPS robust transfer candidate',
-                  version: 'remicare-transfer-10to15fps-candidate-v1.1.0',
-                },
-                samplingProfile: res.samplingProfile || 'Korean recordings augmented across fixed and variable 10–15 FPS with simulated frame drops',
-              };
-
-              const cleanLabel = modelResult.label || 'Korean 10–15 FPS candidate';
+              const modelResult = res;
+              const cleanLabel = modelResult.label || 'Kết quả AI Cover Test';
               const cleanPrediction = modelResult.prediction || 'INCONCLUSIVE';
-              const cleanProbabilities = modelResult.classProbability || modelResult.classProbabilities || { NORMAL: 0, STRABISMUS: 0 };
-              const cleanVersion = modelResult.model?.version || 'remicare-transfer-10to15fps-candidate-v1.1.0';
-              const cleanProfile = modelResult.samplingProfile || 'Korean recordings augmented across fixed and variable 10–15 FPS with simulated frame drops';
+              const cleanProbabilities = modelResult.classProbability || modelResult.classProbabilities;
+              const cleanVersion = modelResult.model?.version || 'Chưa có model được nạp';
+              const cleanProfile = modelResult.samplingProfile || '';
 
               const cardStyle = {
                 background: 'var(--color-pale-teal)',
@@ -1161,14 +1120,14 @@ export default function CoverTestStep({
                     <div style={{ fontSize: '1.15rem', fontWeight: 800, color: cleanPrediction === 'NORMAL' ? 'var(--color-deep-green)' : 'var(--color-warm-coral)', marginBottom: '8px' }}>
                       {cleanPrediction}
                     </div>
-                    <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
+                    {cleanProbabilities && <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
                       Model class probability
-                    </div>
-                    <div style={{ fontSize: '0.84rem', fontWeight: 600 }}>
+                    </div>}
+                    {cleanProbabilities && <div style={{ fontSize: '0.84rem', fontWeight: 600 }}>
                       NORMAL: <span style={{ color: 'var(--color-deep-green)' }}>{((cleanProbabilities.NORMAL ?? 0) * 100).toFixed(1)}%</span>
                       {' | '}
                       STRABISMUS: <span style={{ color: '#8c5a00' }}>{((cleanProbabilities.STRABISMUS ?? 0) * 100).toFixed(1)}%</span>
-                    </div>
+                    </div>}
                     <div style={{ color: 'var(--text-dim)', fontSize: '0.72rem', lineHeight: 1.4, marginTop: '8px' }}>
                       {cleanVersion}<br />
                       {cleanProfile}
@@ -1177,10 +1136,9 @@ export default function CoverTestStep({
 
                   {/* Metadata section */}
                   <div style={{ background: 'rgba(0, 84, 93, 0.04)', padding: '10px 14px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-dim)', lineHeight: '1.6', border: '1px solid var(--border-subtle)' }}>
-                    <div>• <strong>Mô hình:</strong> {cleanLabel} ({cleanVersion}, 14 đặc trưng kỹ thuật)</div>
-                    <div>• <strong>Domain shift:</strong> <span style={{ color: '#8c5a00', fontWeight: 700 }}>WARNING</span> (Korean IR Eye-tracker 60Hz → RemiCare webcam timestamp sampling)</div>
-                    <div>• <strong>Ý nghĩa lâm sàng:</strong> None (Clinical meaning: null)</div>
-                    <div>• <strong>Research-only output:</strong> Probability is model output and has not been clinically validated for RemiCare webcam data.</div>
+                    <div>{res.reason === 'MODEL_NOT_LOADED'
+                      ? 'Dữ liệu đã được lưu. Chưa có model AI Cover Test được nạp; bác sĩ cần đánh giá phiên đo này.'
+                      : res.notice || 'Kết quả nghiên cứu cần được bác sĩ đánh giá.'}</div>
                   </div>
                 </div>
               );

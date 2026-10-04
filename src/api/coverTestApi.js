@@ -5,6 +5,7 @@
  */
 
 import { apiClient } from './client.js';
+import { ensureBackendReady } from './backendReady.js';
 import { COVER_TEST_CONFIG } from '../constants/screeningConfig.js';
 
 const PERSISTENCE_TIMEOUT_MS = 60000;
@@ -86,6 +87,7 @@ export async function saveCoverTestSessionApi({
 
   const endpoint = `/api/v1/cover-test/sessions?run_inference=${runInference ? 'true' : 'false'}`;
 
+  await ensureBackendReady(signal);
   return apiClient(endpoint, {
     method: 'POST',
     body: formData,
