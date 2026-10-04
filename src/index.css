@@ -6145,37 +6145,6 @@ textarea:focus {
   border-radius: 999px;
 }
 
-.hirschberg-eligibility-panel {
-  width: min(420px, 100%);
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.hirschberg-age-label {
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.hirschberg-age-input {
-  width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  background: #ffffff;
-  color: var(--text-main);
-  font: inherit;
-}
-
-.hirschberg-age-input:focus {
-  border-color: var(--primary);
-  outline: 3px solid color-mix(in srgb, var(--primary) 22%, transparent);
-  outline-offset: 1px;
-}
-
 .upload-guide-cta {
   display: flex;
   flex-direction: column;

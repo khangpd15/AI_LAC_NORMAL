@@ -16,8 +16,6 @@ export const RESEARCH_CAMERA_CONFIG = {
 };
 
 export const RESEARCH_ELIGIBILITY_CONFIG = {
-  minAgeYears: 7,
-  maxAgeYears: null,
   redFlagQuestions: [
     {
       id: 'doctor_red_flags_pending',

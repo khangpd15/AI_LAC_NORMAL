@@ -1,6 +1,4 @@
 const ELIGIBILITY_ERROR_MESSAGES = {
-  'Age is outside the supported screening range.':
-    'Độ tuổi hiện tại chưa nằm trong phạm vi hỗ trợ của bài sàng lọc này.',
   'Research consent is required.':
     'Cần xác nhận đồng ý tham gia phép đo nghiên cứu trước khi phân tích.',
   'Red flag present; measurement must not run.':
@@ -47,39 +45,5 @@ export function classifyResearchMeasurementError(error) {
     result: 'SYSTEM_ERROR',
     reasonCode: code || 'RESEARCH_BACKEND_UNAVAILABLE',
     message: message || error?.userMessage || 'Không thể kết nối backend Hirschberg.',
-  };
-}
-
-export function validateResearchAge(ageYears, minAgeYears) {
-  if (ageYears == null || String(ageYears).trim() === '') {
-    return {
-      valid: false,
-      ageYears: null,
-      message: 'Vui lòng nhập tuổi trước khi phân tích Hirschberg.',
-    };
-  }
-
-  const numericAge = Number(ageYears);
-  if (!Number.isFinite(numericAge)) {
-    return {
-      valid: false,
-      ageYears: null,
-      message: 'Vui lòng nhập tuổi trước khi phân tích Hirschberg.',
-    };
-  }
-
-  const normalizedAge = Math.floor(numericAge);
-  if (normalizedAge < minAgeYears) {
-    return {
-      valid: false,
-      ageYears: normalizedAge,
-      message: 'Độ tuổi hiện tại chưa nằm trong phạm vi hỗ trợ của bài sàng lọc này.',
-    };
-  }
-
-  return {
-    valid: true,
-    ageYears: normalizedAge,
-    message: null,
   };
 }
