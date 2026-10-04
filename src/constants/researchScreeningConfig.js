@@ -191,16 +191,17 @@ export function validateResearchCameraSettings(settings = {}, videoElement = nul
 }
 
 export async function tryEnableTorchForResearch(stream, deviceContext = getDeviceContext()) {
+  const safeDeviceContext = deviceContext || getDeviceContext();
   const track = stream?.getVideoTracks?.()[0] || null;
   const result = {
-    requested: Boolean(deviceContext.isAndroid),
+    requested: Boolean(safeDeviceContext.isAndroid),
     supported: false,
     enabled: false,
     fallback: null,
     error: null,
   };
 
-  if (!track || !deviceContext.isAndroid) {
+  if (!track || !safeDeviceContext.isAndroid) {
     result.fallback = 'external_light';
     return result;
   }

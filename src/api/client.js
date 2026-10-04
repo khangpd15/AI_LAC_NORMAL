@@ -25,6 +25,12 @@ const responseCache = new Map();
  */
 export function getApiBaseUrl() {
   const envUrl = typeof import.meta !== 'undefined' && import.meta.env?.VITE_AI_BACKEND_URL;
+  if (!envUrl && typeof import.meta !== 'undefined' && import.meta.env?.PROD) {
+    throw new Error(
+      'VITE_AI_BACKEND_URL is not configured. Set it to the deployed FastAPI backend URL before building the production frontend.'
+    );
+  }
+
   const rawUrl = envUrl || DEFAULT_BACKEND_URL;
   return rawUrl.replace(/\/+$/, '');
 }

@@ -29,6 +29,7 @@ import {
 import { finalizeScreeningSample, setScreeningImage } from '../../services/screeningDatasetService.js';
 import { verifyFrameFreshness } from '../../services/cameraService.js';
 import {
+  getDeviceContext,
   getScreeningCameraConstraints,
   tryEnableTorchForResearch,
   validateResearchCameraSettings,
@@ -52,7 +53,7 @@ export default function BinocularVisionScreening() {
   // Video element ref
   const videoRef = useRef(null);
   const coverTrackingContextRef = useRef({ phase: null, coveredEye: null, trackedEye: null });
-  const preparationDeviceRef = useRef(null);
+  const preparationDeviceRef = useRef(getDeviceContext());
   const lastDetectionTimeRef = useRef(0);
   const isRecoveringRef = useRef(false);
 
@@ -205,7 +206,9 @@ export default function BinocularVisionScreening() {
       const track = activeStream?.getVideoTracks?.()[0] || null;
       const settings = track?.getSettings ? track.getSettings() : {};
       const validation = validateResearchCameraSettings(settings, videoEl);
-      const torch = await tryEnableTorchForResearch(activeStream, preparationDeviceRef.current);
+      const deviceContext = preparationDeviceRef.current || getDeviceContext();
+      preparationDeviceRef.current = deviceContext;
+      const torch = await tryEnableTorchForResearch(activeStream, deviceContext);
 
       setSession((prev) => ({
         ...prev,
@@ -215,6 +218,7 @@ export default function BinocularVisionScreening() {
             settings,
             validation,
             torch,
+            device: deviceContext,
             checkedAt: new Date().toISOString(),
           },
         },

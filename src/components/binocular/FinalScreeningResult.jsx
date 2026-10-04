@@ -82,6 +82,15 @@ function Gaze4DirectionsSummarySection({ gazeTracking }) {
   const cap = captures.hirschberg || captures.straight || {};
   const totalCaptured = Object.values(captures).filter((c) => !!c?.image).length;
   const measurement = gazeTracking?.hirschbergResult;
+  const measurementResultLabel = {
+    SYSTEM_ERROR: 'Lỗi hệ thống',
+    INVALID_FRAME: 'Ảnh không hợp lệ',
+    MEASUREMENT_ONLY: 'Đã đo nghiên cứu',
+    INCONCLUSIVE: 'Chưa đủ dữ liệu',
+    NORMAL: 'Chưa ghi nhận bất thường',
+    ESOTROPIA: 'Có tín hiệu cần xem xét',
+    EXOTROPIA: 'Có tín hiệu cần xem xét',
+  }[measurement?.result] || measurement?.result;
 
   return (
     <div className="final-screening-section gaze-summary-section">
@@ -121,8 +130,8 @@ function Gaze4DirectionsSummarySection({ gazeTracking }) {
             {cap?.distanceCm && (
               <span className="meta-dist">{cap.distanceCm} cm</span>
             )}
-            {measurement?.result && (
-              <span className="meta-dist">{measurement.result}</span>
+            {measurementResultLabel && (
+              <span className="meta-dist">{measurementResultLabel}</span>
             )}
           </div>
         </div>
@@ -174,6 +183,7 @@ function StrabismusAIScreeningSection({ strabismusResult }) {
 
   const {
     status,
+    prediction,
     confidence,
     quality_score,
   } = strabismusResult;
@@ -190,6 +200,27 @@ function StrabismusAIScreeningSection({ strabismusResult }) {
     bannerClass = 'strabismus-banner strabismus-banner--inconclusive';
     emoji = '⚪';
     statusTitle = 'HIRSCHBERG NGHIÊN CỨU';
+  } else if (strabismusResult?.screening_status === 'HIRSCHBERG_AI_PREDICTION') {
+    const predictedClass = prediction || strabismusResult?.hirschbergResult?.aiPrediction?.predictedClass;
+    if (predictedClass === 'NORMAL') {
+      statusText = 'Mô hình nghiên cứu chưa ghi nhận tín hiệu lệch rõ trên ảnh Hirschberg.';
+      badgeClass = 'badge-clear';
+      bannerClass = 'strabismus-banner strabismus-banner--normal';
+      emoji = '🟢';
+      statusTitle = 'HIRSCHBERG AI: BÌNH THƯỜNG';
+    } else if (predictedClass === 'ESOTROPIA' || predictedClass === 'EXOTROPIA') {
+      statusText = 'Mô hình nghiên cứu ghi nhận tín hiệu hình ảnh cần được xem xét thêm bởi chuyên gia.';
+      badgeClass = 'badge-attention';
+      bannerClass = 'strabismus-banner strabismus-banner--suspicious';
+      emoji = '🟡';
+      statusTitle = 'HIRSCHBERG AI: CẦN XEM XÉT';
+    } else {
+      statusText = strabismusResult.message || 'Mô hình nghiên cứu chưa trả về phân lớp Hirschberg đủ rõ.';
+      badgeClass = 'badge-inconclusive';
+      bannerClass = 'strabismus-banner strabismus-banner--inconclusive';
+      emoji = '⚪';
+      statusTitle = 'HIRSCHBERG AI: CHƯA ĐỦ DỮ LIỆU';
+    }
   } else if (status === 'NORMAL') {
     statusText = 'Chưa ghi nhận tín hiệu bất thường đối xứng trục nhãn cầu qua ảnh chụp.';
     badgeClass = 'badge-clear';

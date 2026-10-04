@@ -40,6 +40,11 @@ export default function HirschbergResultStep({
     statusTitle = 'Có dấu hiệu cần kiểm tra thêm';
     statusDesc = 'Ghi nhận độ lệch phản xạ ánh sáng giác mạc giữa hai mắt. Khuyên nên thực hiện thêm Cover Test hoặc thăm khám chuyên khoa.';
     emoji = '🟡';
+  } else if (rawStatus === 'SYSTEM_ERROR') {
+    badgeClass = 'badge-error';
+    statusTitle = 'Lỗi hệ thống khi phân tích';
+    statusDesc = measurement?.message || 'Hệ thống chưa hoàn tất phân tích Hirschberg. Vui lòng thử lại hoặc kiểm tra kết nối backend.';
+    emoji = '🔴';
   }
 
   // Voice announcement
@@ -60,42 +65,42 @@ export default function HirschbergResultStep({
   const deltaH = measurement?.measurements?.delta_h ?? null;
 
   return (
-    <div className="card stage-card-main hirschberg-result-card" style={{ maxWidth: '840px', margin: '0 auto' }}>
-      <div className="stage-header" style={{ textAlign: 'center' }}>
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '8px' }}>
+    <div className="card stage-card-main hirschberg-result-card">
+      <div className="stage-header hirschberg-result-header">
+        <div className="hirschberg-result-badges">
           <span className="badge badge-primary">Bước 2: Kết quả Hirschberg</span>
           <span className={`badge ${badgeClass}`}>{emoji} {rawStatus}</span>
         </div>
-        <h2 className="stage-title" style={{ fontSize: '1.6rem', marginBottom: '6px' }}>
+        <h2 className="stage-title hirschberg-result-title">
           Kết quả Sàng lọc Hirschberg
         </h2>
-        <p className="stage-subtitle" style={{ maxWidth: '620px', margin: '0 auto', color: '#64748b' }}>
+        <p className="stage-subtitle hirschberg-result-subtitle">
           Phương pháp đo phản xạ ánh sáng giác mạc và phân tích hình thái hai mắt bằng AI.
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: imageSrc ? '1fr 1.3fr' : '1fr', gap: '20px', margin: '24px 0', alignItems: 'center' }}>
+      <div className={`hirschberg-result-layout ${imageSrc ? 'has-image' : 'no-image'}`}>
         {imageSrc && (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ borderRadius: '12px', overflow: 'hidden', border: '2px solid #e2e8f0', background: '#000', maxHeight: '260px' }}>
+          <div className="hirschberg-result-image-col">
+            <div className="hirschberg-result-image-frame">
               <img
                 src={imageSrc}
                 alt="Ảnh Hirschberg đã phân tích"
-                style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                className="hirschberg-result-image"
               />
             </div>
-            <span style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '6px', display: 'block' }}>
+            <span className="hirschberg-result-image-caption">
               Ảnh phân tích phản xạ giác mạc
             </span>
           </div>
         )}
 
-        <div>
-          <div style={{ padding: '16px 20px', borderRadius: '12px', background: rawStatus === 'NORMAL' ? '#f0fdf4' : rawStatus === 'INCONCLUSIVE' ? '#f8fafc' : '#fefce8', border: `1px solid ${rawStatus === 'NORMAL' ? '#bbf7d0' : rawStatus === 'INCONCLUSIVE' ? '#e2e8f0' : '#fef08a'}` }}>
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.15rem', color: rawStatus === 'NORMAL' ? '#166534' : rawStatus === 'INCONCLUSIVE' ? '#334155' : '#854d0e', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>{emoji}</span> {statusTitle}
+        <div className="hirschberg-result-content-col">
+          <div className={`hirschberg-status-panel hirschberg-status-panel--${rawStatus.toLowerCase()}`}>
+            <h3 className="hirschberg-status-title">
+              <span aria-hidden="true">{emoji}</span> {statusTitle}
             </h3>
-            <p style={{ margin: 0, fontSize: '0.92rem', color: '#475569', lineHeight: 1.55 }}>
+            <p className="hirschberg-status-desc">
               {statusDesc}
             </p>
           </div>
