@@ -540,7 +540,7 @@ export default function HomePage({
                 <IconShieldCheck size={28} />
               </div>
               <p className="safety-text">
-                <strong>AI hỗ trợ sàng lọc:</strong> Xử lý an toàn 100% trên thiết bị của bạn, tuyệt đối không gửi video hay ảnh lên mạng. Không thay thế chẩn đoán y khoa.
+                <strong>AI hỗ trợ sàng lọc:</strong> Ảnh Hirschberg được gửi đến máy chủ để phân tích và không được lưu. Dữ liệu chuyển động mắt Cover Test được lưu cho bác sĩ đánh giá. Không thay thế chẩn đoán y khoa.
               </p>
             </div>
           </div>
