@@ -48,9 +48,17 @@ export default function EyeOverlay({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    if (canvas.width !== videoWidth || canvas.height !== videoHeight) {
-      canvas.width = videoWidth;
-      canvas.height = videoHeight;
+    // Use display size (CSS pixels × dpr) for canvas resolution
+    // so overlay stays pixel-perfect on high-DPI mobile screens.
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    // Fall back to video intrinsic size if canvas hasn't been laid out yet
+    const displayW = rect.width  > 0 ? Math.round(rect.width  * dpr) : (videoWidth  || 640);
+    const displayH = rect.height > 0 ? Math.round(rect.height * dpr) : (videoHeight || 480);
+
+    if (canvas.width !== displayW || canvas.height !== displayH) {
+      canvas.width = displayW;
+      canvas.height = displayH;
     }
 
     const ctx = canvas.getContext('2d');
@@ -72,14 +80,35 @@ export default function EyeOverlay({
 
     const effectiveFeatures = features || featuresRef?.current || null;
 
-    const w = canvas.width;
-    const h = canvas.height;
+    // Canvas draw space = display pixels
+    const cW = canvas.width;   // display width in physical px
+    const cH = canvas.height;  // display height in physical px
+
+    // Video intrinsic dimensions
+    const vW = videoWidth  || 640;
+    const vH = videoHeight || 480;
+
+    // Replicate object-fit: cover transform so overlay aligns with what
+    // the <video> element actually renders (cover = fill, center, crop).
+    const scaleX = cW / vW;
+    const scaleY = cH / vH;
+    const coverScale = Math.max(scaleX, scaleY);
+    const offsetX = (cW - vW * coverScale) / 2;
+    const offsetY = (cH - vH * coverScale) / 2;
+
+    // Helper: convert normalized landmark → canvas pixel with cover-scale
+    const lx = (nx) => nx * vW * coverScale + offsetX;
+    const ly = (ny) => ny * vH * coverScale + offsetY;
+
+    // Keep w / h as aliases that helpers below use
+    const w = vW;
+    const h = vH;
 
     // Helper: draw single point
     const drawPoint = (pt, color, radius = 2.5) => {
       if (!pt || !Number.isFinite(pt.x) || !Number.isFinite(pt.y)) return;
       ctx.beginPath();
-      ctx.arc(pt.x * w, pt.y * h, radius, 0, Math.PI * 2);
+      ctx.arc(lx(pt.x), ly(pt.y), radius * coverScale, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
     };
@@ -87,19 +116,20 @@ export default function EyeOverlay({
     // Helper: draw crosshair
     const drawCrosshair = (pt, color, length = 7) => {
       if (!pt || !Number.isFinite(pt.x) || !Number.isFinite(pt.y)) return;
-      const x = pt.x * w;
-      const y = pt.y * h;
+      const x = lx(pt.x);
+      const y = ly(pt.y);
+      const len = length * coverScale;
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.2;
 
       ctx.beginPath();
-      ctx.moveTo(x - length, y);
-      ctx.lineTo(x + length, y);
+      ctx.moveTo(x - len, y);
+      ctx.lineTo(x + len, y);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(x, y - length);
-      ctx.lineTo(x, y + length);
+      ctx.moveTo(x, y - len);
+      ctx.lineTo(x, y + len);
       ctx.stroke();
     };
 
@@ -110,9 +140,9 @@ export default function EyeOverlay({
       if (validPts.length < 3) return;
 
       ctx.beginPath();
-      ctx.moveTo(validPts[0].x * w, validPts[0].y * h);
+      ctx.moveTo(lx(validPts[0].x), ly(validPts[0].y));
       for (let i = 1; i < validPts.length; i++) {
-        ctx.lineTo(validPts[i].x * w, validPts[i].y * h);
+        ctx.lineTo(lx(validPts[i].x), ly(validPts[i].y));
       }
       ctx.closePath();
 
@@ -139,14 +169,14 @@ export default function EyeOverlay({
     ctx.lineWidth = 1.0;
     if (lInner && lOuter) {
       ctx.beginPath();
-      ctx.moveTo(lInner.x * w, lInner.y * h);
-      ctx.lineTo(lOuter.x * w, lOuter.y * h);
+      ctx.moveTo(lx(lInner.x), ly(lInner.y));
+      ctx.lineTo(lx(lOuter.x), ly(lOuter.y));
       ctx.stroke();
     }
     if (rInner && rOuter) {
       ctx.beginPath();
-      ctx.moveTo(rInner.x * w, rInner.y * h);
-      ctx.lineTo(rOuter.x * w, rOuter.y * h);
+      ctx.moveTo(lx(rInner.x), ly(rInner.y));
+      ctx.lineTo(lx(rOuter.x), ly(rOuter.y));
       ctx.stroke();
     }
 
@@ -182,10 +212,10 @@ export default function EyeOverlay({
       const drawRoiBox = (roi, strokeColor, _label) => {
         if (!roi || !roi.isValid) return;
 
-        const cxPx = roi.cx * w;
-        const cyPx = roi.cy * h;
-        const roiWPx = roi.roiWidth * w;
-        const roiHPx = roi.roiHeight * h;
+        const cxPx = lx(roi.cx);
+        const cyPx = ly(roi.cy);
+        const roiWPx = roi.roiWidth * vW * coverScale;
+        const roiHPx = roi.roiHeight * vH * coverScale;
 
         ctx.save();
         ctx.translate(cxPx, cyPx);
@@ -238,11 +268,11 @@ export default function EyeOverlay({
     if (effectiveFeatures) {
       const drawGazeVector = (irisPt, gazeH, gazeV, color) => {
         if (!irisPt) return;
-        const startX = irisPt.x * w;
-        const startY = irisPt.y * h;
-        // Displacement vector relative to center 0.5
-        const vecX = (gazeH - 0.5) * 45;
-        const vecY = (gazeV - 0.5) * 45;
+        const startX = lx(irisPt.x);
+        const startY = ly(irisPt.y);
+        // Displacement vector relative to center 0.5 (scale with coverScale)
+        const vecX = (gazeH - 0.5) * 45 * coverScale;
+        const vecY = (gazeV - 0.5) * 45 * coverScale;
 
         ctx.strokeStyle = color;
         ctx.lineWidth = 1.8;
