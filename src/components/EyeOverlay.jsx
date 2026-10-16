@@ -133,16 +133,22 @@ export default function EyeOverlay({
       ctx.stroke();
     };
 
-    // Helper: draw closed contour
-    const drawContour = (indices, strokeColor, fillColor = null) => {
+    // Helper: draw smooth closed contour using quadratic bezier curves
+    const drawContour = (indices, strokeColor, fillColor = null, lineW = 0.8) => {
       if (!indices || indices.length === 0) return;
       const validPts = indices.map((idx) => landmarks[idx]).filter((p) => p && Number.isFinite(p.x));
       if (validPts.length < 3) return;
 
       ctx.beginPath();
-      ctx.moveTo(lx(validPts[0].x), ly(validPts[0].y));
-      for (let i = 1; i < validPts.length; i++) {
-        ctx.lineTo(lx(validPts[i].x), ly(validPts[i].y));
+      // Use midpoints for smooth bezier
+      const mid = (a, b) => ({ x: (lx(a.x) + lx(b.x)) / 2, y: (ly(a.y) + ly(b.y)) / 2 });
+      const first = mid(validPts[validPts.length - 1], validPts[0]);
+      ctx.moveTo(first.x, first.y);
+      for (let i = 0; i < validPts.length; i++) {
+        const curr = validPts[i];
+        const next = validPts[(i + 1) % validPts.length];
+        const m = mid(curr, next);
+        ctx.quadraticCurveTo(lx(curr.x), ly(curr.y), m.x, m.y);
       }
       ctx.closePath();
 
@@ -151,145 +157,116 @@ export default function EyeOverlay({
         ctx.fill();
       }
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = lineW;
       ctx.stroke();
     };
 
-    // 1. Draw 16-point Anatomical Eye Contours
-    drawContour(LEFT_EYE_CONTOUR, 'rgba(0, 171, 155, 0.75)', 'rgba(0, 171, 155, 0.08)');
-    drawContour(RIGHT_EYE_CONTOUR, 'rgba(38, 122, 120, 0.75)', 'rgba(38, 122, 120, 0.08)');
+    // 1. Draw 16-point Anatomical Eye Contours — very subtle smooth curves
+    drawContour(LEFT_EYE_CONTOUR,  'rgba(255, 255, 255, 0.18)', 'rgba(255, 255, 255, 0.03)', 0.7);
+    drawContour(RIGHT_EYE_CONTOUR, 'rgba(255, 255, 255, 0.18)', 'rgba(255, 255, 255, 0.03)', 0.7);
 
-    // 2. Draw Canthal Lines (Inner Canthus to Outer Canthus)
+    // 2. Canthal corners — tiny barely-visible dots only, no lines
     const lInner = landmarks[LANDMARKS.LEFT_INNER_CORNER];
     const lOuter = landmarks[LANDMARKS.LEFT_OUTER_CORNER];
     const rInner = landmarks[LANDMARKS.RIGHT_INNER_CORNER];
     const rOuter = landmarks[LANDMARKS.RIGHT_OUTER_CORNER];
+    [lInner, lOuter, rInner, rOuter].forEach((pt) => drawPoint(pt, 'rgba(255,255,255,0.25)', 1.0));
 
-    ctx.strokeStyle = 'rgba(242, 198, 109, 0.55)';
-    ctx.lineWidth = 1.0;
-    if (lInner && lOuter) {
-      ctx.beginPath();
-      ctx.moveTo(lx(lInner.x), ly(lInner.y));
-      ctx.lineTo(lx(lOuter.x), ly(lOuter.y));
-      ctx.stroke();
-    }
-    if (rInner && rOuter) {
-      ctx.beginPath();
-      ctx.moveTo(lx(rInner.x), ly(rInner.y));
-      ctx.lineTo(lx(rOuter.x), ly(rOuter.y));
-      ctx.stroke();
-    }
-
-    // Draw Canthal Points (Soft Amber)
-    const corners = [lInner, lOuter, rInner, rOuter];
-    corners.forEach((pt) => drawPoint(pt, '#F2C56D', 2.5));
-
-    // 3. Draw Iris Centers (473 Left, 468 Right) & Perimeter Rings
-    const leftIris = landmarks[LANDMARKS.LEFT_IRIS_CENTER];
+    // 3. Iris — soft glint dot only (no crosshair, no bold ring)
+    const leftIris  = landmarks[LANDMARKS.LEFT_IRIS_CENTER];
     const rightIris = landmarks[LANDMARKS.RIGHT_IRIS_CENTER];
 
-    if (leftIris) {
-      drawPoint(leftIris, '#00AB9B', 3.0);
-      drawCrosshair(leftIris, '#B8E8DF', 7);
-    }
-    if (rightIris) {
-      drawPoint(rightIris, '#267A78', 3.0);
-      drawCrosshair(rightIris, '#B8E8DF', 7);
-    }
+    const drawIrisGlint = (pt) => {
+      if (!pt) return;
+      const x = lx(pt.x);
+      const y = ly(pt.y);
+      const r = 2.5 * coverScale;
+      // Soft outer glow
+      const grd = ctx.createRadialGradient(x, y, 0, x, y, r * 2.5);
+      grd.addColorStop(0,   'rgba(255,255,255,0.30)');
+      grd.addColorStop(0.5, 'rgba(255,255,255,0.08)');
+      grd.addColorStop(1,   'rgba(255,255,255,0.00)');
+      ctx.beginPath();
+      ctx.arc(x, y, r * 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+      // Crisp center dot
+      ctx.beginPath();
+      ctx.arc(x, y, r * 0.55, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fill();
+    };
 
+    drawIrisGlint(leftIris);
+    drawIrisGlint(rightIris);
+
+    // Iris perimeter — very faint ring
     if (LANDMARKS.LEFT_IRIS_PERIMETER) {
-      drawContour(LANDMARKS.LEFT_IRIS_PERIMETER, 'rgba(0, 171, 155, 0.85)');
+      drawContour(LANDMARKS.LEFT_IRIS_PERIMETER,  'rgba(255, 255, 255, 0.12)', null, 0.6);
     }
     if (LANDMARKS.RIGHT_IRIS_PERIMETER) {
-      drawContour(LANDMARKS.RIGHT_IRIS_PERIMETER, 'rgba(38, 122, 120, 0.85)');
+      drawContour(LANDMARKS.RIGHT_IRIS_PERIMETER, 'rgba(255, 255, 255, 0.12)', null, 0.6);
     }
 
-    // 4. Draw Roll-Aligned Ocular ROI Boundary Boxes
+    // 4. ROI — only show tiny corner brackets, very faint (no dashed rect)
     if (showRoi) {
-      const leftRoi = calculateEyeRoi(landmarks, 'LEFT');
+      const leftRoi  = calculateEyeRoi(landmarks, 'LEFT');
       const rightRoi = calculateEyeRoi(landmarks, 'RIGHT');
 
-      const drawRoiBox = (roi, strokeColor, _label) => {
+      const drawRoiCorners = (roi, strokeColor) => {
         if (!roi || !roi.isValid) return;
 
-        const cxPx = lx(roi.cx);
-        const cyPx = ly(roi.cy);
-        const roiWPx = roi.roiWidth * vW * coverScale;
+        const cxPx  = lx(roi.cx);
+        const cyPx  = ly(roi.cy);
+        const roiWPx = roi.roiWidth  * vW * coverScale;
         const roiHPx = roi.roiHeight * vH * coverScale;
 
         ctx.save();
         ctx.translate(cxPx, cyPx);
         ctx.rotate(roi.rollAngleRad);
 
-        // Dashed rounded rectangle
+        const bLen = Math.min(6 * coverScale, roiWPx * 0.18);
         ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = 1.2;
-        ctx.setLineDash([4, 3]);
-        ctx.strokeRect(-roiWPx / 2.0, -roiHPx / 2.0, roiWPx, roiHPx);
-        ctx.setLineDash([]);
-
-        // Small corner brackets for visual polish
-        const bLen = Math.min(8, roiWPx * 0.15);
-        ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = 2.0;
-        // Top-left
-        ctx.beginPath();
-        ctx.moveTo(-roiWPx / 2.0, -roiHPx / 2.0 + bLen);
-        ctx.lineTo(-roiWPx / 2.0, -roiHPx / 2.0);
-        ctx.lineTo(-roiWPx / 2.0 + bLen, -roiHPx / 2.0);
-        ctx.stroke();
-        // Top-right
-        ctx.beginPath();
-        ctx.moveTo(roiWPx / 2.0 - bLen, -roiHPx / 2.0);
-        ctx.lineTo(roiWPx / 2.0, -roiHPx / 2.0);
-        ctx.lineTo(roiWPx / 2.0, -roiHPx / 2.0 + bLen);
-        ctx.stroke();
-        // Bottom-left
-        ctx.beginPath();
-        ctx.moveTo(-roiWPx / 2.0, roiHPx / 2.0 - bLen);
-        ctx.lineTo(-roiWPx / 2.0, roiHPx / 2.0);
-        ctx.lineTo(-roiWPx / 2.0 + bLen, roiHPx / 2.0);
-        ctx.stroke();
-        // Bottom-right
-        ctx.beginPath();
-        ctx.moveTo(roiWPx / 2.0 - bLen, roiHPx / 2.0);
-        ctx.lineTo(roiWPx / 2.0, roiHPx / 2.0);
-        ctx.lineTo(roiWPx / 2.0, roiHPx / 2.0 - bLen);
-        ctx.stroke();
+        ctx.lineWidth = 1.0;
+        const hW = roiWPx / 2;
+        const hH = roiHPx / 2;
+        // Four corner L-brackets only
+        [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => {
+          ctx.beginPath();
+          ctx.moveTo(sx * hW, sy * hH + sy * -bLen);
+          ctx.lineTo(sx * hW, sy * hH);
+          ctx.lineTo(sx * hW + sx * -bLen, sy * hH);
+          ctx.stroke();
+        });
 
         ctx.restore();
       };
 
-      drawRoiBox(leftRoi, 'rgba(0, 171, 155, 0.85)', 'L-ROI');
-      drawRoiBox(rightRoi, 'rgba(38, 122, 120, 0.85)', 'R-ROI');
+      drawRoiCorners(leftRoi,  'rgba(255, 255, 255, 0.25)');
+      drawRoiCorners(rightRoi, 'rgba(255, 255, 255, 0.25)');
     }
 
-    // 5. Draw Gaze Projection Vector
+    // 5. Gaze Projection Vector — very subtle, near-invisible
     if (effectiveFeatures) {
       const drawGazeVector = (irisPt, gazeH, gazeV, color) => {
         if (!irisPt) return;
         const startX = lx(irisPt.x);
         const startY = ly(irisPt.y);
-        // Displacement vector relative to center 0.5 (scale with coverScale)
-        const vecX = (gazeH - 0.5) * 45 * coverScale;
-        const vecY = (gazeV - 0.5) * 45 * coverScale;
+        const vecX = (gazeH - 0.5) * 30 * coverScale;
+        const vecY = (gazeV - 0.5) * 30 * coverScale;
 
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1.8;
+        ctx.lineWidth = 0.8;
+        ctx.globalAlpha = 0.25;
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(startX + vecX, startY + vecY);
         ctx.stroke();
-
-        // Arrow head
-        ctx.beginPath();
-        ctx.arc(startX + vecX, startY + vecY, 2.0, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
+        ctx.globalAlpha = 1.0;
       };
 
-      if (leftIris) drawGazeVector(leftIris, effectiveFeatures.leftHorizontalRatio, effectiveFeatures.leftVerticalRatio, '#00AB9B');
-      if (rightIris) drawGazeVector(rightIris, effectiveFeatures.rightHorizontalRatio, effectiveFeatures.rightVerticalRatio, '#267A78');
+      if (leftIris)  drawGazeVector(leftIris,  effectiveFeatures.leftHorizontalRatio,  effectiveFeatures.leftVerticalRatio,  'rgba(255,255,255,0.6)');
+      if (rightIris) drawGazeVector(rightIris, effectiveFeatures.rightHorizontalRatio, effectiveFeatures.rightVerticalRatio, 'rgba(255,255,255,0.6)');
     }
   }, [landmarks, videoWidth, videoHeight, isTrackingValid, features, featuresRef, showRoi]);
 
