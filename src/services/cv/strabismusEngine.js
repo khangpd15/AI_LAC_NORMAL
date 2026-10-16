@@ -307,6 +307,89 @@ export function selectScleraSamples(candidates, irisColor) {
   return selected;
 }
 
+// Keep naturally narrow eyes active. Distinct close/reopen thresholds prevent
+// noisy lid detections from toggling between the original and simulated eye.
+export function updateSimulationBlink(frame, previous) {
+  const ratio = frame.palpebralHeight / Math.max(1, frame.canthalWidth);
+  const reference = previous?.openRatio ?? Math.max(0.12, ratio);
+  const closeAt = Math.max(0.065, Math.min(0.11, reference * 0.55));
+  const reopenAt = Math.max(closeAt + 0.025, Math.min(0.16, reference * 0.75));
+  const closed = frame.canthalWidth < 4 || (previous?.closed ? ratio < reopenAt : ratio < closeAt);
+  return { closed, openRatio: closed ? reference : Math.max(ratio, reference * 0.995) };
+}
+
+/** Continuous inverse warp for mobile: no donor selection or painted patches.
+ * Every output pixel comes from this frame, inside the same eyelid contour.
+ */
+export function renderContinuousEye(ctx, frame, shift, options = {}) {
+  if (!frame || frame.isBlinking) return;
+  const { pIris, rIris, contourPts } = frame;
+  const magnitude = Math.hypot(shift.x, shift.y);
+  if (!Number.isFinite(magnitude) || magnitude < 0.1 || rIris < 1) {
+    if (options.showHirschberg) renderHirschbergLightReflex(ctx, frame, shift, pIris.x, pIris.y);
+    return;
+  }
+  const direction = { x: shift.x / magnitude, y: shift.y / magnitude };
+  const normal = { x: -direction.y, y: direction.x };
+  const local = point => ({ x: (point.x - pIris.x) * direction.x + (point.y - pIris.y) * direction.y, y: (point.x - pIris.x) * normal.x + (point.y - pIris.y) * normal.y });
+  const polygon = contourPts.map(local);
+  const middle = eyeScanlineBounds(polygon, 0);
+  if (!middle) return;
+  const displacement = limitEyeDisplacement(magnitude, Math.max(0, middle[1] - rIris * 0.3), frame.canthalWidth * 0.1);
+  if (displacement < 0.1) return;
+  const minX = Math.max(0, Math.floor(Math.min(...contourPts.map(point => point.x)) - 1));
+  const minY = Math.max(0, Math.floor(Math.min(...contourPts.map(point => point.y)) - 1));
+  const maxX = Math.min(ctx.canvas.width, Math.ceil(Math.max(...contourPts.map(point => point.x)) + 1));
+  const maxY = Math.min(ctx.canvas.height, Math.ceil(Math.max(...contourPts.map(point => point.y)) + 1));
+  const width = maxX - minX, height = maxY - minY;
+  if (width < 3 || height < 3) return;
+  const image = ctx.getImageData(minX, minY, width, height);
+  const original = new Uint8ClampedArray(image.data);
+  const smooth = value => { const t = Math.max(0, Math.min(1, value)); return t * t * (3 - 2 * t); };
+  for (let row = 0; row < height; row++) {
+    for (let col = 0; col < width; col++) {
+      const point = local({ x: minX + col, y: minY + row });
+      const bounds = eyeScanlineBounds(polygon, point.y);
+      if (!bounds || point.x <= bounds[0] || point.x >= bounds[1]) continue;
+      const left = bounds[0], right = bounds[1];
+      const sourceLeft = Math.max(left, -rIris), sourceRight = Math.min(right, rIris);
+      if (sourceRight - sourceLeft < 0.5) continue;
+      const targetLeft = sourceLeft + displacement, targetRight = sourceRight + displacement;
+      let sourceX;
+      if (point.x < targetLeft) {
+        const t = smooth((point.x - left) / Math.max(0.001, targetLeft - left));
+        sourceX = left + (sourceLeft - left) * t;
+      } else if (point.x <= targetRight) {
+        sourceX = point.x - displacement;
+      } else {
+        const t = smooth((point.x - targetRight) / Math.max(0.001, right - targetRight));
+        sourceX = sourceRight + (right - sourceRight) * t;
+      }
+      const px = Math.max(0, Math.min(width - 1.001, pIris.x + sourceX * direction.x + point.y * normal.x - minX));
+      const py = Math.max(0, Math.min(height - 1.001, pIris.y + sourceX * direction.y + point.y * normal.y - minY));
+      const ix = Math.floor(px), iy = Math.floor(py), fx = px - ix, fy = py - iy;
+      // Feather at the actual lids and corners rather than moving their edges.
+      let lidDistance = Infinity;
+      for (let i = 0; i < polygon.length; i++) {
+        const a = polygon[i], b = polygon[(i + 1) % polygon.length];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / Math.max(0.0001, dx * dx + dy * dy)));
+        lidDistance = Math.min(lidDistance, Math.hypot(point.x - a.x - t * dx, point.y - a.y - t * dy));
+      }
+      const blend = smooth(lidDistance / Math.max(1, rIris * 0.18));
+      const index = (row * width + col) * 4;
+      for (let channel = 0; channel < 3; channel++) {
+        const sample = (x, y) => original[(y * width + x) * 4 + channel];
+        const color = sample(ix, iy) * (1 - fx) * (1 - fy) + sample(ix + 1, iy) * fx * (1 - fy)
+          + sample(ix, iy + 1) * (1 - fx) * fy + sample(ix + 1, iy + 1) * fx * fy;
+        image.data[index + channel] = original[index + channel] + (color - original[index + channel]) * blend;
+      }
+    }
+  }
+  ctx.putImageData(image, minX, minY);
+  if (options.showHirschberg) renderHirschbergLightReflex(ctx, frame, shift, pIris.x + direction.x * displacement, pIris.y + direction.y * displacement);
+}
+
 /**
  * Work on the small eye ROI only. Keep camera pixels around the lids and
  * corners fixed while resampling the original iris AND sclera together.
@@ -656,6 +739,7 @@ export function processStrabismusFrame({
   videoElement,
   landmarks,
   simulationConfig,
+  trackingState,
 }) {
   if (!canvas || !videoElement) return;
 
@@ -680,6 +764,13 @@ export function processStrabismusFrame({
 
   if (!rightFrame || !leftFrame) {
     return { hasFace: false, rightEye: null, leftEye: null };
+  }
+  if (simulationConfig.renderMode === 'continuous' && trackingState) {
+    for (const frame of [rightFrame, leftFrame]) {
+      const state = updateSimulationBlink(frame, trackingState[frame.eyeSide]);
+      trackingState[frame.eyeSide] = state;
+      frame.isBlinking = state.closed;
+    }
   }
 
   // 3. Determine which eye is affected
@@ -710,11 +801,12 @@ export function processStrabismusFrame({
   const leftShift = isLeftAffected ? calculateStrabismusShift(leftFrame, simulationConfig) : zeroShift;
 
   // 5. Render ocular warps
+  const renderEye = simulationConfig.renderMode === 'continuous' ? renderContinuousEye : renderSimulatedEye;
   if (isRightAffected) {
-    renderSimulatedEye(ctx, rightFrame, rightShift, simulationConfig);
+    renderEye(ctx, rightFrame, rightShift, simulationConfig);
   }
   if (isLeftAffected) {
-    renderSimulatedEye(ctx, leftFrame, leftShift, simulationConfig);
+    renderEye(ctx, leftFrame, leftShift, simulationConfig);
   }
 
   // If Hirschberg enabled on fixing eyes too, draw penlight on fixing eye

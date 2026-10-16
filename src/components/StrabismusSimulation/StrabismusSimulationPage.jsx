@@ -43,6 +43,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
   const trackedFrameRef = useRef(null);
   const frameVersionRef = useRef(0);
   const submittedVideoTimeRef = useRef(-1);
+  const eyeTrackingStateRef = useRef({});
   const [mobilePipeline] = useState(() => navigator.maxTouchPoints > 0 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
 
   // Camera & Tracking states
@@ -134,6 +135,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
         trackedFrameRef.current = document.createElement('canvas');
         frameVersionRef.current = 0;
         submittedVideoTimeRef.current = -1;
+        eyeTrackingStateRef.current = {};
         meshBusyRef.current = false;
         setHasFace(false);
 
@@ -170,6 +172,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
             // Hold the last matched image briefly across a missed detection.
             if (landmarksRef.current && now - landmarkTimeRef.current < (mobilePipeline ? 350 : 120)) return;
             landmarksRef.current = null;
+            eyeTrackingStateRef.current = {};
             setHasFace(false);
           }
           const source = inferenceFrameRef.current;
@@ -280,7 +283,8 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
           canvas,
           videoElement: displaySource,
           landmarks: landmarksRef.current,
-          simulationConfig: effectiveConfig,
+          simulationConfig: { ...effectiveConfig, renderMode: mobilePipeline ? 'continuous' : 'texture' },
+          trackingState: eyeTrackingStateRef.current,
         });
 
         // Compute FPS

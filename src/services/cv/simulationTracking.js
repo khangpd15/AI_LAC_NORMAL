@@ -19,7 +19,7 @@ export function stabilizeSimulationLandmarks(next, previous, deltaMs = 1000 / 30
     const aperture = points => Math.hypot(points[top].x - points[bottom].x, points[top].y - points[bottom].y);
     if (width < 0.001 || priorWidth < 0.001 || width / priorWidth < 0.7 || width / priorWidth > 1.4) continue;
     // Do not blur an actual blink or retain iris texture over closed eyelids.
-    if (aperture(next) / width < 0.2 || aperture(previous) / priorWidth < 0.2) continue;
+    if (aperture(next) / width < 0.1 || aperture(previous) / priorWidth < 0.1) continue;
     const denominator = priorWidth * priorWidth;
     const a = (before.x * after.x + before.y * after.y) / denominator;
     const b = (before.x * after.y - before.y * after.x) / denominator;

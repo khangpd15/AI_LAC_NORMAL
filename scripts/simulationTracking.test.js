@@ -28,6 +28,19 @@ test('small iris noise is reduced without mutating camera landmarks', () => {
   assert.equal(next[468].x, before[468].x + 0.004);
 });
 
+test('naturally narrow open eyes still receive iris smoothing', () => {
+  const before = face();
+  for (const side of ['LEFT', 'RIGHT']) {
+    before[LANDMARKS[`${side}_TOP_LID`]].y = 0.4925;
+    before[LANDMARKS[`${side}_BOTTOM_LID`]].y = 0.5075;
+  }
+  const next = before.map(point => ({ ...point }));
+  next[468].x += 0.004;
+  const result = stabilizeSimulationLandmarks(next, before, 1000 / 30, { mobile: true });
+  assert.ok(result[468].x > before[468].x);
+  assert.ok(result[468].x < before[468].x + 0.002);
+});
+
 test('head translation, rotation and scale follow immediately instead of lagging', () => {
   const before = face();
   const transform = point => ({ x: 0.1 + point.x * 1.1 - point.y * 0.2, y: -0.1 + point.x * 0.2 + point.y * 1.1 });
