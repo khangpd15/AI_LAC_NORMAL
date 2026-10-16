@@ -10,6 +10,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { ListeningProvider } from './components/audio/ListeningExperience';
 import './redesign.css';
 import './sitePhotos.css';
+import './mobile.css';
 
 export default function App() {
   // Navigation views: 'home' (Trang chủ) | 'experience' (Trải nghiệm góc nhìn) | 'simulation' (Mô phỏng lác lé) | 'screening' (Sàng lọc hai mắt) | 'about' (Giới thiệu)

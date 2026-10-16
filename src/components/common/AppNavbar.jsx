@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { AudioIcon } from '../audio/ListeningExperience';
 import {
   IconNavHome,
@@ -28,6 +28,9 @@ export default function AppNavbar({
   onSelectTab,
   onNavigateHome,
 }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const menuId = useId();
+  const mobileMenuRef = useRef(null);
   const [dark, setDark] = useState(() => {
     try { return (localStorage.getItem('remicare-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark'; } catch { return false; }
   });
@@ -36,6 +39,7 @@ export default function AppNavbar({
     try { localStorage.setItem('remicare-theme', dark ? 'dark' : 'light'); } catch { /* Storage can be unavailable in private mode. */ }
   }, [dark]);
   const handleBrandClick = () => {
+    setMobileOpen(false);
     if (activeTab === 'home') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (onNavigateHome) {
@@ -46,6 +50,7 @@ export default function AppNavbar({
   };
 
   const handleTabClick = (tabKey) => {
+    setMobileOpen(false);
     if (activeTab === tabKey) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
@@ -58,7 +63,7 @@ export default function AppNavbar({
   return (
     <>
       <SvgGradients />
-      <header className="remicare-unified-navbar" role="banner" aria-label="Thanh điều hướng chính RemiCare AI">
+      <header className="remicare-unified-navbar" data-mobile-open={mobileOpen} onKeyDown={event => { if (event.key === 'Escape' && mobileOpen) { setMobileOpen(false); mobileMenuRef.current?.focus(); } }} role="banner" aria-label="Thanh điều hướng chính RemiCare AI">
         <div className="unified-navbar-inner">
           {/* Brand Logo & Title */}
           <div
@@ -82,7 +87,7 @@ export default function AppNavbar({
           </div>
 
           {/* 5 Navigation Tabs (Unified Across All Views) */}
-          <nav className="unified-navbar-nav" aria-label="Các trang chính">
+          <nav id={menuId} className="unified-navbar-nav" aria-label="Các trang chính">
             <ul className="unified-navbar-items">
               <li>
                 <button
@@ -167,6 +172,9 @@ export default function AppNavbar({
             </ul>
           </nav>
           <button className="care-theme-toggle" onClick={() => setDark((value) => !value)} aria-label={dark ? 'Bật giao diện sáng' : 'Bật giao diện tối'} aria-pressed={dark}><AudioIcon name={dark ? 'sun' : 'moon'} /></button>
+          <button ref={mobileMenuRef} type="button" className="mobile-menu-toggle" aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu điều hướng'} aria-expanded={mobileOpen} aria-controls={menuId} onClick={() => setMobileOpen(value => !value)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d={mobileOpen ? 'M6 6L18 18M18 6L6 18' : 'M4 6H20M4 12H20M4 18H20'} /></svg>
+          </button>
         </div>
       </header>
     </>

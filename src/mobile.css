@@ -1,0 +1,150 @@
+/* Final phone and tablet rules shared across the five views. Desktop stays intact. */
+.mobile-menu-toggle { display: none; }
+@media (max-width: 1024px) and (min-width: 721px) {
+  .home-listening-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px), (max-height: 500px) and (orientation: landscape) and (max-width: 960px) {
+  html { scroll-padding-top: 88px; }
+  .home-main-scrollable, .about-main-container { padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
+  .home-main-scrollable > *, .about-main-container > *, .app-main > * { min-width: 0; max-width: 100%; }
+  .remicare-unified-navbar .unified-navbar-inner { gap: 8px; min-height: 68px; padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left)); }
+  .unified-navbar-brand { min-width: 0; flex: 1; gap: 8px; }
+  .unified-brand-title { font-size: 18px; white-space: nowrap; }
+  .unified-brand-logo-img { width: 36px; height: 36px; }
+  .unified-brand-subtitle { display: none; }
+  .care-theme-toggle { order: 1; margin-left: 0; }
+  .mobile-menu-toggle { order: 2; display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border: 1px solid var(--border-subtle); border-radius: 50%; color: var(--text-heading); background: var(--bg-surface); }
+  .remicare-unified-navbar .unified-navbar-nav { display: none; order: 3; width: 100%; flex-basis: 100%; max-height: calc(100dvh - 100px); overflow-y: auto; }
+  .remicare-unified-navbar[data-mobile-open='true'] .unified-navbar-nav { display: block; }
+  .unified-navbar-nav .unified-navbar-items { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; width: 100%; gap: 4px; padding: 8px 0 0; overflow: visible; }
+  .unified-navbar-items .unified-nav-btn { width: 100%; min-height: 48px; justify-content: flex-start; padding: 12px 16px; gap: 12px; font-size: 14px; border-radius: 12px; }
+  .unified-nav-btn .unified-nav-icon { display: inline-flex; width: 22px; flex-shrink: 0; }
+
+  .care-hero { padding-block: 28px; gap: 24px; }
+  .care-hero h1 { font-size: clamp(30px, 8.8vw, 44px); letter-spacing: -1.2px; line-height: 1.22; }
+  .care-hero-copy > p { font-size: 16px; line-height: 1.7; }
+  .care-hero-art { min-height: 0; aspect-ratio: 6 / 5; border-radius: 20px; }
+  .care-art-caption { left: 12px; right: 12px; bottom: 12px; padding: 12px; gap: 10px; }
+  .care-art-caption strong { font-size: 14px; }
+  .care-art-caption div > span { font-size: 12px; }
+  .care-hero-note { align-items: flex-start; }
+
+  /* Let the longest slide reserve its own height instead of covering controls. */
+  .home-campaign { min-height: 0; margin-top: 8px; border-radius: 20px; }
+  .campaign-scenes { position: relative; display: grid; height: auto; }
+  .campaign-scene { position: relative; grid-area: 1 / 1; height: auto; }
+  .campaign-scene > img { object-position: 75% 35% !important; }
+  .campaign-scene::after { background: linear-gradient(180deg, #082e3128 0%, #082e3180 24%, #082e31ed 57%, #082e31 100%); }
+  .campaign-copy { position: relative; inset: auto; max-width: none; padding: 172px 20px 0; }
+  .campaign-copy h2 { font-size: clamp(24px, 6.4vw, 32px); line-height: 1.25; letter-spacing: -.6px; margin-block: 12px; }
+  .campaign-copy p { font-size: 14px; line-height: 1.7; max-width: none; }
+  .campaign-eyebrow { font-size: 9px; letter-spacing: 1px; }
+  .campaign-topline { position: absolute; inset: 0 0 auto; padding: 20px; font-size: 9px; letter-spacing: 1px; }
+  .campaign-bottom { position: relative; inset: auto; padding: 20px; gap: 12px; }
+  .campaign-cta { width: 100%; padding: 12px 16px; font-size: 13px; }
+  .campaign-pagination { margin-left: auto; }
+
+  .listening-section-heading h2 { font-size: 26px; line-height: 1.3; }
+  .listening-section-heading > p { font-size: 14px; margin-top: 10px; }
+  .listening-filters { gap: 6px; margin-block: 20px; }
+  .listening-filters button { min-height: 44px; font-size: 12px; padding: 8px 13px; }
+  .home-listening-grid { gap: 20px; }
+  .home-listening-grid .listening-card h3 { min-height: 0; }
+  .home-listening-grid .listening-card-body > p:not(.listen-status) { min-height: 0; font-size: 14px; }
+  .listening-card .listen-controls { column-gap: 12px; }
+  .listen-speed select { font-size: 16px; }
+  .listening-mini { bottom: max(8px, env(safe-area-inset-bottom)); }
+  .listening-mini .mini-track-info { padding-right: 40px; }
+  .listening-mini .listen-controls { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; }
+  .listening-mini .listen-timeline { grid-row: 2; grid-column: 1 / -1; width: 100%; }
+  .listening-mini .listen-speed { grid-row: 1; grid-column: 2; }
+  body:has(.listening-mini) :is(.home-main-scrollable, .app-main, .about-main-container, .sim-main-stage) { padding-bottom: calc(190px + env(safe-area-inset-bottom)); }
+  .fixed-audio-guide-dock { right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); }
+  .fixed-audio-guide-dock .btn-fixed-floating-audio { width: 52px; height: 52px; min-height: 52px; }
+  .floating-audio-tooltip { display: none; }
+
+  .story-container-card { padding: 20px 16px; border-radius: 20px; }
+  .story-header-row { flex-direction: column; align-items: stretch; gap: 16px; }
+  .story-main-title { font-size: 25px; line-height: 1.3; }
+  .story-short-sub { font-size: 14px; }
+  .btn-story-audio-play { align-self: flex-start; min-height: 44px; font-size: 13px; }
+  .story-toggle-doors { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .btn-story-door { padding: 14px; min-width: 0; }
+  .door-tab-text { min-width: 0; }
+  .door-tab-text strong { font-size: 16px; }
+  .door-tab-text small { font-size: 13px; line-height: 1.5; }
+  .story-img-wrapper { height: clamp(260px, 80vw, 380px); }
+  .visual-badge-overlay { left: 10px; right: 10px; top: 10px; }
+  .visual-badge-overlay > span { max-width: 100%; padding: 8px 10px; gap: 6px; font-size: 11px; border-radius: 12px; }
+  .visual-badge-overlay svg { flex-shrink: 0; }
+  .story-direct-cta { left: 12px; right: 12px; bottom: 16px; transform: none; width: auto; max-width: none; }
+  .btn-try-experience-now { width: 100%; min-height: 48px; padding: 12px; font-size: 14px; }
+  .home-parents-visual-section, .home-story-visual-section { padding-block: 28px; }
+  .parent-three-cards-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .parent-touch-card { padding: 20px; }
+  .trust-pill-box { padding: 20px 16px; gap: 12px; }
+  .trust-info-block { min-width: 0; }
+  .trust-main-text { font-size: 17px; }
+  .trust-sub-text { font-size: 14px; line-height: 1.7; }
+
+  .about-main-container { width: 100%; }
+  .app-main input:not([type='range']):not([type='checkbox']):not([type='radio']), .app-main select, .app-main textarea { font-size: 16px; max-width: 100%; }
+  .about-content-block { padding: 20px 16px; }
+  .about-hero-title { font-size: clamp(28px, 7.6vw, 36px); letter-spacing: -.8px; }
+  .about-hero-subtitle { font-size: 16px; }
+  .about-hero-stats-row, .about-tech-grid, .about-audience-grid, .about-ethics-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .about-cta-section { padding: 28px 20px; }
+  .about-cta-actions > button { white-space: normal; font-size: 15px; padding: 14px; }
+  .modal-sheet-card, .sim-modal-card { max-width: 100%; max-height: calc(100dvh - 24px); }
+  .modal-sheet-header, .sim-modal-header { padding: 16px; gap: 12px; }
+  .modal-sheet-body, .sim-modal-body { padding: 16px; }
+  .sim-modal-footer { gap: 12px; flex-wrap: wrap; }
+  .remicare-footer-inner { padding-inline: max(20px, env(safe-area-inset-left)) max(20px, env(safe-area-inset-right)); padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+  .remicare-footer-dialog { max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+
+  .strabismus-sim-container .sim-main-stage { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .strabismus-sim-container .sim-viewport-frame { min-height: 300px; height: auto; aspect-ratio: 3 / 4; max-height: 65svh; position: relative; top: auto; }
+  .strabismus-sim-container .sim-screen-overlays { padding: 10px; }
+  .strabismus-sim-container .sim-overlay-header { padding: 0; }
+  .strabismus-sim-container .btn-overlay-chip { min-height: 44px; font-size: 10px; padding: 8px; }
+  .strabismus-sim-container .sim-overlay-tools-top { display: flex; width: 100%; gap: 5px; }
+  .strabismus-sim-container .sim-overlay-tools-top > button { flex: 1; }
+  .strabismus-sim-container .sim-overlay-tools-bottom { padding: 0; gap: 8px; }
+  .strabismus-sim-container .btn-hold-compare, .strabismus-sim-container .btn-snapshot-action { min-height: 48px; padding: 10px; font-size: 11px; }
+  .strabismus-sim-container .sim-camera-guidance { bottom: 70px; font-size: 10px; }
+  .strabismus-sim-container .sim-step .btn-eye-chip { min-height: 44px; }
+  .strabismus-sim-container .nav-left { flex: 1 1 100%; gap: 12px; }
+  .strabismus-sim-container .nav-right-actions { width: 100%; justify-content: flex-end; }
+  .strabismus-sim-container .sim-tool-btn { min-width: 44px; min-height: 44px; }
+  .strabismus-sim-container .sim-listening-panel > summary { min-height: 44px; padding-block: 12px; }
+  .sim-page-intro h2 { font-size: 24px; }
+  .sim-deck-title { flex-wrap: wrap; }
+
+  /* Flow layout reserves room for both narration and navigation at any height. */
+  .experience-fullscreen-container { height: 100dvh; }
+  .experience-fullscreen-container .fullscreen-hud-layer { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; padding-top: calc(54px + env(safe-area-inset-top)); }
+  .experience-fullscreen-container .hud-top-bar { position: relative; inset: auto; padding: 0 12px 12px; align-items: flex-start; }
+  .experience-fullscreen-container .voice-hud-indicator { max-width: calc(100% - 48px); }
+  .experience-fullscreen-container .btn-voice-hud { min-width: 44px; min-height: 44px; }
+  .experience-fullscreen-container .stage-transcript { max-height: 22dvh; overflow-y: auto; font-size: 13px; }
+  .experience-fullscreen-container .hud-middle-zone { position: relative; inset: auto; min-height: 0; height: 100%; padding: 8px 12px; overscroll-behavior: contain; }
+  .experience-fullscreen-container .hud-question-card { max-height: none; flex-shrink: 0; overflow: visible; }
+  .experience-fullscreen-container .hud-bottom-stage-bar { position: relative; inset: auto; flex-direction: column; align-items: stretch; padding: 12px 12px max(12px, env(safe-area-inset-bottom)); }
+  .experience-fullscreen-container .stage-caption-box { flex: auto; }
+  .experience-fullscreen-container .stage-nav-two-buttons { width: 100%; }
+  .experience-fullscreen-container .stage-prompt-text { display: block; max-height: none; overflow: visible; }
+  .experience-fullscreen-container .stage7-instruction-sub, .experience-fullscreen-container .stage7-sim-desc, .experience-fullscreen-container .conclusion-subtext { max-height: none; overflow: visible; }
+  .experience-fullscreen-container .btn-fullscreen-exit { top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); min-height: 44px; }
+  .experience-fullscreen-container .fullscreen-welcome-backdrop { padding: calc(64px + env(safe-area-inset-top)) 12px max(24px, env(safe-area-inset-bottom)); }
+  .experience-fullscreen-container .welcome-cinematic-card { padding: 16px; }
+  .experience-fullscreen-container .welcome-headline { font-size: 26px; }
+}
+@media (max-height: 500px) and (orientation: landscape) and (max-width: 960px) {
+  .experience-fullscreen-container .fullscreen-hud-layer { padding-top: 48px; }
+  .experience-fullscreen-container .hud-top-bar { padding-bottom: 4px; }
+  .experience-fullscreen-container .hud-bottom-stage-bar { padding-block: 8px; flex-direction: row; align-items: center; }
+  .experience-fullscreen-container .stage-caption-box { flex: 1; }
+  .experience-fullscreen-container .stage-nav-two-buttons { width: auto; min-width: 240px; }
+  .experience-fullscreen-container .stage-prompt-text { display: none; }
+  .strabismus-sim-container .sim-viewport-frame { min-height: 280px; aspect-ratio: 16 / 9; max-height: none; }
+}
