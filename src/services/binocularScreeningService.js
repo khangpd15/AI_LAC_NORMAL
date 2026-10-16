@@ -20,6 +20,7 @@ import {
   OVERALL_SCREENING_STATUS,
 } from '../constants/binocularScreeningConfig.js';
 import { beginScreeningSample, generateSampleId } from './screeningDatasetService.js';
+import { normalizeHirschbergResult } from './hirschbergResultService.js';
 import { validateScreeningData } from './screeningQualityGate.js';
 
 // In-memory active screening sessions store (Client-side only)
@@ -401,7 +402,8 @@ export function evaluateFinalScreening(session) {
 
     // Supporting Computational Evidence: AI Deep Learning Image Analysis
     const aiStatus = aiImageEvidence?.status; // 'NORMAL' | 'SUSPICIOUS' | 'INCONCLUSIVE' | null
-    const isAiSuspicious = aiStatus === 'SUSPICIOUS';
+    const imageView = normalizeHirschbergResult(aiImageEvidence);
+    const isAiSuspicious = aiStatus === 'SUSPICIOUS' || ['ESOTROPIA', 'EXOTROPIA'].includes(imageView.proposal);
 
     // RULE 2: Cover Test Suspicious (Strongest clinical signal)
     if (isCoverSuspicious) {

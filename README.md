@@ -1,3 +1,5 @@
+> Cập nhật giao diện và API Hirschberg: [hướng dẫn tích hợp](docs/FRONTEND_HIRSCHBERG_INTEGRATION.md).
+
 # RemiCare Strabismus Screening
 
 > **Sàng lọc lác mắt (Esotropia / Exotropia) ứng dụng Trí tuệ Nhân tạo & Thị giác Máy tính.**
@@ -42,7 +44,7 @@ B5 — KẾT QUẢ TỔNG HỢP (COMBINED SCREENING RESULT)
 1. **Hirschberg Screening (B1 - B2)**:
    - Sàng lọc độ lệch phản xạ ánh sáng giác mạc đối xứng trục nhãn cầu.
    - Quality Gate tự động loại bỏ ảnh mờ, nhắm mắt, nghiêng đầu trước khi gửi backend.
-   - Phân tích hình thái hai mắt bằng mô hình AI Deep Learning (73 đặc trưng hình học + ResNet-18).
+   - Phân tích hình thái hai mắt bằng mô hình AI Deep Learning (ResNet50 + đặc trưng hình học Hirschberg + nhánh khe mi).
 
 2. **Cover Test Realtime Engine (B3 - B4)**:
    - Kiểm tra khoảng cách mục tiêu 30–50 cm thời gian thực dựa trên khoảng cách gian đồng tử (IPD).

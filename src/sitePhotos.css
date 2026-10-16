@@ -1,0 +1,58 @@
+/* Shared photo treatment. Preserve layout even when an asset cannot load. */
+.site-photo {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: var(--photo-ratio, 16 / 10);
+  overflow: hidden;
+  background: #E1F4F0;
+  isolation: isolate;
+}
+.site-photo img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--photo-position, center);
+}
+.site-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(0, 171, 155, .12), rgba(0, 171, 155, .04));
+}
+.site-photo[data-missing='true']::after { display: none; }
+.guide-cover { display: block; position: relative; aspect-ratio: 16 / 10; background: #E1F4F0; }
+.guide-cover > .site-photo { height: 100%; aspect-ratio: 16 / 10; }
+.listening-card-compact > .guide-cover { aspect-ratio: auto; }
+.listening-mini > .guide-cover { aspect-ratio: 1; }
+.care-hero-photograph { aspect-ratio: 6 / 5; min-height: 0; background: #E1F4F0; }
+.care-hero-photograph > .site-photo { position: absolute; inset: 0; height: 100%; }
+.care-hero-photograph > .site-photo::after {
+  background: linear-gradient(180deg, rgba(0, 35, 40, .8), transparent 28%, transparent 65%, rgba(0, 35, 40, .24)), linear-gradient(135deg, rgba(0, 171, 155, .12), rgba(0, 171, 155, .04));
+}
+.care-hero-photograph .care-art-topline { position: relative; z-index: 1; color: #fff; }
+.care-hero-photograph .care-art-caption { background: rgba(0, 35, 40, .92); color: #fff; }
+.care-hero-photograph .care-art-spark { color: #B8E8DF; }
+.home-final-cta-visual { position: relative; isolation: isolate; overflow: hidden; width: 100%; max-width: none; margin: 48px auto; padding: 0; background: #E1F4F0; }
+.home-final-cta-visual > .site-photo { position: absolute; inset: 0; height: 100%; }
+.home-final-cta-visual > .site-photo::after {
+  background: linear-gradient(90deg, rgba(0, 35, 40, .86), rgba(0, 35, 40, .72)), linear-gradient(135deg, rgba(0, 171, 155, .12), rgba(0, 171, 155, .04));
+}
+.home-final-cta-visual .final-box-inner { position: relative; z-index: 1; padding: 64px 32px; }
+.home-final-cta-visual .final-title-text { color: #fff; max-width: 23ch; margin: 0 auto 32px; }
+.home-final-cta-visual .btn-final-huge-action { background: #fff; color: #00545D; font-size: 16px; min-height: 56px; max-width: 100%; padding: 16px 24px; border: 0; }
+.home-final-cta-visual .arrow-chip { width: 32px; height: 32px; background: #E1F4F0; flex-shrink: 0; }
+/* Retain dark text on the mint placeholder when the CTA photo is missing. */
+.home-final-cta-visual:has(.site-photo[data-missing='true']) .final-title-text { color: #00545D; }
+.care-hero-photograph:has(.site-photo[data-missing='true']) .care-art-topline { color: #00545D; }
+@media (max-width: 720px) {
+  .home-final-cta-visual .final-box-inner { padding: 48px 24px; }
+  .care-hero-photograph .care-art-topline { padding: 16px; letter-spacing: 1px; }
+  .care-hero-photograph .care-art-caption { left: 16px; right: 16px; bottom: 16px; gap: 8px; padding: 12px; }
+  .care-hero-photograph .care-art-caption strong { font-size: 14px; }
+  .care-hero-photograph .care-art-caption div > span { font-size: 12px; }
+}

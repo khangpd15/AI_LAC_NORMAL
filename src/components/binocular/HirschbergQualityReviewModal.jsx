@@ -13,6 +13,10 @@ export default function HirschbergQualityReviewModal({
   isInspecting = false,
   isAnalyzing = false,
   analysisError = null,
+  orientation = 'auto',
+  onOrientationChange,
+  fixation = 'unknown',
+  onFixationChange,
   onConfirm,
   onRetake,
   onReupload,
@@ -189,6 +193,23 @@ export default function HirschbergQualityReviewModal({
           </div>
         </div>
 
+        <div className="hirschberg-capture-facts">
+          <label>Hướng ảnh khi chụp
+            <select aria-label="Hướng ảnh khi chụp" value={orientation} onChange={e => onOrientationChange?.(e.target.value)} disabled={isAnalyzing}>
+              <option value="auto">Tôi chưa xác định ảnh có bị lật hay không</option>
+              <option value="unmirrored">Ảnh gốc không bị lật ngang</option>
+              <option value="mirrored">Ảnh đã bị lật ngang</option>
+            </select>
+          </label>
+          <label>Hướng nhìn khi chụp
+            <select aria-label="Hướng nhìn khi chụp" value={fixation} onChange={e => onFixationChange?.(e.target.value)} disabled={isAnalyzing}>
+              <option value="unknown">Tôi chưa xác nhận hướng nhìn</option>
+              <option value="confirmed">Xác nhận đang nhìn nguồn sáng gần camera khi chụp</option>
+              <option value="offaxis">Đang nhìn lệch khỏi nguồn sáng</option>
+            </select>
+          </label>
+          <small>Chọn theo điều kiện chụp thực tế. Thiếu thông tin này có thể khiến kết quả chưa đủ điều kiện đánh giá.</small>
+        </div>
         {/* Bottom Actions Bar */}
         <div className="hirschberg-review-actions">
           {/* If unacceptable: Prompt user to retake or re-upload, or allow sending to AI with advisory notice */}

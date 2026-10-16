@@ -1,3 +1,4 @@
+import AudioGuide from '../audio/ListeningExperience';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ScreeningProgress from './ScreeningProgress';
 import HirschbergStep from './HirschbergStep.jsx';
@@ -490,6 +491,7 @@ export default function BinocularVisionScreening() {
         </div>
       </div>
 
+      <div className="page-audio-intro"><AudioGuide guideId="screening" compact /></div>
       {/* Persistent Step Progress Indicator */}
       <ScreeningProgress currentStep={currentStep} />
 

@@ -123,6 +123,15 @@ export const IconNavSimulation = ({ size = 20, className = '' }) => (
   </svg>
 );
 
+// 5b. Navigation About Icon (Info Sparkle)
+export const IconNavAbout = ({ size = 20, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
+    <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="2.1" />
+    <circle cx="12" cy="8" r="1.3" fill="currentColor" />
+    <path d="M12 11.5V16.5" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+  </svg>
+);
+
 // 6. Audio Waveform Speaker Icon
 export const IconSpeakerWave = ({ size = 22, isPlaying = false, className = '' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
@@ -208,6 +217,29 @@ export const IconDoorCare = ({ size = 76, className = '' }) => (
       fill="#FFFFFF"
     />
     <circle cx="44" cy="37" r="3.5" fill="#E05A47" />
+  </svg>
+);
+
+// 9b. Large Door Icon: AI Strabismus Simulator
+export const IconDoorStrabismus = ({ size = 76, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 88 88" fill="none" className={className}>
+    <circle cx="44" cy="44" r="40" fill="url(#rc-grad-blue)" fillOpacity="0.18" />
+    {/* Eyeball & Strabismus pupil vector */}
+    <path
+      d="M12 44C12 44 26 24 44 24C62 24 76 44 76 44C76 44 62 64 44 64C26 64 12 44 12 44Z"
+      fill="#FFFFFF"
+      stroke="url(#rc-grad-blue)"
+      strokeWidth="4"
+      strokeLinejoin="round"
+    />
+    {/* Shifted Iris showing strabismus */}
+    <circle cx="37" cy="44" r="14" fill="url(#rc-grad-blue)" />
+    <circle cx="37" cy="44" r="7" fill="#0A1E24" />
+    <circle cx="40" cy="41" r="2.5" fill="#FFFFFF" />
+    {/* Directional Deviation Vector Arrow */}
+    <path d="M48 44H62M62 44L56 38M62 44L56 50" stroke="#FF3366" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    {/* Optical axis target cross */}
+    <circle cx="44" cy="44" r="18" stroke="#00FFEA" strokeWidth="1.5" strokeDasharray="3 3" opacity="0.7" />
   </svg>
 );
 

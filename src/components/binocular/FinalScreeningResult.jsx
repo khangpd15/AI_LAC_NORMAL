@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import HirschbergOutcome from './HirschbergOutcome.jsx';
+import { normalizeHirschbergResult } from '../../services/hirschbergResultService.js';
 import {
   COVER_TEST_VERDICTS,
   OVERALL_SCREENING_STATUS,
@@ -181,121 +183,10 @@ function QualityWarnings({ quality }) {
 
 function StrabismusAIScreeningSection({ strabismusResult }) {
   if (!strabismusResult) return null;
-
-  const {
-    status,
-    prediction,
-    confidence,
-    quality_score,
-  } = strabismusResult;
-
-  let statusText = 'Hình ảnh chưa đủ chất lượng để đánh giá.';
-  let badgeClass = 'badge-inconclusive';
-  let bannerClass = 'strabismus-banner strabismus-banner--inconclusive';
-  let emoji = '⚪';
-  let statusTitle = 'CHƯA ĐỦ ĐIỀU KIỆN ĐÁNH GIÁ';
-
-  if (strabismusResult?.screening_status === 'HIRSCHBERG_MEASUREMENT_ONLY') {
-    statusText = strabismusResult.message || 'Đã đo Hirschberg theo chế độ nghiên cứu; chưa có ngưỡng chẩn đoán được duyệt.';
-    badgeClass = 'badge-inconclusive';
-    bannerClass = 'strabismus-banner strabismus-banner--inconclusive';
-    emoji = '⚪';
-    statusTitle = 'HIRSCHBERG NGHIÊN CỨU';
-  } else if (strabismusResult?.screening_status === 'HIRSCHBERG_INELIGIBLE') {
-    statusText = strabismusResult.message || strabismusResult?.hirschbergResult?.message || 'Thông tin hiện tại chưa nằm trong phạm vi hỗ trợ của bài sàng lọc này.';
-    badgeClass = 'badge-attention';
-    bannerClass = 'strabismus-banner strabismus-banner--suspicious';
-    emoji = '🟡';
-    statusTitle = 'CHƯA ĐỦ ĐIỀU KIỆN';
-  } else if (strabismusResult?.screening_status === 'HIRSCHBERG_AI_PREDICTION') {
-    const predictedClass = prediction || strabismusResult?.hirschbergResult?.aiPrediction?.predictedClass;
-    if (predictedClass === 'NORMAL') {
-      statusText = 'Mô hình nghiên cứu chưa ghi nhận tín hiệu lệch rõ trên ảnh Hirschberg.';
-      badgeClass = 'badge-clear';
-      bannerClass = 'strabismus-banner strabismus-banner--normal';
-      emoji = '🟢';
-      statusTitle = 'HIRSCHBERG AI: BÌNH THƯỜNG';
-    } else if (predictedClass === 'ESOTROPIA' || predictedClass === 'EXOTROPIA') {
-      statusText = 'Mô hình nghiên cứu ghi nhận tín hiệu hình ảnh cần được xem xét thêm bởi chuyên gia.';
-      badgeClass = 'badge-attention';
-      bannerClass = 'strabismus-banner strabismus-banner--suspicious';
-      emoji = '🟡';
-      statusTitle = 'HIRSCHBERG AI: CẦN XEM XÉT';
-    } else {
-      statusText = strabismusResult.message || 'Mô hình nghiên cứu chưa trả về phân lớp Hirschberg đủ rõ.';
-      badgeClass = 'badge-inconclusive';
-      bannerClass = 'strabismus-banner strabismus-banner--inconclusive';
-      emoji = '⚪';
-      statusTitle = 'HIRSCHBERG AI: CHƯA ĐỦ DỮ LIỆU';
-    }
-  } else if (status === 'NORMAL') {
-    statusText = 'Chưa ghi nhận tín hiệu bất thường đối xứng trục nhãn cầu qua ảnh chụp.';
-    badgeClass = 'badge-clear';
-    bannerClass = 'strabismus-banner strabismus-banner--normal';
-    emoji = '🟢';
-    statusTitle = 'BÌNH THƯỜNG';
-  } else if (status === 'SUSPICIOUS') {
-    statusText = 'Có tín hiệu hình ảnh cần xem xét thêm (không phải chẩn đoán mắc bệnh).';
-    badgeClass = 'badge-attention';
-    bannerClass = 'strabismus-banner strabismus-banner--suspicious';
-    emoji = '🟡';
-    statusTitle = 'CÓ TÍN HIỆU CẦN XEM XÉT';
-  } else if (status === 'INCONCLUSIVE') {
-    statusText = 'Chưa đủ điều kiện chất lượng ảnh hoặc chưa trích xuất được vùng hai mắt hợp lệ.';
-    badgeClass = 'badge-inconclusive';
-    bannerClass = 'strabismus-banner strabismus-banner--inconclusive';
-    emoji = '⚪';
-    statusTitle = 'CHƯA ĐỦ ĐIỀU KIỆN ĐÁNH GIÁ';
-  }
-
-  const confidencePct = confidence != null ? Math.round(confidence * 100) : null;
-  const qualityPct = quality_score != null ? Math.round(quality_score * 100) : null;
-
-  return (
-    <div className="final-screening-section strabismus-ai-card" aria-label="Phân tích hình ảnh hai mắt bằng AI">
-      <div className="section-header-flex">
-        <div className="strabismus-ai-title-wrap">
-          <h3 className="final-screening-section-title" style={{ margin: 0 }}>
-            Phân tích hình ảnh (Hirschberg)
-          </h3>
-        </div>
-        <span className={`badge ${badgeClass} strabismus-status-badge`}>
-          {emoji} {statusTitle}
-        </span>
-      </div>
-
-      <p className="section-subtext" style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '12px' }}>
-        Đo ảnh nhìn thẳng theo phương pháp Hirschberg nghiên cứu. Ngưỡng lâm sàng vẫn là TODO_PILOT.
-      </p>
-
-      <div className={bannerClass}>
-        <p className="strabismus-summary-text" style={{ margin: 0, fontSize: '0.9rem' }}>
-          {statusText}
-        </p>
-      </div>
-
-      <div className="strabismus-metrics-grid" style={{ marginTop: '12px' }}>
-        {confidencePct != null && (
-          <div className="final-screening-info-row">
-            <span>Độ tự tin của mô hình (Confidence)</span>
-            <strong>{confidencePct}%</strong>
-          </div>
-        )}
-        {qualityPct != null && (
-          <div className="final-screening-info-row">
-            <span>Chất lượng vùng chụp (Quality Gate)</span>
-            <strong>{qualityPct}%</strong>
-          </div>
-        )}
-      </div>
-
-      <div className="final-screening-disclaimer-box" style={{ marginTop: '12px', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.8rem', color: '#475569', lineHeight: 1.5 }}>
-        <p style={{ margin: 0 }}>
-          <strong>Lưu ý:</strong> Hirschberg trong phiên bản này chỉ là phép đo hình học nghiên cứu. Không dùng kết quả này như xác suất mắc bệnh hoặc chẩn đoán.
-        </p>
-      </div>
-    </div>
-  );
+  return <div className="final-screening-section strabismus-ai-card">
+    <h3 className="final-screening-section-title">Kết quả sàng lọc Hirschberg</h3>
+    <HirschbergOutcome result={strabismusResult} />
+  </div>;
 }
 
 function TechnicalDetails({ coverTest, quality, gazeTracking, strabismusResult }) {
@@ -402,7 +293,7 @@ function TechnicalDetails({ coverTest, quality, gazeTracking, strabismusResult }
       {/* Strabismus Deep Learning technical */}
       {strabismusResult && (
         <>
-          <h4>Mô hình AI Sàng lọc (ONNX ResNet-18) — Chỉ số kỹ thuật</h4>
+          <h4>Mô hình Hirschberg — Chỉ số kỹ thuật</h4>
           <div className="table-responsive">
             <table className="metrics-table">
               <thead>
@@ -416,11 +307,11 @@ function TechnicalDetails({ coverTest, quality, gazeTracking, strabismusResult }
               </thead>
               <tbody>
                 <tr>
-                  <td>{strabismusResult.model_version || 'remicare-bilateral-resnet18-v1'}</td>
-                  <td>{strabismusResult.threshold != null ? strabismusResult.threshold : '0.20'}</td>
+                  <td>{strabismusResult.model_version || strabismusResult.hirschbergResult?.modelId || '--'}</td>
+                  <td>{strabismusResult.threshold ?? '--'}</td>
                   <td>{strabismusResult.inference_latency_ms ? `${strabismusResult.inference_latency_ms} ms` : '--'}</td>
                   <td>{strabismusResult.quality_score != null ? strabismusResult.quality_score : '--'}</td>
-                  <td>{strabismusResult.confidence != null ? `${Math.round(strabismusResult.confidence * 100)}%` : '--'}</td>
+                  <td>{normalizeHirschbergResult(strabismusResult).confidence !== null ? `${(normalizeHirschbergResult(strabismusResult).confidence * 100).toFixed(1)}%` : '--'}</td>
                 </tr>
               </tbody>
             </table>

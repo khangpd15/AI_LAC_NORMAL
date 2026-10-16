@@ -1,0 +1,58 @@
+{
+  "browserFixtures": {
+    "passed": true,
+    "method": "Browser UI integration with mocked prescreen and backend contracts; not model inference validation",
+    "cases": [
+      {
+        "case": "scored",
+        "passed": true,
+        "apiCalls": 1,
+        "stepAndFinalResultVerified": true,
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        }
+      },
+      {
+        "case": "inconclusive",
+        "passed": true,
+        "apiCalls": 1,
+        "stepAndFinalResultVerified": true,
+        "viewport": {
+          "width": 390,
+          "height": 1000
+        }
+      },
+      {
+        "case": "inconclusive-scored",
+        "passed": true,
+        "apiCalls": 1,
+        "stepAndFinalResultVerified": true,
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        }
+      }
+    ]
+  },
+  "realBackendContract": {
+    "passed": true,
+    "method": "Browser UI integration with mocked prescreen and backend contracts; not model inference validation",
+    "cases": [
+      {
+        "case": "backend-real",
+        "passed": true,
+        "apiCalls": 1,
+        "stepAndFinalResultVerified": true,
+        "viewport": {
+          "width": 390,
+          "height": 1000
+        }
+      }
+    ]
+  },
+  "build": "PASS",
+  "unitTests": 26,
+  "lint": "PASS with existing/source React warnings",
+  "deployed": false
+}

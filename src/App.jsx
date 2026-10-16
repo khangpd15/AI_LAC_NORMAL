@@ -2,15 +2,27 @@ import React, { useState, useEffect } from 'react';
 import HomePage from './components/home/HomePage';
 import BinocularVisionScreening from './components/binocular/BinocularVisionScreening';
 import ExperienceVisionPage from './components/ExperienceVision/ExperienceVisionPage';
+import StrabismusSimulationPage from './components/StrabismusSimulation/StrabismusSimulationPage';
+import AboutPage from './components/about/AboutPage';
+import AppNavbar from './components/common/AppNavbar';
+import AppFooter from './components/common/AppFooter';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ListeningProvider } from './components/audio/ListeningExperience';
+import './redesign.css';
+import './sitePhotos.css';
 
 export default function App() {
-  // Navigation views: 'home' (Trang chủ RemiCare) | 'experience' (Trải nghiệm góc nhìn camera) | 'screening' (Sàng lọc hai mắt)
+  // Navigation views: 'home' (Trang chủ) | 'experience' (Trải nghiệm góc nhìn) | 'simulation' (Mô phỏng lác lé) | 'screening' (Sàng lọc hai mắt) | 'about' (Giới thiệu)
   const [activeTab, setActiveTab] = useState('home');
 
+  return <ListeningProvider key={activeTab}><AppContent activeTab={activeTab} setActiveTab={setActiveTab} /></ListeningProvider>;
+}
+
+function AppContent({ activeTab, setActiveTab }) {
+
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'light');
-  }, []);
+    window.scrollTo(0, 0);
+  }, [activeTab]);
 
   // 1. Home / Landing Page Mode (Default)
   if (activeTab === 'home') {
@@ -19,6 +31,8 @@ export default function App() {
         <HomePage
           onStartExperience={() => setActiveTab('experience')}
           onStartScreening={() => setActiveTab('screening')}
+          onStartSimulation={() => setActiveTab('simulation')}
+          onOpenAbout={() => setActiveTab('about')}
         />
       </ErrorBoundary>
     );
@@ -36,80 +50,41 @@ export default function App() {
     );
   }
 
-  // 3. Binocular Vision Screening Mode (Clinical screening protocol)
+  // 3. Strabismus Eye Simulation Mode (Realtime Webcam AI Warping)
+  if (activeTab === 'simulation') {
+    return (
+      <ErrorBoundary>
+        <StrabismusSimulationPage
+          onExit={() => setActiveTab('home')}
+          onStartScreening={() => setActiveTab('screening')}
+        />
+      </ErrorBoundary>
+    );
+  }
+
+  // 4. About RemiCare AI Page
+  if (activeTab === 'about') {
+    return (
+      <ErrorBoundary>
+        <AboutPage
+          onNavigateHome={() => setActiveTab('home')}
+          onStartExperience={() => setActiveTab('experience')}
+          onStartScreening={() => setActiveTab('screening')}
+          onStartSimulation={() => setActiveTab('simulation')}
+        />
+      </ErrorBoundary>
+    );
+  }
+
+  // 5. Binocular Vision Screening Mode (Clinical screening protocol)
   return (
     <div className="app-layout">
-      {/* Top Navigation Bar */}
-      <header className="app-header">
-        <div className="header-inner">
-          <div
-            className="brand-group"
-            onClick={() => setActiveTab('home')}
-            style={{ cursor: 'pointer' }}
-            title="Về Trang chủ RemiCare"
-          >
-            <img
-              src="/images/logo.jpg"
-              alt="Logo RemiCare"
-              className="brand-logo-img"
-            />
-            <div className="brand-text">
-              <span className="brand-title">RemiCare AI</span>
-              <span className="brand-subtitle">Digital Binocular Vision Screening</span>
-            </div>
-          </div>
-
-          <div className="header-controls">
-            {/* Mode Navigation Tabs */}
-            <nav className="mode-nav" role="tablist" aria-label="Chế độ trải nghiệm và sàng lọc">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'home'}
-                className={`tab-link ${activeTab === 'home' ? 'active' : ''}`}
-                onClick={() => setActiveTab('home')}
-              >
-                <span className="tab-icon" aria-hidden="true">⌂</span>
-                <span>Trang chủ</span>
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'experience'}
-                className={`tab-link ${activeTab === 'experience' ? 'active' : ''}`}
-                onClick={() => setActiveTab('experience')}
-              >
-                <span className="tab-icon" aria-hidden="true">◉</span>
-                <span>Trải nghiệm</span>
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'screening'}
-                className={`tab-link ${activeTab === 'screening' ? 'active' : ''}`}
-                onClick={() => setActiveTab('screening')}
-              >
-                <span className="tab-icon" aria-hidden="true">▣</span>
-                <span>Sàng lọc</span>
-              </button>
-
-              <button
-                type="button"
-                role="tab"
-                className="tab-link tab-link-disabled"
-                disabled
-                title="Tính năng đang được phát triển — không khả dụng"
-                style={{ opacity: 0.55, cursor: 'not-allowed' }}
-              >
-                <span>Mô phỏng lác lé</span>
-                <span style={{ fontSize: '0.68rem', background: 'rgba(255, 255, 255, 0.15)', padding: '2px 6px', borderRadius: '9999px', marginLeft: '6px' }}>Đang làm</span>
-              </button>
-            </nav>
-          </div>
-        </div>
-      </header>
+      {/* Unified Master Application Navbar */}
+      <AppNavbar
+        activeTab="screening"
+        onSelectTab={setActiveTab}
+        onNavigateHome={() => setActiveTab('home')}
+      />
 
       {/* Main Content Area */}
       <main className="app-main" id="main-content">
@@ -118,17 +93,14 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
-      {/* App Footer */}
-      <footer className="app-footer">
-        <div className="footer-inner">
-          <p className="footer-privacy">
-            🔒 <strong>Bảo mật tối đa:</strong> Tất cả quá trình xử lý camera và thị giác máy tính diễn ra 100% cục bộ trên trình duyệt của bạn thông qua WebAssembly. Không có hình ảnh hay video nào được gửi lên bất kỳ máy chủ nào.
-          </p>
-          <p className="footer-credits">
-            RemiCare AI &bull; Digital Binocular Vision Screening
-          </p>
-        </div>
-      </footer>
+      {/* Master Comprehensive App Footer */}
+      <AppFooter
+        onNavigateHome={() => setActiveTab('home')}
+        onStartExperience={() => setActiveTab('experience')}
+        onStartScreening={() => setActiveTab('screening')}
+        onStartSimulation={() => setActiveTab('simulation')}
+        onOpenAbout={() => setActiveTab('about')}
+      />
     </div>
   );
 }

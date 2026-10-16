@@ -103,6 +103,7 @@ export default function VoiceController({
         </span>
       </div>
 
+      <details className="stage-transcript"><summary>Đọc lời hướng dẫn</summary><p>{voiceText}</p></details>
       <div className="voice-actions-row">
         <button
           type="button"

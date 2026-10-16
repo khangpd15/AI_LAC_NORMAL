@@ -1,0 +1,220 @@
+/* ==========================================================================
+   REMICARE AI — UNIFIED MASTER NAVBAR STYLES
+   Đồng bộ 1 mẫu Navbar duy nhất, chuẩn chỉ trên toàn bộ các trang:
+   Trang chủ • Trải nghiệm • Mô phỏng lác lé • Sàng lọc • Giới thiệu
+   Ghim cố định (Sticky) ở đỉnh màn hình, chuẩn trợ năng mọi thế hệ.
+   ========================================================================== */
+
+.remicare-unified-navbar {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1.5px solid rgba(0, 171, 155, 0.22);
+  box-shadow: 0 2px 16px rgba(8, 127, 120, 0.06);
+  transition: all 0.25s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.unified-navbar-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 68px;
+}
+
+/* --------------------------------------------------------------------------
+   BRAND & LOGO
+   -------------------------------------------------------------------------- */
+.unified-navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  transition: transform 0.2s ease;
+}
+
+.unified-navbar-brand:hover {
+  transform: scale(1.02);
+}
+
+.unified-brand-logo-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: contain;
+  background: #FFFFFF;
+  padding: 2px;
+  border: 1.5px solid rgba(0, 171, 155, 0.3);
+  box-shadow: 0 3px 12px rgba(0, 171, 155, 0.18);
+  flex-shrink: 0;
+}
+
+.unified-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.unified-brand-title {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #087F78;
+  letter-spacing: -0.3px;
+}
+
+.unified-brand-subtitle {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #00AB9B;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------------------
+   NAV ITEMS LIST
+   -------------------------------------------------------------------------- */
+.unified-navbar-items {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.unified-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  min-height: 44px;
+  border-radius: 9999px;
+  background: transparent;
+  border: 1.5px solid transparent;
+  color: #2D4A47;
+  font-size: 0.94rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  white-space: nowrap;
+  font-family: inherit;
+  user-select: none;
+}
+
+.unified-nav-btn:hover {
+  background: rgba(0, 171, 155, 0.08);
+  color: #00AB9B;
+  border-color: rgba(0, 171, 155, 0.25);
+  transform: translateY(-1px);
+}
+
+.unified-nav-btn:focus-visible {
+  outline: 2px solid #00AB9B;
+  outline-offset: 2px;
+}
+
+/* ACTIVE STATE */
+.unified-nav-btn.active {
+  background: linear-gradient(135deg, #00AB9B 0%, #087F78 100%);
+  color: #FFFFFF;
+  border-color: #00AB9B;
+  box-shadow: 0 4px 16px rgba(0, 171, 155, 0.35);
+}
+
+.unified-nav-btn.active:hover {
+  background: linear-gradient(135deg, #00C7B4 0%, #066B65 100%);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.unified-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.unified-nav-badge-new {
+  font-size: 0.68rem;
+  font-weight: 800;
+  background: #00FFEA;
+  color: #04221D;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  margin-left: 4px;
+  letter-spacing: 0.3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.unified-nav-btn.active .unified-nav-badge-new {
+  background: #FFFFFF;
+  color: #087F78;
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVE DESIGN (TABLET & MOBILE)
+   -------------------------------------------------------------------------- */
+@media (max-width: 960px) {
+  .unified-navbar-inner {
+    padding: 8px 16px;
+    gap: 12px;
+  }
+  .unified-brand-subtitle {
+    display: none;
+  }
+  .unified-nav-btn {
+    padding: 8px 14px;
+    font-size: 0.88rem;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .unified-navbar-items {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    padding: 4px 0;
+  }
+  .unified-navbar-items::-webkit-scrollbar {
+    display: none;
+  }
+  .unified-nav-btn {
+    padding: 8px 12px;
+    font-size: 0.84rem;
+  }
+}
+
+@media (max-width: 540px) {
+  .unified-brand-title {
+    font-size: 1.15rem;
+  }
+  .unified-brand-logo-img {
+    width: 38px;
+    height: 38px;
+  }
+  .unified-nav-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    min-height: 40px;
+  }
+  .unified-nav-badge-new {
+    display: none;
+  }
+}

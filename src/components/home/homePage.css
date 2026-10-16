@@ -48,7 +48,7 @@
   background-color: var(--remicare-bg);
   color: var(--remicare-text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  overflow-x: hidden;
+  overflow-x: clip;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -590,8 +590,8 @@
 
 .three-doors-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
 }
 
 .door-card {
@@ -626,6 +626,11 @@
   background: linear-gradient(180deg, #FFFFFF 55%, #E6FAF7 100%);
 }
 
+.door-simulation {
+  border-color: rgba(0, 136, 255, 0.35);
+  background: linear-gradient(180deg, #FFFFFF 55%, #EBF5FF 100%);
+}
+
 .door-screening {
   border-color: rgba(8, 127, 120, 0.35);
   background: linear-gradient(180deg, #FFFFFF 55%, #E2F5F4 100%);
@@ -634,6 +639,15 @@
 .door-care {
   border-color: rgba(224, 90, 71, 0.35);
   background: linear-gradient(180deg, #FFFFFF 55%, #FFF2F0 100%);
+}
+
+.btn-blue-door {
+  background: linear-gradient(135deg, #0088FF 0%, #0066CC 100%);
+  color: #FFFFFF;
+}
+
+.blue-glow {
+  background: radial-gradient(circle, rgba(0, 136, 255, 0.35) 0%, transparent 70%);
 }
 
 .door-top-meta {
@@ -1328,6 +1342,7 @@
 .final-title-text {
   font-size: clamp(1.9rem, 3.8vw, 2.6rem);
   font-weight: 900;
+  color: #ffffff;
   margin: 0 0 32px;
   letter-spacing: -0.01em;
 }

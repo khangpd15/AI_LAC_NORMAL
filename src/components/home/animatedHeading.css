@@ -1,0 +1,45 @@
+/* Overlapping grid items reserve space for every phrase, preventing layout shifts. */
+.care-hero .animated-heading-words {
+  display: inline-grid;
+  vertical-align: top;
+  max-width: 100%;
+  padding-block: .12em;
+  margin-block: -.12em;
+  overflow: hidden;
+}
+.care-hero .animated-heading-words em {
+  grid-area: 1 / 1;
+  display: block;
+  font-style: normal;
+  opacity: 0;
+  transform: translateY(.45em);
+  animation: care-heading-rotate 12s cubic-bezier(.22, 1, .36, 1) infinite;
+  animation-delay: calc(var(--phrase-index) * 4s - .6s);
+}
+.care-hero .animated-heading-words[data-paused='true'] em { animation-play-state: paused; }
+@keyframes care-heading-rotate {
+  0% { opacity: 0; transform: translateY(.45em); }
+  5%, 27% { opacity: 1; transform: translateY(0); }
+  35%, 100% { opacity: 0; transform: translateY(-.45em); }
+}
+.heading-motion-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  margin: -8px 0 16px -12px;
+  border: 0;
+  border-radius: 16px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+}
+.heading-motion-toggle:hover { color: var(--text-heading); background: var(--bg-elevated); }
+@media (prefers-reduced-motion: reduce) {
+  .care-hero .animated-heading-words em { animation: none !important; opacity: 0; transform: none; }
+  .care-hero .animated-heading-words em:first-child { opacity: 1; }
+  .heading-motion-toggle { display: none; }
+}

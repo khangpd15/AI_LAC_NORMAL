@@ -1,4 +1,6 @@
 import React from 'react';
+import HirschbergOutcome from './HirschbergOutcome.jsx';
+import { normalizeHirschbergResult } from '../../services/hirschbergResultService.js';
 
 /**
  * HirschbergResultStep (B2 - Hirschberg Screening Result)
@@ -19,64 +21,18 @@ export default function HirschbergResultStep({
   isVoiceEnabled = true,
 }) {
   const measurement = hirschbergData?.hirschbergResult || {};
-  const aiPred = measurement?.aiPrediction || null;
   const capture = hirschbergData?.captures?.hirschberg || hirschbergData?.captures?.straight || null;
   const imageSrc = capture?.image || capture?.originalFrame || null;
-
-  // Determine screening outcome
-  const rawStatus = aiPred?.predictedClass || measurement?.result || 'INCONCLUSIVE';
-  let badgeClass = 'badge-inconclusive';
-  let statusTitle = 'Kết quả không đủ điều kiện để đánh giá';
-  let statusDesc = 'Ảnh chụp chưa đủ thông tin hoặc chất lượng chưa đạt để đánh giá phản xạ giác mạc.';
-  let emoji = '⚪';
-
-  if (rawStatus === 'NORMAL') {
-    badgeClass = 'badge-clear';
-    statusTitle = 'Không phát hiện dấu hiệu rõ ràng trong lần sàng lọc này';
-    statusDesc = 'Các chỉ số phản xạ giác mạc hai mắt cân đối, chưa ghi nhận dấu hiệu lệch trục nhãn cầu.';
-    emoji = '🟢';
-  } else if (rawStatus === 'STRABISMUS' || rawStatus === 'SUSPICIOUS') {
-    badgeClass = 'badge-attention';
-    statusTitle = 'Có dấu hiệu cần kiểm tra thêm';
-    statusDesc = 'Ghi nhận độ lệch phản xạ ánh sáng giác mạc giữa hai mắt. Khuyên nên thực hiện thêm Cover Test hoặc thăm khám chuyên khoa.';
-    emoji = '🟡';
-  } else if (rawStatus === 'SYSTEM_ERROR') {
-    badgeClass = 'badge-error';
-    statusTitle = 'Lỗi hệ thống khi phân tích';
-    statusDesc = measurement?.message || 'Hệ thống chưa hoàn tất phân tích Hirschberg. Vui lòng thử lại hoặc kiểm tra kết nối backend.';
-    emoji = '🔴';
-  } else if (rawStatus === 'INELIGIBLE') {
-    badgeClass = 'badge-attention';
-    statusTitle = 'Chưa đủ điều kiện sàng lọc';
-    statusDesc = measurement?.message || 'Thông tin hiện tại chưa nằm trong phạm vi hỗ trợ của bài sàng lọc này.';
-    emoji = '🟡';
-  }
-
-  // Voice announcement
+  const { title, message } = normalizeHirschbergResult(measurement);
   React.useEffect(() => {
-    if (isVoiceEnabled && speak) {
-      if (rawStatus === 'NORMAL') {
-        speak('Ảnh Hirschberg chưa phát hiện dấu hiệu bất thường. Bạn có thể kiểm tra bổ sung bằng Cover Test để chắc chắn hơn.');
-      } else if (rawStatus === 'STRABISMUS' || rawStatus === 'SUSPICIOUS') {
-        speak('Ảnh Hirschberg có dấu hiệu cần kiểm tra thêm. Khuyến nghị thực hiện Cover Test bổ sung.');
-      } else if (rawStatus === 'INELIGIBLE') {
-        speak('Thông tin hiện tại chưa đủ điều kiện để hệ thống phân tích Hirschberg tự động.');
-      } else {
-        speak('Đã hoàn thành phân tích Hirschberg.');
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const confidencePct = aiPred?.confidence != null ? Math.round(aiPred.confidence * 100) : null;
-  const deltaH = measurement?.measurements?.delta_h ?? null;
-
+    if (isVoiceEnabled && speak) speak(`${title}. ${message}`);
+  }, [isVoiceEnabled, speak, title, message]);
   return (
     <div className="card stage-card-main hirschberg-result-card">
       <div className="stage-header hirschberg-result-header">
         <div className="hirschberg-result-badges">
           <span className="badge badge-primary">Bước 2: Kết quả Hirschberg</span>
-          <span className={`badge ${badgeClass}`}>{emoji} {rawStatus}</span>
+
         </div>
         <h2 className="stage-title hirschberg-result-title">
           Kết quả Sàng lọc Hirschberg
@@ -103,37 +59,7 @@ export default function HirschbergResultStep({
         )}
 
         <div className="hirschberg-result-content-col">
-          <div className={`hirschberg-status-panel hirschberg-status-panel--${rawStatus.toLowerCase()}`}>
-            <h3 className="hirschberg-status-title">
-              <span aria-hidden="true">{emoji}</span> {statusTitle}
-            </h3>
-            <p className="hirschberg-status-desc">
-              {statusDesc}
-            </p>
-          </div>
-
-          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.9rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-              <span style={{ color: '#64748b' }}>Phương pháp:</span>
-              <strong>Hirschberg Photo Screening</strong>
-            </div>
-            {confidencePct != null && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ color: '#64748b' }}>Độ tự tin mô hình AI:</span>
-                <strong>{confidencePct}%</strong>
-              </div>
-            )}
-            {deltaH != null && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ color: '#64748b' }}>Chỉ số lệch phản xạ giác mạc (&Delta;h):</span>
-                <strong>{Number(deltaH).toFixed(3)}</strong>
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-              <span style={{ color: '#64748b' }}>Thời gian thực hiện:</span>
-              <span>{new Date().toLocaleTimeString()}</span>
-            </div>
-          </div>
+          <HirschbergOutcome result={measurement} />
         </div>
       </div>
 

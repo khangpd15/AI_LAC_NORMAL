@@ -1,9 +1,11 @@
+import './hirschbergOutcome.css';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import AudioButton from '../audio/AudioButton';
-import { measureResearchGeometry } from '../../api/researchMeasurementApi.js';
+import { predictHirschberg } from '../../api/hirschbergApi.js';
+import { toHirschbergSessionResult } from '../../services/hirschbergResultService.js';
 import HirschbergQualityReviewModal from './HirschbergQualityReviewModal.jsx';
 import { inspectHirschbergImage } from '../../services/hirschbergQualityPrescreenService.js';
-import { classifyResearchMeasurementError } from '../../services/researchMeasurementErrorService.js';
+
 
 /**
  * HirschbergStep (B1 - Hirschberg Screening)
@@ -12,7 +14,7 @@ import { classifyResearchMeasurementError } from '../../services/researchMeasure
  * 1. Instruction: Guide user on camera posture, 30–50 cm distance, head straight, target fixation, lighting.
  * 2. Upload / Photo Capture: User selects or takes a photo.
  * 3. Quality Gate: Inspects face, both eyes, openness, blur, lighting, corneal reflex before inference.
- * 4. AI Analysis: Calls backend research geometry measurement API (/api/v1/research/measurements).
+ * 4. AI Analysis: Calls the trained Hirschberg multipart API (/api/v1/hirschberg/predict).
  */
 export default function HirschbergStep({
   preparationData,
@@ -24,6 +26,8 @@ export default function HirschbergStep({
 }) {
   const [stepStatus, setStepStatus] = useState('GUIDE'); // 'GUIDE' | 'REVIEWING' | 'COMPLETED'
   const fileInputRef = useRef(null);
+  const [orientation, setOrientation] = useState('auto');
+  const [fixation, setFixation] = useState('unknown');
 
   // Pre-screening review candidate
   const [reviewCandidate, setReviewCandidate] = useState(null);
@@ -49,37 +53,6 @@ export default function HirschbergStep({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Build backend payload from captureRecord
-  const buildResearchMeasurementPayload = useCallback(
-    (captureRecord) => {
-      const eligibility = preparationData?.eligibility || {};
-      const qualityMeta = captureRecord?.researchQuality?.metadata || {};
-      return {
-        schemaVersion: 'remicare-research-quality-v0.1',
-        featureVersion: 'research-geometry-v0.1',
-        protocolVersion: 'hirschberg-photo-v1',
-        configVersion: 'TODO_PILOT',
-        testType: 'HIRSCHBERG',
-        sessionId: sessionId || `client-${Date.now()}`,
-        requestId: `hirschberg-${Date.now()}`,
-        distance_bucket: qualityMeta.distanceBucket || '30_50_CM',
-        eligibility: {
-          consent: Boolean(eligibility.guardianConsent ?? true),
-          redFlag: Boolean(eligibility.redFlagPresent),
-        },
-        quality: captureRecord?.researchQuality?.checks || {},
-        metadata: {
-          ...(qualityMeta || {}),
-          landmarks: captureRecord?.researchLandmarks || [],
-          selfReported: preparationData?.selfReported || {},
-          preparationSchemaVersion: preparationData?.schemaVersion || null,
-        },
-        imageDataUrl: captureRecord?.originalFrame,
-      };
-    },
-    [preparationData, sessionId]
-  );
-
   // Finalize: send to backend, then call onComplete
   const handleFinalizeStep = useCallback(
     async (captureRecord) => {
@@ -92,22 +65,21 @@ export default function HirschbergStep({
           const controller = new AbortController();
           abortControllerRef.current = controller;
 
-          hirschbergResult = await measureResearchGeometry(
-            buildResearchMeasurementPayload(captureRecord),
-            { signal: controller.signal }
-          );
+          const eligibility = preparationData?.eligibility || {};
+          if (eligibility.guardianConsent === false || eligibility.redFlagPresent) {
+            hirschbergResult = { status: 'INELIGIBLE', message: eligibility.guardianConsent === false
+              ? 'Cần xác nhận đồng ý tham gia sàng lọc trước khi phân tích.'
+              : 'Có dấu hiệu cần khám chuyên khoa trước khi sàng lọc tự động.' };
+          } else {
+            hirschbergResult = await predictHirschberg(captureRecord.image || captureRecord.originalFrame, {
+              signal: controller.signal, orientation, fixation, sessionId,
+            });
+          }
         } catch (err) {
           if (err.name === 'AbortError') return;
           console.warn('Hirschberg backend warning:', err);
-          const researchError = classifyResearchMeasurementError(err);
           hirschbergResult = {
-            status: 'INCONCLUSIVE',
-            result: researchError.result,
-            reasonCodes: [researchError.reasonCode],
-            measurements: {},
-            quality: captureRecord?.researchQuality || {},
-            experimental: true,
-            message: researchError.message,
+            status: 'SYSTEM_ERROR', message: err.userMessage || err.message || 'Không thể kết nối hệ thống AI. Vui lòng thử lại.',
           };
         } finally {
           setIsAnalyzing(false);
@@ -131,22 +103,10 @@ export default function HirschbergStep({
         completedAt: new Date().toISOString(),
         captures: { hirschberg: captureRecord },
         hirschbergResult,
-        strabismusResult: {
-          status: hirschbergResult?.aiPrediction?.predictedClass ? 'COMPLETED' : 'INCONCLUSIVE',
-          prediction: hirschbergResult?.aiPrediction?.predictedClass || 'INCONCLUSIVE',
-          confidence: hirschbergResult?.aiPrediction?.confidence ?? null,
-          probabilities: hirschbergResult?.aiPrediction?.probabilities ?? null,
-          screening_status: hirschbergResult?.result === 'INELIGIBLE'
-            ? 'HIRSCHBERG_INELIGIBLE'
-            : hirschbergResult?.aiPrediction
-            ? 'HIRSCHBERG_AI_PREDICTION'
-            : 'HIRSCHBERG_MEASUREMENT_ONLY',
-          message: hirschbergResult?.message || null,
-          hirschbergResult,
-        },
+        ...toHirschbergSessionResult(hirschbergResult),
       });
     },
-    [buildResearchMeasurementPayload, onComplete]
+    [onComplete, preparationData, sessionId, orientation, fixation]
   );
 
   // File upload handler
@@ -155,6 +115,8 @@ export default function HirschbergStep({
       const file = event.target.files?.[0];
       if (!file) return;
 
+      setOrientation('auto');
+      setFixation('unknown');
       setStepStatus('REVIEWING');
       setIsInspecting(true);
       setAnalysisError(null);
@@ -389,6 +351,10 @@ export default function HirschbergStep({
           isInspecting={isInspecting}
           isAnalyzing={isAnalyzing}
           analysisError={analysisError}
+          orientation={orientation}
+          onOrientationChange={setOrientation}
+          fixation={fixation}
+          onFixationChange={setFixation}
           onConfirm={handleConfirmReview}
           onRetake={handleRetake}
           onReupload={handleTriggerUpload}

@@ -1,3 +1,4 @@
+import AudioGuide from '../audio/ListeningExperience';
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { EXPERIENCE_STAGES } from './storyData';
 import CameraView from './CameraView';
@@ -338,6 +339,7 @@ export default function ExperienceVisionPage({
               Camera sẽ được sử dụng để<br />tạo hiệu ứng thị giác realtime.
             </p>
 
+            <AudioGuide guideId="experience" compact />
             <div className="welcome-actions-cluster">
               {sessionPhase === 'START_PROMPT' && (
                 <button
