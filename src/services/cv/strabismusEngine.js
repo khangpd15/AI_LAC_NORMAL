@@ -659,7 +659,7 @@ export function processStrabismusFrame({
 }) {
   if (!canvas || !videoElement) return;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   const w = canvas.width;
   const h = canvas.height;
 

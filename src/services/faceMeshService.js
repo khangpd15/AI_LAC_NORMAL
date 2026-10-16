@@ -107,17 +107,32 @@ export function setFaceMeshResultsCallback(callback) {
  * @param {any} faceMeshInstance
  * @param {HTMLVideoElement} videoElement
  */
+const pendingVideoFrames = new WeakMap();
+
+export function isFaceMeshBusy(faceMeshInstance) {
+  return Boolean(faceMeshInstance && pendingVideoFrames.has(faceMeshInstance));
+}
+
 export async function sendFrameToFaceMesh(faceMeshInstance, videoElement, frameSource = videoElement) {
   if (
     !faceMeshInstance ||
+    isFaceMeshBusy(faceMeshInstance) ||
     !videoElement ||
     videoElement.readyState < 2 ||
     videoElement.videoWidth === 0 ||
     videoElement.videoHeight === 0 ||
     videoElement.paused
   ) {
-    return;
+    return false;
   }
+  // Keep the input locked until send itself settles, even after our watchdog
+  // expires. Otherwise a slow phone can run overlapping sends on one instance.
+  const pending = Promise.resolve().then(() => faceMeshInstance.send({ image: frameSource }));
+  pendingVideoFrames.set(faceMeshInstance, pending);
+  const release = () => {
+    if (pendingVideoFrames.get(faceMeshInstance) === pending) pendingVideoFrames.delete(faceMeshInstance);
+  };
+  pending.then(release, release);
   try {
     let timeoutId = null;
     const timeoutPromise = new Promise((_, reject) => {
@@ -126,15 +141,17 @@ export async function sendFrameToFaceMesh(faceMeshInstance, videoElement, frameS
 
     try {
       await Promise.race([
-        faceMeshInstance.send({ image: frameSource }),
+        pending,
         timeoutPromise,
       ]);
     } finally {
       if (timeoutId) clearTimeout(timeoutId);
     }
+    return true;
   } catch (err) {
     // Non-fatal frame skip
     console.debug('MediaPipe frame processing skipped:', err);
+    return false;
   }
 }
 

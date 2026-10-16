@@ -22,10 +22,11 @@ import {
 import {
   initializeFaceMesh,
   sendFrameToFaceMesh,
+  isFaceMeshBusy,
   closeFaceMesh,
 } from '../../services/faceMeshService';
 import audioService from '../../services/audioService';
-import { stabilizeSimulationLandmarks } from '../../services/cv/simulationTracking';
+import { getSimulationProcessingSize, stabilizeSimulationLandmarks } from '../../services/cv/simulationTracking';
 import './strabismusSimulation.css';
 
 export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
@@ -42,6 +43,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
   const trackedFrameRef = useRef(null);
   const frameVersionRef = useRef(0);
   const submittedVideoTimeRef = useRef(-1);
+  const [mobilePipeline] = useState(() => navigator.maxTouchPoints > 0 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
 
   // Camera & Tracking states
   const [cameraState, setCameraState] = useState('INIT'); // 'INIT' | 'RUNNING' | 'ERROR'
@@ -132,14 +134,16 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
         trackedFrameRef.current = document.createElement('canvas');
         frameVersionRef.current = 0;
         submittedVideoTimeRef.current = -1;
+        meshBusyRef.current = false;
         setHasFace(false);
 
         // 1. Start Camera
         const constraints = {
           video: {
             facingMode: { ideal: facingMode },
-            width: { ideal: 1280, max: 1920 },
-            height: { ideal: 720, max: 1080 },
+            width: { ideal: mobilePipeline ? 640 : 1280, max: mobilePipeline ? 1280 : 1920 },
+            height: { ideal: mobilePipeline ? 480 : 720, max: mobilePipeline ? 1280 : 1080 },
+            frameRate: { ideal: 30, max: 30 },
           },
           audio: false,
         };
@@ -159,12 +163,12 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
           if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
             const next = results.multiFaceLandmarks[0];
             const deltaMs = now - landmarkTimeRef.current;
-            landmarksRef.current = stabilizeSimulationLandmarks(next, deltaMs < 250 ? landmarksRef.current : null, deltaMs);
+            landmarksRef.current = stabilizeSimulationLandmarks(next, deltaMs < (mobilePipeline ? 700 : 250) ? landmarksRef.current : null, deltaMs, { mobile: mobilePipeline });
             landmarkTimeRef.current = now;
             setHasFace(true);
           } else {
             // Hold the last matched image briefly across a missed detection.
-            if (landmarksRef.current && now - landmarkTimeRef.current < 120) return;
+            if (landmarksRef.current && now - landmarkTimeRef.current < (mobilePipeline ? 350 : 120)) return;
             landmarksRef.current = null;
             setHasFace(false);
           }
@@ -205,7 +209,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
       closeFaceMesh();
       audioService.stop();
     };
-  }, [facingMode, cameraAttempt]);
+  }, [facingMode, cameraAttempt, mobilePipeline]);
 
   // 2. Main Render & Inference Animation Loop
   useEffect(() => {
@@ -216,27 +220,22 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
     let lastRenderedVersion = -1;
 
 
-    const renderLoop = async () => {
+    const renderLoop = () => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
 
-      if (video && canvas && video.readyState >= 2 && video.videoWidth > 0) {
-        // Sync canvas resolution with camera
-        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-        }
-
+      if (video && canvas && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
         // Send frame to FaceMesh at controlled cadence
-        if (!meshBusyRef.current && faceMeshRef.current && !video.paused && submittedVideoTimeRef.current !== video.currentTime) {
+        if (!meshBusyRef.current && faceMeshRef.current && !isFaceMeshBusy(faceMeshRef.current) && !video.paused && submittedVideoTimeRef.current !== video.currentTime) {
           meshBusyRef.current = true;
           submittedVideoTimeRef.current = video.currentTime;
           const source = inferenceFrameRef.current;
-          if (source.width !== video.videoWidth || source.height !== video.videoHeight) {
-            source.width = video.videoWidth;
-            source.height = video.videoHeight;
+          const size = getSimulationProcessingSize(video.videoWidth, video.videoHeight, mobilePipeline ? 640 : 1280);
+          if (source.width !== size.width || source.height !== size.height) {
+            source.width = size.width;
+            source.height = size.height;
           }
-          source.getContext('2d').drawImage(video, 0, 0);
+          source.getContext('2d').drawImage(video, 0, 0, source.width, source.height);
           sendFrameToFaceMesh(faceMeshRef.current, video, source).finally(() => {
             meshBusyRef.current = false;
           });
@@ -249,6 +248,12 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
           return;
         }
         lastRenderedVersion = frameVersionRef.current;
+        const displaySource = frameVersionRef.current > 0 ? trackedFrameRef.current : video;
+        const displaySize = getSimulationProcessingSize(displaySource.videoWidth || displaySource.width, displaySource.videoHeight || displaySource.height, mobilePipeline ? 640 : 1280);
+        if (canvas.width !== displaySize.width || canvas.height !== displaySize.height) {
+          canvas.width = displaySize.width;
+          canvas.height = displaySize.height;
+        }
 
         // Render simulation or original
         const effectiveConfig = isHoldingOriginal
@@ -273,7 +278,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
 
         processStrabismusFrame({
           canvas,
-          videoElement: frameVersionRef.current > 0 ? trackedFrameRef.current : video,
+          videoElement: displaySource,
           landmarks: landmarksRef.current,
           simulationConfig: effectiveConfig,
         });
@@ -309,6 +314,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
     isHoldingOriginal,
     alternatingEye,
     isMirrored,
+    mobilePipeline,
   ]);
 
   // 3. Snapshot Handler

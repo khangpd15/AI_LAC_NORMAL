@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { stabilizeSimulationLandmarks } from '../src/services/cv/simulationTracking.js';
-import { sendFrameToFaceMesh } from '../src/services/faceMeshService.js';
+import { getSimulationProcessingSize, stabilizeSimulationLandmarks } from '../src/services/cv/simulationTracking.js';
+import { isFaceMeshBusy, sendFrameToFaceMesh } from '../src/services/faceMeshService.js';
 import { LANDMARKS } from '../src/constants/screeningConfig.js';
 
 function face() {
@@ -71,4 +71,53 @@ test('FaceMesh receives the captured image that will be rendered rather than the
   assert.equal(sent, capturedFrame);
   await sendFrameToFaceMesh({ send: async input => { sent = input.image; } }, video);
   assert.equal(sent, video);
+});
+
+test('mobile processing bounds both camera orientations without stretching or upscaling', () => {
+  assert.deepEqual(getSimulationProcessingSize(1920, 1080), { width: 640, height: 360 });
+  assert.deepEqual(getSimulationProcessingSize(1080, 1920), { width: 360, height: 640 });
+  assert.deepEqual(getSimulationProcessingSize(640, 480), { width: 640, height: 480 });
+  assert.deepEqual(getSimulationProcessingSize(320, 240), { width: 320, height: 240 });
+  assert.equal(getSimulationProcessingSize(0, 720), null);
+  assert.equal(getSimulationProcessingSize(NaN, 720), null);
+});
+
+test('slow mobile frames damp iris noise instead of applying a large jump', () => {
+  const before = face();
+  const next = face();
+  next[468].x += 0.02;
+  const mobile = stabilizeSimulationLandmarks(next, before, 150, { mobile: true });
+  const desktop = stabilizeSimulationLandmarks(next, before, 150);
+  assert.ok(mobile[468].x - before[468].x < 0.012);
+  assert.ok(mobile[468].x < desktop[468].x);
+  const closed = face();
+  closed[159].y = 0.498;
+  closed[145].y = 0.502;
+  assert.deepEqual(stabilizeSimulationLandmarks(closed, before, 150, { mobile: true })[159], closed[159]);
+});
+
+test('watchdog expiry keeps a slow FaceMesh request locked until it really completes', async context => {
+  context.mock.timers.enable({ apis: ['setTimeout'] });
+  const video = { readyState: 2, videoWidth: 640, videoHeight: 480, paused: false };
+  let finishSend;
+  let sends = 0;
+  const mesh = { send: () => { sends += 1; return new Promise(resolve => { finishSend = resolve; }); } };
+  const first = sendFrameToFaceMesh(mesh, video);
+  await Promise.resolve();
+  assert.equal(isFaceMeshBusy(mesh), true);
+  context.mock.timers.tick(2500);
+  assert.equal(await first, false);
+  assert.equal(isFaceMeshBusy(mesh), true);
+  assert.equal(await sendFrameToFaceMesh(mesh, video), false);
+  assert.equal(sends, 1);
+  finishSend();
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(isFaceMeshBusy(mesh), false);
+  const next = sendFrameToFaceMesh(mesh, video);
+  await Promise.resolve();
+  finishSend();
+  assert.equal(await next, true);
+  assert.equal(sends, 2);
+  context.mock.timers.reset();
 });
