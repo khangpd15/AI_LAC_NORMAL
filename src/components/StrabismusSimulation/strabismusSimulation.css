@@ -215,13 +215,20 @@
   overflow: hidden;
 }
 
-/* The Live Output Canvas */
+/* The Live Output Canvas
+   Canvas elements do NOT support object-fit — they simply stretch.
+   Fix: width:100% + height:auto lets the browser preserve the canvas's
+   intrinsic aspect ratio (set by canvas.width / canvas.height in JS).
+   The flex viewport-frame centers it both axes. */
 .sim-display-canvas {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
   display: block;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  /* Fallback aspect-ratio for before first frame renders */
+  aspect-ratio: 4 / 3;
 }
+
 
 /* Loading & Error Curtains */
 .sim-loading-curtain,

@@ -252,11 +252,18 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
         }
         lastRenderedVersion = frameVersionRef.current;
         const displaySource = frameVersionRef.current > 0 ? trackedFrameRef.current : video;
-        const displaySize = getSimulationProcessingSize(displaySource.videoWidth || displaySource.width, displaySource.videoHeight || displaySource.height, mobilePipeline ? 640 : 1280);
-        if (canvas.width !== displaySize.width || canvas.height !== displaySize.height) {
-          canvas.width = displaySize.width;
-          canvas.height = displaySize.height;
+
+        // Size canvas to actual display pixels (CSS rect × dpr) so there's no
+        // stretch on mobile portrait — the engine's getDrawRect handles scaling internally.
+        const canvasRect = canvas.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const targetW = canvasRect.width  > 0 ? Math.round(canvasRect.width  * dpr) : (displaySource.videoWidth  || displaySource.width  || 640);
+        const targetH = canvasRect.height > 0 ? Math.round(canvasRect.height * dpr) : (displaySource.videoHeight || displaySource.height || 480);
+        if (canvas.width !== targetW || canvas.height !== targetH) {
+          canvas.width  = targetW;
+          canvas.height = targetH;
         }
+
 
         // Render simulation or original
         const effectiveConfig = isHoldingOriginal
