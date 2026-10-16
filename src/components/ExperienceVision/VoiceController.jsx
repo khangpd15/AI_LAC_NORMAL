@@ -10,6 +10,7 @@ import audioService from '../../services/audioService';
  */
 export default function VoiceController({
   voiceText = '',
+  playbackKey = null,
   isVoiceEnabled = true,
   onToggleVoice,
   onVoiceComplete,
@@ -22,45 +23,32 @@ export default function VoiceController({
     onVoiceCompleteRef.current = onVoiceComplete;
   }, [onVoiceComplete]);
 
-  const lastPlayedTextRef = useRef('');
-  const isSpeakingRef = useRef(false);
+  const playbackRef = useRef(0);
+  const [replayCount, setReplayCount] = useState(0);
 
   useEffect(() => {
-    isSpeakingRef.current = isSpeaking;
-  }, [isSpeaking]);
-
-  useEffect(() => {
-    let cancelled = false;
+    const playback = ++playbackRef.current;
 
     if (!voiceText || !isVoiceEnabled) {
+      audioService.stop();
       setIsSpeaking(false);
-      isSpeakingRef.current = false;
       return;
     }
-
-    // Prevent re-triggering playback of the exact same spoken text across re-renders
-    if (lastPlayedTextRef.current === voiceText) {
-      return;
-    }
-    lastPlayedTextRef.current = voiceText;
 
     const startPlayback = async () => {
       audioService.stop();
       setIsSpeaking(true);
-      isSpeakingRef.current = true;
 
       try {
-        await audioService.speak(voiceText);
-        if (!cancelled) {
+        const completed = await audioService.speak(voiceText);
+        if (playbackRef.current === playback) {
           setIsSpeaking(false);
-          isSpeakingRef.current = false;
-          onVoiceCompleteRef.current?.();
+          if (completed) onVoiceCompleteRef.current?.();
         }
       } catch (err) {
         console.warn('[VoiceController] Playback error or canceled:', err);
-        if (!cancelled) {
+        if (playbackRef.current === playback) {
           setIsSpeaking(false);
-          isSpeakingRef.current = false;
         }
       }
     };
@@ -68,22 +56,14 @@ export default function VoiceController({
     startPlayback();
 
     return () => {
-      cancelled = true;
+      playbackRef.current += 1;
       audioService.stop();
     };
-  }, [voiceText, isVoiceEnabled]);
+  }, [voiceText, playbackKey, isVoiceEnabled, replayCount]);
 
-  const handleReplay = async () => {
+  const handleReplay = () => {
     if (!voiceText || !isVoiceEnabled) return;
-    audioService.stop();
-    setIsSpeaking(true);
-    try {
-      await audioService.speak(voiceText);
-    } catch (err) {
-      console.warn('[VoiceController] Replay error:', err);
-    } finally {
-      setIsSpeaking(false);
-    }
+    setReplayCount((count) => count + 1);
   };
 
   return (
@@ -99,7 +79,7 @@ export default function VoiceController({
           <span className="voice-idle-dot" />
         )}
         <span className="voice-status-text">
-          {isSpeaking ? 'AI đang đọc lời dẫn…' : 'Lời dẫn hoàn tất'}
+          {!isVoiceEnabled ? 'Đã tắt lời dẫn' : isSpeaking ? 'AI đang đọc lời dẫn…' : 'Lời dẫn hoàn tất'}
         </span>
       </div>
 
@@ -109,6 +89,7 @@ export default function VoiceController({
           type="button"
           className="btn-voice-hud"
           onClick={handleReplay}
+          disabled={!isVoiceEnabled || !voiceText}
           title="Nghe lại lời dẫn"
         >
           <span>🔄</span>

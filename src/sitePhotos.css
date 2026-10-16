@@ -27,6 +27,8 @@
 .site-photo[data-missing='true']::after { display: none; }
 .guide-cover { display: block; position: relative; aspect-ratio: 16 / 10; background: #E1F4F0; }
 .guide-cover > .site-photo { height: 100%; aspect-ratio: 16 / 10; }
+.home-listening-grid .guide-cover { aspect-ratio: 2 / 1; flex-shrink: 0; }
+.home-listening-grid .guide-cover > .site-photo { aspect-ratio: auto; }
 .listening-card-compact > .guide-cover { aspect-ratio: auto; }
 .listening-mini > .guide-cover { aspect-ratio: 1; }
 .care-hero-photograph { aspect-ratio: 6 / 5; min-height: 0; background: #E1F4F0; }

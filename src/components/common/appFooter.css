@@ -46,16 +46,17 @@
 .footer-cta-ribbon-inner {
   max-width: 1240px;
   margin: 0 auto;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  flex-wrap: wrap;
   position: relative;
   z-index: 1;
 }
 
 .footer-cta-text-side {
+  min-width: 0;
   max-width: 620px;
 }
 
@@ -99,14 +100,17 @@
 
 /* Connection action chips */
 .footer-cta-chips-grid {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
 .footer-cta-chip-btn {
   display: inline-flex;
+  justify-content: center;
+  min-width: 0;
+  text-align: center;
   align-items: center;
   gap: 10px;
   padding: 12px 20px;
@@ -156,9 +160,21 @@
 
 .footer-grid-layout {
   display: grid;
-  grid-template-columns: 1.35fr 1fr 1.15fr 1.25fr;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1.25fr);
   gap: 36px;
   margin-bottom: 50px;
+}
+
+.footer-grid-layout > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.remicare-master-footer .chip-icon,
+.remicare-master-footer .trust-pill-icon,
+.remicare-master-footer .footer-link-dot,
+.remicare-master-footer .hosp-dot {
+  flex-shrink: 0;
 }
 
 /* Column 1: Brand & Slogan */
@@ -182,6 +198,7 @@
 }
 
 .footer-brand-logo-img {
+  flex-shrink: 0;
   width: 52px;
   height: 52px;
   border-radius: 14px;
@@ -193,6 +210,7 @@
 }
 
 .footer-brand-titles {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   line-height: 1.2;
@@ -481,6 +499,8 @@
 }
 
 .footer-copyright-text {
+  flex: 1 1 400px;
+  min-width: 0;
   font-size: 0.9rem;
   color: #3D615E;
   line-height: 1.55;
@@ -496,6 +516,7 @@
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .btn-footer-voice-listen {
@@ -572,16 +593,18 @@
    4. RESPONSIVE BREAKPOINTS
    -------------------------------------------------------------------------- */
 @media (max-width: 1080px) {
+  .footer-cta-ribbon-inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .footer-grid-layout {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 36px;
   }
 }
 
 @media (max-width: 680px) {
   .footer-cta-ribbon-inner {
-    flex-direction: column;
-    align-items: flex-start;
+    grid-template-columns: minmax(0, 1fr);
   }
   .footer-cta-chips-grid {
     width: 100%;
@@ -591,7 +614,7 @@
     justify-content: center;
   }
   .footer-grid-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 32px;
   }
   .footer-main-container {
@@ -602,8 +625,25 @@
     text-align: center;
     gap: 14px;
   }
+  .footer-copyright-text {
+    flex: auto;
+  }
+  .footer-bottom-actions {
+    width: 100%;
+    gap: 10px;
+  }
+  .footer-bottom-actions > button {
+    flex: 1 1 180px;
+    justify-content: center;
+  }
   .btn-footer-back-to-top {
     width: 100%;
     justify-content: center;
+  }
+}
+
+@media (max-width: 400px) {
+  .footer-cta-chips-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

@@ -107,7 +107,7 @@ export function setFaceMeshResultsCallback(callback) {
  * @param {any} faceMeshInstance
  * @param {HTMLVideoElement} videoElement
  */
-export async function sendFrameToFaceMesh(faceMeshInstance, videoElement) {
+export async function sendFrameToFaceMesh(faceMeshInstance, videoElement, frameSource = videoElement) {
   if (
     !faceMeshInstance ||
     !videoElement ||
@@ -126,7 +126,7 @@ export async function sendFrameToFaceMesh(faceMeshInstance, videoElement) {
 
     try {
       await Promise.race([
-        faceMeshInstance.send({ image: videoElement }),
+        faceMeshInstance.send({ image: frameSource }),
         timeoutPromise,
       ]);
     } finally {

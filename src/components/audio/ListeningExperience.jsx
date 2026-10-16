@@ -114,8 +114,14 @@ export function ListeningProvider({ children }) {
   </ListeningContext.Provider>;
 }
 
-function PlayerControls({ compact = false }) {
-  const { track, status, position, duration, rate, play, seek, changeRate } = useContext(ListeningContext);
+function PlayerControls({ compact = false, guide }) {
+  const player = useContext(ListeningContext);
+  const active = !guide || player.track?.id === guide.id;
+  const { rate, play, seek, changeRate } = player;
+  const track = guide || player.track;
+  const status = active ? player.status : 'idle';
+  const position = active ? player.position : 0;
+  const duration = active ? player.duration : 0;
   const id = useId();
   const loading = status === 'loading';
   return <div className={`listen-controls ${compact ? 'listen-controls-compact' : ''}`}>
@@ -138,11 +144,9 @@ export default function AudioGuide({ guideId, compact = false }) {
     <div className="listening-card-body">
       <div className="listening-meta"><span className="listen-chip">{guide.topic}</span><span>Giọng đọc Iris · Tiếng Việt</span></div>
       <h3>{guide.title}</h3><p>{guide.description}</p>
-      {active ? <>
-        <div className="listen-waveform" aria-hidden="true">{Array.from({ length: 56 }, (_, i) => <i key={i} style={{ height: `${12 + (player.peaks[i] ?? (Math.sin(i * 1.9) ** 2 * .6)) * 28}px`, opacity: i / 56 < player.position / player.duration ? 1 : .3 }} />)}</div>
-        <PlayerControls />
-        <p className="listen-status" role="status">{player.error || (player.status === 'loading' ? 'Đang chuẩn bị giọng đọc…' : player.status === 'playing' ? 'Đang phát' : player.status === 'ended' ? 'Đã nghe xong' : 'Đã tạm dừng')}</p>
-      </> : <button className="listen-start" onClick={() => player.play(guide)}><AudioIcon /><span>Nghe cùng Iris</span><span className="listen-start-note">{player.duration && active ? time(player.duration) : 'Hướng dẫn ngắn'}</span></button>}
+      <div className="listen-waveform" aria-hidden="true">{Array.from({ length: 56 }, (_, i) => <i key={i} style={{ height: `${12 + ((active ? player.peaks[i] : undefined) ?? (Math.sin(i * 1.9) ** 2 * .6)) * 28}px`, opacity: active && player.duration > 0 && i / 56 < player.position / player.duration ? 1 : .3 }} />)}</div>
+      <PlayerControls guide={guide} />
+      <p className="listen-status" role="status">{!active ? 'Sẵn sàng nghe cùng Iris' : player.error || (player.status === 'loading' ? 'Đang chuẩn bị giọng đọc…' : player.status === 'playing' ? 'Đang phát' : player.status === 'ended' ? 'Đã nghe xong' : 'Đã tạm dừng')}</p>
       <details className="listen-transcript"><summary>Đọc nội dung bài nghe</summary><p>{guide.text}</p></details>
     </div>
   </article>;

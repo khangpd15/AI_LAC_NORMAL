@@ -443,12 +443,15 @@ export default function HomePage({
               </button>
             </div>
 
-            {/* Visual Image Display Box (Custom Vietnamese clean scenic image) */}
+            {/* Use the same real photograph for both views to isolate the visual effect. */}
             <div className="story-visual-canvas">
               <div className={`story-img-wrapper mode-${storyMode}`}>
                 <img
-                  src="/images/vision_comparison_clean.jpg"
-                  alt="So sánh mắt sáng rõ và mắt nhìn mờ"
+                  src="/images/listen-rest.webp"
+                  alt="Ảnh chụp ánh nắng xuyên qua tán cây, dùng để so sánh góc nhìn rõ và góc nhìn mờ"
+                  width="960"
+                  height="600"
+                  loading="lazy"
                   className="story-visual-img"
                 />
 

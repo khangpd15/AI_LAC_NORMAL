@@ -25,6 +25,7 @@ import {
   closeFaceMesh,
 } from '../../services/faceMeshService';
 import audioService from '../../services/audioService';
+import { stabilizeSimulationLandmarks } from '../../services/cv/simulationTracking';
 import './strabismusSimulation.css';
 
 export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
@@ -37,11 +38,16 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
   const landmarksRef = useRef(null);
   const meshBusyRef = useRef(false);
   const landmarkTimeRef = useRef(0);
+  const inferenceFrameRef = useRef(null);
+  const trackedFrameRef = useRef(null);
+  const frameVersionRef = useRef(0);
+  const submittedVideoTimeRef = useRef(-1);
 
   // Camera & Tracking states
   const [cameraState, setCameraState] = useState('INIT'); // 'INIT' | 'RUNNING' | 'ERROR'
   const [cameraError, setCameraError] = useState(null);
   const [facingMode, setFacingMode] = useState('user');
+  const isMirrored = facingMode === 'user';
   const [fps, setFps] = useState(0);
   const [hasFace, setHasFace] = useState(false);
 
@@ -121,6 +127,11 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
         setCameraState('INIT');
         setCameraError(null);
         landmarksRef.current = null;
+        landmarkTimeRef.current = 0;
+        inferenceFrameRef.current = document.createElement('canvas');
+        trackedFrameRef.current = document.createElement('canvas');
+        frameVersionRef.current = 0;
+        submittedVideoTimeRef.current = -1;
         setHasFace(false);
 
         // 1. Start Camera
@@ -144,19 +155,28 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
         // 2. Initialize MediaPipe FaceMesh
         const faceMesh = await initializeFaceMesh((results) => {
           if (isCancelled) return;
+          const now = performance.now();
           if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
             const next = results.multiFaceLandmarks[0];
-            const previous = landmarksRef.current;
-            // Smooth tiny tracking noise; follow head movement and blinks immediately.
-            const motion = previous ? Math.hypot(next[1].x - previous[1].x, next[1].y - previous[1].y) : 1;
-            landmarksRef.current = previous && motion < 0.008
-              ? next.map((point, index) => ({ ...point, x: previous[index].x * 0.18 + point.x * 0.82, y: previous[index].y * 0.18 + point.y * 0.82 }))
-              : next;
-            landmarkTimeRef.current = performance.now();
+            const deltaMs = now - landmarkTimeRef.current;
+            landmarksRef.current = stabilizeSimulationLandmarks(next, deltaMs < 250 ? landmarksRef.current : null, deltaMs);
+            landmarkTimeRef.current = now;
             setHasFace(true);
           } else {
+            // Hold the last matched image briefly across a missed detection.
+            if (landmarksRef.current && now - landmarkTimeRef.current < 120) return;
             landmarksRef.current = null;
             setHasFace(false);
+          }
+          const source = inferenceFrameRef.current;
+          const tracked = trackedFrameRef.current;
+          if (source.width && source.height) {
+            if (tracked.width !== source.width || tracked.height !== source.height) {
+              tracked.width = source.width;
+              tracked.height = source.height;
+            }
+            tracked.getContext('2d').drawImage(source, 0, 0);
+            frameVersionRef.current += 1;
           }
         });
 
@@ -193,6 +213,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
 
     let lastFpsTime = performance.now();
     let frameCount = 0;
+    let lastRenderedVersion = -1;
 
 
     const renderLoop = async () => {
@@ -207,12 +228,27 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
         }
 
         // Send frame to FaceMesh at controlled cadence
-        if (!meshBusyRef.current && faceMeshRef.current && !video.paused) {
+        if (!meshBusyRef.current && faceMeshRef.current && !video.paused && submittedVideoTimeRef.current !== video.currentTime) {
           meshBusyRef.current = true;
-          sendFrameToFaceMesh(faceMeshRef.current, video).finally(() => {
+          submittedVideoTimeRef.current = video.currentTime;
+          const source = inferenceFrameRef.current;
+          if (source.width !== video.videoWidth || source.height !== video.videoHeight) {
+            source.width = video.videoWidth;
+            source.height = video.videoHeight;
+          }
+          source.getContext('2d').drawImage(video, 0, 0);
+          sendFrameToFaceMesh(faceMeshRef.current, video, source).finally(() => {
             meshBusyRef.current = false;
           });
         }
+
+        // Each captured image is warped once, with landmarks from that image.
+        // Reusing old landmarks over a newer live video frame causes eye jumps.
+        if (lastRenderedVersion === frameVersionRef.current) {
+          animFrameRef.current = requestAnimationFrame(renderLoop);
+          return;
+        }
+        lastRenderedVersion = frameVersionRef.current;
 
         // Render simulation or original
         const effectiveConfig = isHoldingOriginal
@@ -222,7 +258,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
               angleDeg: 0,
               showHud: false,
               showHirschberg: false,
-              isMirrored: false,
+              isMirrored,
             }
           : {
               type,
@@ -232,13 +268,13 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
               showHud,
               showHirschberg,
               alternatingState: alternatingEye,
-              isMirrored: false,
+              isMirrored,
             };
 
         processStrabismusFrame({
           canvas,
-          videoElement: video,
-          landmarks: performance.now() - landmarkTimeRef.current < 250 ? landmarksRef.current : null,
+          videoElement: frameVersionRef.current > 0 ? trackedFrameRef.current : video,
+          landmarks: landmarksRef.current,
           simulationConfig: effectiveConfig,
         });
 
@@ -272,6 +308,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
     showHirschberg,
     isHoldingOriginal,
     alternatingEye,
+    isMirrored,
   ]);
 
   // 3. Snapshot Handler
@@ -287,7 +324,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
           affectedEye,
           angleDeg: type === STRABISMUS_TYPES.ORTHOTROPIA || isHoldingOriginal ? 0 : angleDeg,
         },
-        isMirrored: false,
+        isMirrored,
       });
 
       // Trigger automatic PNG download
@@ -421,6 +458,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
           <canvas
             ref={canvasRef}
             className="sim-display-canvas"
+            style={{ transform: isMirrored ? 'scaleX(-1)' : 'none' }}
           />
 
           {cameraState === 'RUNNING' && <div className={`sim-camera-guidance ${hasFace ? 'tracking' : ''}`} role="status"><span />{hasFace ? 'Nhìn thẳng vào camera để quan sát rõ hiệu ứng' : 'Đưa khuôn mặt vào giữa khung hình'}</div>}
@@ -519,7 +557,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
               return <button key={id} type="button" className={`btn-preset-card ${type === id ? 'active' : ''}`} aria-pressed={type === id} onClick={() => handleTypeSelect(id)}><EyeDirection type={id} /><span className="card-info"><strong>{definition.title}</strong><small>{({ ESOTROPIA: 'Về phía mũi', EXOTROPIA: 'Về phía tai' })[id]}</small></span><span className="sim-card-check">{type === id ? '✓' : ''}</span></button>;
             })}
           </div><button type="button" className="sim-original-option" aria-pressed={type === STRABISMUS_TYPES.ORTHOTROPIA} onClick={() => handleTypeSelect(STRABISMUS_TYPES.ORTHOTROPIA)}>◎ Xem ảnh gốc · Không áp dụng hiệu ứng</button></section>
-          <section className="sim-step"><h3><b>2</b> Chọn mắt áp dụng</h3><div className="eye-selector-group" aria-label="Chọn mắt áp dụng">{EYE_OPTIONS.map((option) => <button key={option.id} type="button" aria-pressed={affectedEye === option.id} className={`btn-eye-chip ${affectedEye === option.id ? 'active' : ''}`} onClick={() => setAffectedEye(option.id)}>{option.label}</button>)}</div><p className="sim-field-help">Trái / phải theo phía của bạn. Camera hiển thị không lật gương.{affectedEye === AFFECTED_EYE.ALTERNATING && ` Đang áp dụng: ${alternatingEye === 'RIGHT' ? 'mắt phải' : 'mắt trái'}.`}</p></section>
+          <section className="sim-step"><h3><b>2</b> Chọn mắt áp dụng</h3><div className="eye-selector-group" aria-label="Chọn mắt áp dụng">{EYE_OPTIONS.map((option) => <button key={option.id} type="button" aria-pressed={affectedEye === option.id} className={`btn-eye-chip ${affectedEye === option.id ? 'active' : ''}`} onClick={() => setAffectedEye(option.id)}>{option.label}</button>)}</div><p className="sim-field-help">Trái / phải theo phía của bạn. {isMirrored ? 'Camera trước hiển thị như gương, cùng chiều chuyển động của bạn.' : 'Camera sau hiển thị theo hướng chụp thực tế.'}{affectedEye === AFFECTED_EYE.ALTERNATING && ` Đang áp dụng: ${alternatingEye === 'RIGHT' ? 'mắt phải' : 'mắt trái'}.`}</p></section>
           <section className="sim-step"><h3><b>3</b> Điều chỉnh mức độ <output htmlFor="sim-deviation">{type === STRABISMUS_TYPES.ORTHOTROPIA ? 0 : angleDeg}°</output></h3><input id="sim-deviation" aria-label="Góc lệch mô phỏng" type="range" min="0" max="35" step="1" value={angleDeg} disabled={type === STRABISMUS_TYPES.ORTHOTROPIA} onChange={(event) => setAngleDeg(Number(event.target.value))} className="sim-angle-slider" /><div className="slider-ticks-row"><span>0° · Không lệch</span><span>35° · Lệch rõ</span></div><div className="presets-btn-row">{ANGLE_PRESETS.map((preset) => <button key={preset.label} type="button" disabled={type === STRABISMUS_TYPES.ORTHOTROPIA} aria-pressed={angleDeg === preset.angleDeg} className={`btn-angle-chip ${angleDeg === preset.angleDeg ? 'active' : ''}`} onClick={() => setAngleDeg(preset.angleDeg)}>{preset.label} <small>{preset.angleDeg}°</small></button>)}</div><p className="sim-field-help">Góc đặt cho hiệu ứng, không phải độ lác đo từ camera.</p></section>
           <div className="sim-current-explanation"><span className="sim-eyebrow">BẠN ĐANG QUAN SÁT</span><strong>{currentDef.title}</strong><p>{type === STRABISMUS_TYPES.ORTHOTROPIA ? 'Hình ảnh camera gốc, chưa áp dụng dịch chuyển mắt.' : currentDef.summary}</p>{showHirschberg && <p>{currentDef.hirschbergNote}</p>}</div>
           <details className="sim-advanced" open={showAdvanced} onToggle={(event) => setShowAdvanced(event.currentTarget.open)}><summary>Tùy chỉnh hướng lệch tự do</summary><p className="sim-field-help">Kéo về “Trong” để hướng về mũi, “Ngoài” để hướng về tai. Kéo xa tâm để tăng độ lệch.</p><VirtualJoystick value={customVector} onChange={(vector) => { setCustomVector(vector); setType(STRABISMUS_TYPES.CUSTOM); }} size={160} label="Hướng lệch phối hợp" /><p className="sim-field-help">Quy đổi góc đặt: ~{angleToPrismDiopters(type === STRABISMUS_TYPES.ORTHOTROPIA ? 0 : angleDeg)}Δ.</p></details>

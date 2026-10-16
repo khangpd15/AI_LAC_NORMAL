@@ -134,7 +134,7 @@ export default function ExperienceVisionPage({
   const [showQuestion, setShowQuestion] = useState(false);
 
   // Voice narration text dynamically switches between stage story, question, and feedback
-  const [speakingText, setSpeakingText] = useState('');
+  const [narration, setNarration] = useState(null);
 
   // Giai đoạn 7: AI nhận diện che mắt trái / phải
   const [isEyeCovered, setIsEyeCovered] = useState(false);
@@ -147,20 +147,33 @@ export default function ExperienceVisionPage({
   const isStage7 = activeStage.id === 7 || activeStage.effect === 'severeAmblyopia';
 
   const activeStageRef = useRef(activeStage);
+  const questionTriggeredRef = useRef({});
   useEffect(() => {
     activeStageRef.current = activeStage;
   }, [activeStage]);
+  const setSpeakingText = useCallback((text) => {
+    setNarration({ stageId: activeStageRef.current.id, text });
+  }, []);
+  const speakingText = narration?.stageId === activeStage.id ? narration.text : activeStage.voiceText;
 
   // When changing stages, set initial voice text and reset stage-specific states
   useEffect(() => {
     if (sessionPhase === 'IN_EXPERIENCE') {
-      setSpeakingText(activeStage.voiceText);
+      setNarration(null);
+      delete questionTriggeredRef.current[activeStage.id];
       setShowQuestion(false);
       setIsEyeCovered(false);
       setAiDetectedSide(null);
       setHasTestedCover(false);
     }
   }, [currentStageIdx, sessionPhase, activeStage]);
+
+  // Questions remain available when narration is muted.
+  useEffect(() => {
+    if (sessionPhase === 'IN_EXPERIENCE' && !isVoiceEnabled && activeStage.question) {
+      setShowQuestion(true);
+    }
+  }, [sessionPhase, isVoiceEnabled, activeStage]);
 
   // Handle camera permission granted
   const handleCameraReady = useCallback(() => {
@@ -178,8 +191,6 @@ export default function ExperienceVisionPage({
     setCurrentStageIdx(0);
   };
 
-  const questionTriggeredRef = useRef({});
-
   // Voice completion callback
   const handleVoiceComplete = useCallback(() => {
     const stage = activeStageRef.current;
@@ -193,7 +204,7 @@ export default function ExperienceVisionPage({
       setShowQuestion(true);
       setSpeakingText(stage.question.voiceText);
     }
-  }, [userAnswers]);
+  }, [userAnswers, setSpeakingText]);
 
   const hasSpokenCoverFeedbackRef = useRef(false);
   useEffect(() => {
@@ -218,7 +229,7 @@ export default function ExperienceVisionPage({
         setAiDetectedSide(null);
       }
     }
-  }, []);
+  }, [setSpeakingText]);
 
 
 
@@ -241,7 +252,7 @@ export default function ExperienceVisionPage({
     if (option.feedbackVoice) {
       setSpeakingText(option.feedbackVoice);
     }
-  }, []);
+  }, [setSpeakingText]);
 
   // Determine if user can proceed to next stage
   const hasQuestion = Boolean(activeStage.question);
@@ -264,6 +275,7 @@ export default function ExperienceVisionPage({
   };
 
   const handleRestart = () => {
+    questionTriggeredRef.current = {};
     setCurrentStageIdx(0);
     setUserAnswers({});
     setShowQuestion(false);
@@ -293,7 +305,7 @@ export default function ExperienceVisionPage({
         return next;
       });
     }
-  }, []);
+  }, [setSpeakingText]);
 
   return (
     <div className={`experience-fullscreen-container ${className}`}>
@@ -390,7 +402,9 @@ export default function ExperienceVisionPage({
 
             {/* Voice Controller */}
             <VoiceController
+              key={activeStage.id}
               voiceText={speakingText}
+              playbackKey={narration?.stageId === activeStage.id ? narration : null}
               isVoiceEnabled={isVoiceEnabled}
               onToggleVoice={() => setIsVoiceEnabled((v) => !v)}
               onVoiceComplete={handleVoiceComplete}

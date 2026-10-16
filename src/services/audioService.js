@@ -86,6 +86,8 @@ export class AudioService {
     this.listeners = new Set();
     this.requestId = 0;
     this.activeTimer = null;
+    this.cancelPlayback = null;
+    this.resolveDelay = null;
     this.unlocked = true;
     this.initialized = false;
     this.audioPrimed = false;
@@ -429,16 +431,29 @@ export class AudioService {
 
       let urlIndex = 0;
       let resolved = false;
+      let activeAudio = null;
+
+      const releaseAudio = () => {
+        if (!activeAudio) return;
+        activeAudio.onplay = activeAudio.onended = activeAudio.onerror = null;
+        try { activeAudio.pause(); activeAudio.removeAttribute('src'); } catch {}
+        if (this.currentAudio === activeAudio) this.currentAudio = null;
+        activeAudio = null;
+      };
 
       const finish = () => {
         if (!resolved) {
           resolved = true;
-          this.currentAudio = null;
+          releaseAudio();
+          if (this.cancelPlayback === finish) this.cancelPlayback = null;
           resolve();
         }
       };
+      this.cancelPlayback = finish;
 
       const tryNextUrl = () => {
+        if (resolved) return;
+        releaseAudio();
         if (this.requestId !== requestId) {
           finish();
           return;
@@ -452,6 +467,7 @@ export class AudioService {
 
         const url = urls[urlIndex++];
         const audio = new Audio();
+        activeAudio = audio;
         this.currentAudio = audio;
         audio.referrerPolicy = 'no-referrer';
         audio.playbackRate = Math.max(0.75, Math.min(1.25, rate));
@@ -471,9 +487,15 @@ export class AudioService {
           finish();
         };
 
+        let failed = false;
+        const retry = () => {
+          if (failed || resolved || activeAudio !== audio) return;
+          failed = true;
+          tryNextUrl();
+        };
         audio.onerror = (e) => {
           console.warn(`[AudioService] Audio stream URL failed (${url}):`, e);
-          tryNextUrl();
+          retry();
         };
 
         audio.src = url;
@@ -481,7 +503,7 @@ export class AudioService {
         if (playPromise !== undefined) {
           playPromise.catch((err) => {
             console.warn(`[AudioService] Audio play error for URL (${url}):`, err?.message || err);
-            tryNextUrl();
+            retry();
           });
         }
       };
@@ -515,24 +537,20 @@ export class AudioService {
           await this.playSingleAudioChunk(chunk, rate, volume, requestId);
 
           if (c < subChunks.length - 1 && requestId === this.requestId) {
-            await new Promise((res) => {
-              this.activeTimer = setTimeout(res, 20);
-            });
+            await this.waitForPause(20);
           }
         }
 
         if (i < segments.length - 1 && requestId === this.requestId) {
           const pauseMs = segment.pauseAfterMs || AUDIO_CONFIG.pauseNormalSentenceMs;
-          await new Promise((res) => {
-            this.activeTimer = setTimeout(res, pauseMs);
-          });
+          await this.waitForPause(pauseMs);
         }
       }
 
       if (requestId === this.requestId) {
         this.clearCurrent(AUDIO_STATES.IDLE);
       }
-      return true;
+      return requestId === this.requestId;
     } catch (err) {
       console.error('[AudioService] Stream speech error:', err);
       if (requestId === this.requestId) {
@@ -611,6 +629,11 @@ export class AudioService {
           }
 
           const utterance = new this.Utterance(segment.text);
+          const finish = () => {
+            if (this.cancelPlayback === finish) this.cancelPlayback = null;
+            resolve();
+          };
+          this.cancelPlayback = finish;
           utterance.lang = options.lang || AUDIO_CONFIG.lang;
           utterance.rate = rate;
           utterance.pitch = pitch;
@@ -626,23 +649,24 @@ export class AudioService {
 
           utterance.onend = () => {
             if (this.requestId !== requestId) {
-              resolve();
+              finish();
               return;
             }
             this.currentUtterance = null;
-            resolve();
+            finish();
           };
 
           utterance.onerror = (event) => {
             if (this.requestId !== requestId) {
-              resolve();
+              finish();
               return;
             }
             if (event.error === 'canceled' || event.error === 'interrupted') {
-              resolve();
+              finish();
               return;
             }
             console.error('[AudioService] Utterance error:', event.error || event);
+            if (this.cancelPlayback === finish) this.cancelPlayback = null;
             reject(event);
           };
 
@@ -653,16 +677,14 @@ export class AudioService {
         // Khoảng nghỉ 120ms tự nhiên giữa các câu
         if (i < segments.length - 1 && requestId === this.requestId) {
           const pauseMs = segment.pauseAfterMs || AUDIO_CONFIG.pauseNormalSentenceMs;
-          await new Promise((res) => {
-            this.activeTimer = setTimeout(res, pauseMs);
-          });
+          await this.waitForPause(pauseMs);
         }
       }
 
       if (requestId === this.requestId) {
         this.clearCurrent(AUDIO_STATES.IDLE);
       }
-      return true;
+      return requestId === this.requestId;
     } catch (error) {
       if (requestId === this.requestId) {
         console.warn('[AudioService] Native speech failed, falling back to Female Audio Stream:', error);
@@ -672,12 +694,27 @@ export class AudioService {
     }
   }
 
+  waitForPause(durationMs) {
+    return new Promise((resolve) => {
+      const finish = () => {
+        this.activeTimer = null;
+        this.resolveDelay = null;
+        resolve();
+      };
+      this.resolveDelay = finish;
+      this.activeTimer = setTimeout(finish, durationMs);
+    });
+  }
+
   stop(emit = true) {
     this.requestId += 1;
+    this.cancelPlayback?.();
+    this.cancelPlayback = null;
     if (this.activeTimer) {
       clearTimeout(this.activeTimer);
       this.activeTimer = null;
     }
+    this.resolveDelay?.();
     if (this.currentAudio) {
       try {
         this.currentAudio.pause();
