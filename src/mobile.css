@@ -113,11 +113,22 @@
   .strabismus-sim-container .btn-hold-compare, .strabismus-sim-container .btn-snapshot-action { min-height: 48px; padding: 10px; font-size: 11px; }
   .strabismus-sim-container .sim-camera-guidance { bottom: 70px; font-size: 10px; }
   .strabismus-sim-container .sim-step .btn-eye-chip { min-height: 44px; }
-  .strabismus-sim-container .nav-left { flex: 1 1 100%; gap: 12px; }
-  .strabismus-sim-container .nav-right-actions { width: 100%; justify-content: flex-end; }
-  .strabismus-sim-container .sim-tool-btn { min-width: 44px; min-height: 44px; }
-  .strabismus-sim-container .sim-listening-panel > summary { min-height: 44px; padding-block: 12px; }
-  .sim-page-intro h2 { font-size: 24px; }
+  .strabismus-sim-container .sim-top-nav { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); }
+  .strabismus-sim-container .nav-left { display: grid; grid-template-columns: auto minmax(0, 1fr); width: 100%; gap: 12px; align-items: center; }
+  .strabismus-sim-container .sim-title-group { min-width: 0; max-width: none; }
+  .strabismus-sim-container .sim-brand-title { font-size: 9px; letter-spacing: .1em; }
+  .strabismus-sim-container .sim-feature-title { font-size: 15px; line-height: 1.35; }
+  .strabismus-sim-container .sim-btn-back { min-height: 44px; padding: 8px 10px; white-space: nowrap; }
+  .strabismus-sim-container .nav-right-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; gap: 8px; }
+  .strabismus-sim-container .sim-tool-btn { min-width: 0; min-height: 44px; width: 100%; padding: 8px 6px; gap: 5px; justify-content: center; }
+  .strabismus-sim-container .sim-tool-btn .tool-text { display: inline; font-size: 11px; white-space: nowrap; }
+  .strabismus-sim-container .sim-tool-btn .tool-icon { font-size: 16px; }
+  .strabismus-sim-container .sim-listening-panel { margin: 0; padding: 0 16px; flex: none; }
+  .strabismus-sim-container .sim-listening-panel:not([open]) { height: 48px; max-height: none; overflow: hidden; }
+  .strabismus-sim-container .sim-listening-panel > summary { min-height: 44px; padding-block: 12px; font-size: 12px; line-height: 1.6; }
+  .strabismus-sim-container .sim-page-intro { margin: 0 auto; padding: 14px 16px 16px; }
+  .strabismus-sim-container .sim-page-intro h2 { font-size: 23px; margin-block: 6px 8px; }
+  .strabismus-sim-container .sim-page-intro p { font-size: 12px; line-height: 1.65; }
   .sim-deck-title { flex-wrap: wrap; }
 
   /* Flow layout reserves room for both narration and navigation at any height. */
