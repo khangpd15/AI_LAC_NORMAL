@@ -3,16 +3,8 @@ import audioService from '../../services/audioService';
 import {
   SvgGradients,
   IconSpeakerWave,
-  IconDoorEye,
-  IconDoorStrabismus,
-  IconDoorScanner,
   IconDoorCare,
   IconPlay,
-  IconAiStepCamera,
-  IconAiStepMesh,
-  IconAiStepNeural,
-  IconAiStepInsight,
-  IconShieldCheck,
   IconNormalVision,
   IconLowVision,
   IconParentUnderstand,
@@ -25,7 +17,7 @@ import AppNavbar from '../common/AppNavbar';
 import AppFooter from '../common/AppFooter';
 import './homePage.css';
 import HomeHero from './HomeHero';
-import SitePhoto from '../common/SitePhoto';
+import HomeCampaign from './HomeCampaign';
 import { HomeListeningSection } from '../audio/ListeningExperience';
 
 /**
@@ -58,7 +50,7 @@ export default function HomePage({
   // Voice narration text mapping
   const voiceScripts = {
     welcome:
-      'Xin chào! Mình là Iris. Mình sẽ hướng dẫn bạn từng bước nhé. Hãy chạm vào một trong các cánh cửa lớn bên dưới để bắt đầu.',
+      'Xin chào! Mình là Iris. Mình sẽ hướng dẫn bạn từng bước nhé. Bạn có thể khám phá góc nhìn của con, nghe bài hướng dẫn hoặc chọn trải nghiệm trên thanh điều hướng để bắt đầu.',
     experience:
       'Hãy thử xem thế giới có thể trông như thế nào khi một bên mắt nhìn kém.',
     simulation:
@@ -138,260 +130,9 @@ export default function HomePage({
             ================================================================== */}
         <HomeHero onStartExperience={onStartExperience} onStartScreening={onStartScreening} />
 
-        {/* ==================================================================
-            3. MAIN ACTION — 4 CÁNH CỬA TRẢI NGHIỆM
-            ================================================================== */}
-        <section
-          className="three-doors-section"
-          id="three-doors-section"
-          aria-label="Chọn trải nghiệm chính"
-        >
-          <div className="section-title-visual-strip">
-            <div className="visual-pointer-pill">
-              <IconSparkle size={18} />
-              <span>CHỌN TRẢI NGHIỆM</span>
-            </div>
-            <h2 className="doors-section-heading">Hôm nay, mình bắt đầu từ đâu?</h2>
-            <p className="doors-section-sub">Chọn một trải nghiệm phù hợp với bạn và gia đình.</p>
-          </div>
-
-          <div className="three-doors-grid">
-            {/* ---------------- CÁNH CỬA 01: TRẢI NGHIỆM ---------------- */}
-            <div
-              className="door-card door-experience"
-              onClick={onStartExperience}
-            >
-              <div className="door-top-meta">
-                <span className="door-number">01</span>
-                <button
-                  type="button"
-                  className="btn-door-voice"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    playVoice('experience', voiceScripts.experience);
-                  }}
-                  title="Nghe Iris giải thích"
-                  aria-label="Nghe hướng dẫn Trải nghiệm"
-                >
-                  <IconSpeakerWave size={22} isPlaying={currentSpokenId === 'experience'} />
-                </button>
-              </div>
-
-              <div className="door-illustration-box">
-                <IconDoorEye size={88} className="door-svg-art" />
-                <div className="door-glow-spot mint-glow" />
-              </div>
-
-              <div className="door-info">
-                <h3 className="door-action-title">TRẢI NGHIỆM</h3>
-                <p className="door-action-desc">
-                  Thử xem thế giới trông như thế nào khi một bên mắt nhìn kém.
-                </p>
-              </div>
-
-              <button type="button" className="door-giant-action-btn btn-mint-door" aria-label="Bắt đầu trải nghiệm" onClick={(event) => { event.stopPropagation(); onStartExperience(); }}>
-                <IconPlay size={20} />
-                <span className="action-label">BẮT ĐẦU</span>
-              </button>
-            </div>
-
-            {/* ---------------- CÁNH CỬA 02: MÔ PHỎNG LÁC LÉ AI ---------------- */}
-            <div
-              className="door-card door-simulation"
-              onClick={onStartSimulation}
-            >
-              <div className="door-top-meta">
-                <span className="door-number" style={{ color: '#0088FF' }}>02</span>
-                <button
-                  type="button"
-                  className="btn-door-voice"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    playVoice('simulation', voiceScripts.simulation);
-                  }}
-                  title="Nghe Iris giải thích"
-                  aria-label="Nghe hướng dẫn Mô phỏng lác lé"
-                >
-                  <IconSpeakerWave size={22} isPlaying={currentSpokenId === 'simulation'} />
-                </button>
-              </div>
-
-              <div className="door-illustration-box">
-                <IconDoorStrabismus size={88} className="door-svg-art" />
-                <div className="door-glow-spot blue-glow" />
-              </div>
-
-              <div className="door-info">
-                <h3 className="door-action-title">MÔ PHỎNG LÁC LÉ</h3>
-                <p className="door-action-desc">
-                  Bật webcam, AI quét gương mặt và mô phỏng mắt lác trong, ngoài, trên, dưới trực tiếp.
-                </p>
-              </div>
-
-              <button type="button" className="door-giant-action-btn btn-blue-door" aria-label="Mở mô phỏng lác lé" onClick={(event) => { event.stopPropagation(); onStartSimulation(); }}>
-                <IconPlay size={20} />
-                <span className="action-label">MÔ PHỎNG NGAY</span>
-              </button>
-            </div>
-
-            {/* ---------------- CÁNH CỬA 03: SÀNG LỌC ---------------- */}
-            <div
-              className="door-card door-screening"
-              onClick={onStartScreening}
-            >
-              <div className="door-top-meta">
-                <span className="door-number">03</span>
-                <button
-                  type="button"
-                  className="btn-door-voice"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    playVoice('screening', voiceScripts.screening);
-                  }}
-                  title="Nghe Iris giải thích"
-                  aria-label="Nghe hướng dẫn Sàng lọc"
-                >
-                  <IconSpeakerWave size={22} isPlaying={currentSpokenId === 'screening'} />
-                </button>
-              </div>
-
-              <div className="door-illustration-box">
-                <IconDoorScanner size={88} className="door-svg-art" />
-                <div className="door-glow-spot teal-glow" />
-              </div>
-
-              <div className="door-info">
-                <h3 className="door-action-title">SÀNG LỌC</h3>
-                <p className="door-action-desc">
-                  Bài kiểm tra thị giác hai mắt đơn giản và nhẹ nhàng cùng camera.
-                </p>
-              </div>
-
-              <button type="button" className="door-giant-action-btn btn-teal-door" aria-label="Bắt đầu sàng lọc" onClick={(event) => { event.stopPropagation(); onStartScreening(); }}>
-                <IconPlay size={20} />
-                <span className="action-label">BẮT ĐẦU</span>
-              </button>
-            </div>
-
-            {/* ---------------- CÁNH CỬA 04: CHĂM SÓC MẮT ---------------- */}
-            <div
-              className="door-card door-care"
-              onClick={() => {
-                setActiveModal('care_modal');
-                playVoice('care', voiceScripts.care);
-              }}
-            >
-              <div className="door-top-meta">
-                <span className="door-number">04</span>
-                <button
-                  type="button"
-                  className="btn-door-voice"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    playVoice('care', voiceScripts.care);
-                  }}
-                  title="Nghe Iris giải thích"
-                  aria-label="Nghe hướng dẫn Chăm sóc mắt"
-                >
-                  <IconSpeakerWave size={22} isPlaying={currentSpokenId === 'care'} />
-                </button>
-              </div>
-
-              <div className="door-illustration-box">
-                <IconDoorCare size={88} className="door-svg-art" />
-                <div className="door-glow-spot coral-glow" />
-              </div>
-
-              <div className="door-info">
-                <h3 className="door-action-title">CHĂM SÓC MẮT</h3>
-                <p className="door-action-desc">
-                  Bí quyết giữ mắt sáng khỏe mỗi ngày dành cho cả gia đình.
-                </p>
-              </div>
-
-              <button type="button" className="door-giant-action-btn btn-coral-door" aria-label="Xem chăm sóc mắt" onClick={(event) => { event.stopPropagation(); setActiveModal('care_modal'); playVoice('care', voiceScripts.care); }}>
-                <IconPlay size={20} />
-                <span className="action-label">XEM NGAY</span>
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* ==================================================================
-            4. SECTION — AI LIVE (CÔNG NGHỆ THỊ GIÁC AI)
-            ================================================================== */}
+        <HomeCampaign onStartExperience={onStartExperience} />
         <HomeListeningSection />
-        <section className="home-ai-live-section" aria-label="Công nghệ AI thị giác">
-          <div className="ai-live-card">
-            <div className="ai-live-header">
-              <div className="ai-tag">
-                <IconSparkle size={14} />
-                <span>CÔNG NGHỆ THỊ GIÁC AI</span>
-              </div>
-              <h2 className="ai-heading">Cách AI phân tích chuyển động mắt</h2>
-            </div>
 
-            {/* Visual Pipeline 4 Bước Bằng Vector Icon & Sơ Đồ */}
-            <div className="ai-steps-pipeline">
-              <div className="ai-pipe-item">
-                <div className="pipe-icon-circle">
-                  <IconAiStepCamera size={34} />
-                </div>
-                <span className="pipe-step-num">BƯỚC 1</span>
-                <span className="pipe-title">Mắt nhìn camera</span>
-              </div>
-
-              <div className="pipe-arrow-line">
-                <div className="pulse-connection-bar" />
-              </div>
-
-              <div className="ai-pipe-item">
-                <div className="pipe-icon-circle">
-                  <IconAiStepMesh size={34} />
-                </div>
-                <span className="pipe-step-num">BƯỚC 2</span>
-                <span className="pipe-title">468 Điểm mốc</span>
-              </div>
-
-              <div className="pipe-arrow-line">
-                <div className="pulse-connection-bar" />
-              </div>
-
-              <div className="ai-pipe-item pipe-featured">
-                <div className="pipe-icon-circle">
-                  <IconAiStepNeural size={34} />
-                </div>
-                <span className="pipe-step-num">BƯỚC 3</span>
-                <span className="pipe-title">AI xử lý</span>
-              </div>
-
-              <div className="pipe-arrow-line">
-                <div className="pulse-connection-bar" />
-              </div>
-
-              <div className="ai-pipe-item">
-                <div className="pipe-icon-circle">
-                  <IconAiStepInsight size={34} />
-                </div>
-                <span className="pipe-step-num">BƯỚC 4</span>
-                <span className="pipe-title">Hiểu thị giác</span>
-              </div>
-            </div>
-
-            <div className="ai-safety-strip">
-              <div className="safety-icon-wrap">
-                <IconShieldCheck size={28} />
-              </div>
-              <p className="safety-text">
-                <strong>AI hỗ trợ sàng lọc:</strong> Xử lý an toàn 100% trên thiết bị của bạn, tuyệt đối không gửi video hay ảnh lên mạng. Không thay thế chẩn đoán y khoa.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ==================================================================
-            5. SECTION — STORYTELLING: “ĐÔI MẮT NHÌN THẾ GIỚI NHƯ THẾ NÀO?”
-            ================================================================== */}
         <section className="home-story-visual-section" aria-label="So sánh thị giác">
           <div className="story-container-card">
             <div className="story-header-row">
@@ -591,27 +332,6 @@ export default function HomePage({
           </div>
         </section>
 
-        {/* ==================================================================
-            8. FINAL ULTRA-LARGE CTA
-            ================================================================== */}
-        <section className="home-final-cta-visual">
-          <SitePhoto name="cta" decorative />
-          <div className="final-box-inner">
-            <h2 className="final-title-text">Sẵn sàng khám phá đôi mắt của con?</h2>
-
-            <button
-              type="button"
-              className="btn-final-huge-action pulse-glow-huge"
-              onClick={onStartExperience}
-              id="btn-final-large-start"
-            >
-              <span>BẮT ĐẦU TRẢI NGHIỆM</span>
-              <span className="arrow-chip">
-                <IconPlay size={20} />
-              </span>
-            </button>
-          </div>
-        </section>
       </main>
 
       {/* ====================================================================

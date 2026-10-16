@@ -1,0 +1,51 @@
+.home-campaign {
+  position: relative;
+  isolation: isolate;
+  min-height: 450px;
+  margin: 12px 0 56px;
+  overflow: hidden;
+  border-radius: 24px;
+  background: #163b39;
+  color: #fff;
+}
+.campaign-scenes, .campaign-scene, .campaign-scene > img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.campaign-scene { opacity: 0; visibility: hidden; transition: opacity 1s ease, visibility 1s; }
+.campaign-scene.is-active { opacity: 1; visibility: visible; }
+.campaign-scene > img { object-fit: cover; transform: scale(1.035); }
+.campaign-scene.is-active > img { animation: campaign-drift 8s ease-out both; animation-play-state: paused; }
+.home-campaign[data-playing='true'] .campaign-scene.is-active > img { animation-play-state: running; }
+.campaign-scene::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #082e31ed 0%, #082e31b8 38%, #082e3110 80%), linear-gradient(0deg, #082e31a8, transparent 35%); }
+.campaign-topline { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; padding: 24px 36px; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #d7eee8; }
+.campaign-topline > span:last-child { font-size: 28px; line-height: 1; }
+.campaign-copy { position: absolute; z-index: 1; left: 36px; top: 100px; right: 36px; max-width: 580px; }
+.campaign-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: #b8e8df; }
+.campaign-copy h2 { font-size: clamp(28px, 3.4vw, 44px); line-height: 1.2; letter-spacing: -1.2px; font-weight: 600; margin: 16px 0; color: #fff; }
+.campaign-copy p { max-width: 43ch; font-size: 15px; line-height: 1.75; color: #e0eeea; margin: 0; }
+.campaign-bottom { position: absolute; z-index: 2; bottom: 28px; left: 36px; right: 36px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.campaign-cta { display: inline-flex; align-items: center; justify-content: space-between; gap: 24px; background: #e1f4f0; color: #00545d; border: 0; border-radius: 999px; padding: 14px 20px; font-size: 13px; font-weight: 700; }
+.campaign-cta:hover { background: #fff; }
+.campaign-cta > span { font-size: 20px; }
+.campaign-pagination { display: flex; align-items: center; gap: 8px; }
+.campaign-pagination > button { display: grid; place-items: center; width: 36px; min-height: 44px; border: 0; padding: 0; background: transparent; color: #fff; }
+.campaign-pagination > button > span { position: relative; overflow: hidden; width: 30px; height: 3px; border-radius: 4px; background: #ffffff50; }
+.campaign-pagination > button > span.is-active { background: #fff; }
+.home-campaign[data-playing='true'] .campaign-pagination .is-active::after { content: ''; position: absolute; inset: 0; background: #00ab9b; transform-origin: left; animation: campaign-progress 6.5s linear both; }
+.campaign-counter { font-size: 10px; letter-spacing: 1px; margin: 0 8px; font-variant-numeric: tabular-nums; }
+.campaign-pagination > .campaign-pause { border: 1px solid #ffffff60; border-radius: 50%; width: 44px; font-size: 15px; }
+.home-campaign :focus-visible { outline-color: #fff; }
+@keyframes campaign-drift { from { transform: scale(1.035); } to { transform: scale(1.1); } }
+@keyframes campaign-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (max-width: 720px) {
+  .home-campaign { min-height: 480px; margin-bottom: 36px; }
+  .campaign-topline { padding: 20px 24px; font-size: 9px; letter-spacing: 1px; }
+  .campaign-copy { left: 24px; right: 24px; top: 92px; }
+  .campaign-copy h2 { font-size: clamp(26px, 6vw, 36px); letter-spacing: -.8px; }
+  .campaign-copy p { max-width: 34ch; font-size: 14px; }
+  .campaign-scene::after { background: linear-gradient(90deg, #082e31db, #082e3178), linear-gradient(0deg, #082e31c9, transparent); }
+  .campaign-bottom { left: 24px; right: 24px; bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .campaign-pagination { margin-left: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-campaign .campaign-scene { transition: none; }
+  .home-campaign .campaign-scene > img, .home-campaign .campaign-pagination .is-active::after { animation: none; }
+}

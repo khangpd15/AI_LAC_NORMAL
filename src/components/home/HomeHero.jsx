@@ -1,5 +1,5 @@
 import React from 'react';
-import AudioGuide, { AudioIcon } from '../audio/ListeningExperience';
+import { AudioIcon } from '../audio/ListeningExperience';
 import SitePhoto from '../common/SitePhoto';
 import AnimatedHeading from './AnimatedHeading';
 
@@ -19,6 +19,5 @@ export default function HomeHero({ onStartExperience, onStartScreening }) {
         <div className="care-art-caption"><span className="care-art-spark">✳</span><div><strong>Mỗi đôi mắt, một thế giới.</strong><span>Cùng khám phá thế giới của nhau.</span></div></div>
       </div>
     </section>
-    <div className="care-hero-listen"><div><span className="section-eyebrow">CHÀO BẠN, MÌNH LÀ IRIS</span><h2>Bạn nghe, mình hướng dẫn.</h2><p>Bắt đầu bằng một lời chào.<br />Dừng, nghe lại hoặc đọc theo cách của bạn.</p></div><AudioGuide guideId="home" compact /></div>
   </>;
 }

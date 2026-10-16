@@ -1,5 +1,13 @@
 # Nguồn ảnh chụp — RemiCare
 
+## Ảnh minh họa chiến dịch
+
+`campaign-eye-screening.webp` (1536 × 1024) được tạo bằng công cụ ImageGen tích hợp của OpenAI ngày 16/10/2026, theo phong cách ảnh chụp, minh họa phụ huynh Việt Nam cùng bé kiểm tra mắt qua camera. Đây là nhân vật và tình huống do AI tạo, không phải ảnh bệnh nhân thật hay bằng chứng kiểm chứng sản phẩm. Prompt gốc: [campaign-eye-screening.prompt.md](campaign-eye-screening.prompt.md). Bản dùng trên web được chuyển WebP bằng Pillow, chất lượng 86.
+
+## Ảnh chụp từ nguồn bên ngoài
+
+Hai ảnh riêng cho cảnh 2 và 3 của banner: `campaign-eye-clinic.webp` và `campaign-eye-family.webp` (mỗi ảnh 1536 × 1024), tạo bằng ImageGen tích hợp ngày 16/10/2026, chuyển WebP bằng Pillow chất lượng 86. Đây là ảnh minh họa AI, không phải ảnh bệnh nhân, bác sĩ hoặc gia đình sử dụng sản phẩm thực tế. Cảnh che mắt minh họa sự đồng hành trong chăm sóc nhược thị, không phải hướng dẫn tự điều trị. Prompt gốc: [campaign-additional-images.prompts.md](campaign-additional-images.prompts.md).
+
 Đối chiếu trang ảnh và giấy phép ngày 15/10/2026. Các ảnh dưới đây được dùng để minh họa nội dung; không ngụ ý người trong ảnh là người dùng, nhân viên hay người bảo chứng cho RemiCare.
 
 | File WebP | Kích thước | Dung lượng | Tác giả | Nguồn gốc | Giấy phép |

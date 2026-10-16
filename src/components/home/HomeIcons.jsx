@@ -108,18 +108,18 @@ export const IconNavCamera = ({ size = 20, className = '' }) => (
   </svg>
 );
 
-// 5. Navigation Simulation (Prism Refraction)
+// 5. Navigation Simulation (Eye in a camera viewfinder)
 export const IconNavSimulation = ({ size = 20, className = '' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
     <path
-      d="M12 3L2 21H22L12 3Z"
+      d="M8 2H3V7M16 2H21V7M21 17V22H16M8 22H3V17"
       stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-    <path d="M12 9V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    <circle cx="12" cy="17" r="1.5" fill="currentColor" />
+    <path d="M4 12C6 8.5 8.5 7 12 7S18 8.5 20 12C18 15.5 15.5 17 12 17S6 15.5 4 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="13" cy="12" r="2.5" fill="currentColor" />
   </svg>
 );
 

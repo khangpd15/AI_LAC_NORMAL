@@ -1,374 +1,155 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import audioService from '../../services/audioService';
+import { AudioIcon } from '../audio/ListeningExperience';
 import './appFooter.css';
 
-/**
- * REMICARE AI — COMPREHENSIVE MEDICAL & COMMUNITY FOOTER
- * 
- * Sáng tạo dựa trên cấu trúc thông tin nhãn khoa hiện đại (tham chiếu Visi/Orcax),
- * giữ trọn bản sắc RemiCare AI:
- * - Dải kết nối tương tác cộng đồng (Interactive Community CTA Ribbon)
- * - Hệ thống 4 cột sinh thái: Thương hiệu • Điều hướng • Công nghệ Y sinh • Mạng lưới Nhãn khoa & Khuyến cáo
- * - Trợ lý giọng nói Iris thân thiện hỗ trợ mọi lứa tuổi (Trẻ nhỏ đến Người cao tuổi)
- * - Nút cuộn mượt mà lên đầu trang (Back to top)
- */
-export default function AppFooter({
-  onNavigateHome,
-  onStartExperience,
-  onStartScreening,
-  onStartSimulation,
-  onOpenAbout,
-  onOpenCareModal,
-}) {
-  const [isSpeaking, setIsSpeaking] = useState(false);
+const socialLinks = [
+  { name: 'Facebook', icon: 'facebook', href: 'https://www.facebook.com/remicare.visionhealth' },
+  { name: 'Instagram', icon: 'instagram', href: 'https://www.instagram.com/remicare.vision.health/' },
+  { name: 'YouTube', icon: 'youtube', href: 'https://www.youtube.com/@remicare-visionhealth' },
+  { name: 'TikTok', icon: 'tiktok', href: 'https://www.tiktok.com/@remicare.vision.health' },
+  { name: 'Email', icon: 'mail', href: 'mailto:remicare.visionhealth@gmail.com' },
+];
+
+function SocialIcon({ name }) {
+  const shapes = {
+    facebook: <path fill="currentColor" stroke="none" d="M14 22V13H17L17.5 9H14V7C14 5.9 14.3 5 16 5H18V1.5C17.1 1.2 16 1 15 1C11.8 1 10 2.9 10 6V9H7V13H10V22Z" />,
+    instagram: <><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></>,
+    youtube: <><rect x="2" y="5" width="20" height="14" rx="4" /><path d="M10 9L16 12L10 15Z" fill="currentColor" stroke="none" /></>,
+    tiktok: <path d="M14 3V16A4 4 0 1 1 10 12M14 3C14 7 17 9 21 9V5C18 5 17 3 17 2H14V3Z" />,
+    mail: <><rect x="2" y="4" width="20" height="16" rx="3" /><path d="M3 6L12 13L21 6" /></>,
+  };
+  return <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{shapes[name]}</svg>;
+}
+
+const footerInfo = {
+  guide: { title: 'Hướng dẫn sàng lọc', paragraphs: [
+    'Chọn “Sàng lọc” trên thanh điều hướng, cho phép camera và làm theo từng bước hướng dẫn trên màn hình.',
+    'Giữ khuôn mặt trong khung hình. Ở bước Hirschberg, xem lại ảnh chụp trước khi xác nhận gửi ảnh để AI phân tích.',
+    'Bạn có thể nghe Iris hướng dẫn hoặc đọc nội dung ngay trên từng màn hình.',
+  ] },
+  results: { title: 'Hiểu kết quả sàng lọc', paragraphs: [
+    'Kết quả của RemiCare là thông tin hỗ trợ sàng lọc ban đầu. Hình ảnh chưa đủ điều kiện hoặc kết quả chưa rõ có thể cần được thực hiện lại hoặc chuyên gia xem xét.',
+    'Điểm số do mô hình trả về không phải kết luận chẩn đoán. Kết quả bình thường không loại trừ hoàn toàn các bệnh lý về mắt.',
+    'Nếu bạn lo lắng về đôi mắt của mình hoặc của con, hãy mang thông tin sàng lọc đến bác sĩ chuyên khoa mắt để được tư vấn.',
+  ] },
+  faq: { title: 'Câu hỏi thường gặp', items: [
+    ['RemiCare có thay thế bác sĩ không?', 'Không. Đây là công cụ trải nghiệm, nâng cao nhận thức và hỗ trợ sàng lọc ban đầu.'],
+    ['Mô phỏng có phải kết quả đo mắt của tôi không?', 'Không. Hướng lệch và mức độ trong mô phỏng được bạn chủ động lựa chọn để quan sát hiệu ứng.'],
+    ['Tôi có cần bật camera ngay khi mở trang không?', 'Không. Camera chỉ được sử dụng trong các trải nghiệm cần hình ảnh, sau khi bạn cho phép.'],
+    ['Tôi có thể dùng khi tắt âm thanh không?', 'Có. Các hướng dẫn và nội dung bài nghe đều có phần văn bản để bạn đọc.'],
+  ] },
+  privacy: { title: 'Chính sách bảo mật', paragraphs: [
+    'Bạn quyết định việc cấp quyền camera trên trình duyệt. Camera được dùng cho các bước trải nghiệm và sàng lọc có hướng dẫn.',
+    'Bước phân tích Hirschberg gửi ảnh chụp cùng thông tin phiên đo đến máy chủ AI sau khi bạn xác nhận phân tích. Vì vậy, không phải toàn bộ quy trình đều xử lý trên thiết bị.',
+    'Tính năng đọc lời dẫn có thể dùng dịch vụ giọng nói trực tuyến để tạo hoặc tải âm thanh. Lựa chọn giao diện sáng hoặc tối được lưu trong trình duyệt của bạn.',
+  ] },
+  terms: { title: 'Điều khoản sử dụng', paragraphs: [
+    'RemiCare được xây dựng cho mục đích giáo dục, trải nghiệm thị giác và hỗ trợ sàng lọc mắt ban đầu.',
+    'Các mô phỏng là hình ảnh minh họa; kết quả sàng lọc không thay thế việc thăm khám, chẩn đoán hoặc điều trị của bác sĩ chuyên khoa mắt.',
+    'Trẻ em cần có phụ huynh hoặc người chăm sóc đồng hành khi sử dụng các tính năng camera và sàng lọc.',
+  ] },
+  ai: { title: 'Thông tin về AI', paragraphs: [
+    'RemiCare dùng điểm mốc khuôn mặt để bám vị trí mắt trong các trải nghiệm camera. Bộ mô phỏng tạo hiệu ứng theo hướng và mức độ bạn lựa chọn.',
+    'Ở quy trình Hirschberg, ảnh được gửi đến mô hình trên máy chủ để hỗ trợ phân tích. Chất lượng ảnh và điều kiện chụp có thể ảnh hưởng đến đầu ra.',
+    'Các hình ảnh chiến dịch trên trang có thể là ảnh minh họa do AI tạo, không phải bằng chứng xác nhận hiệu quả của hệ thống.',
+  ] },
+  care: { title: 'Kiến thức sức khỏe mắt', paragraphs: [
+    'Khám phá các bài nghe về chăm sóc mắt và đồng hành cùng con trên trang chủ. Bạn có thể nghe Iris đọc hoặc mở phần nội dung để đọc theo.',
+    'Phần trải nghiệm góc nhìn và mô phỏng giúp bạn tìm hiểu trực quan về lác lé, nhược thị. Đây là nội dung giáo dục, không phải hướng dẫn tự điều trị.',
+  ] },
+};
+
+const intro = 'Cùng bạn chủ động chăm sóc sức khỏe đôi mắt. RemiCare ứng dụng AI hỗ trợ sàng lọc mắt ban đầu, giúp người dùng nâng cao nhận thức và chủ động hơn trong chăm sóc sức khỏe mắt. RemiCare không thay thế việc thăm khám, chẩn đoán hoặc điều trị của bác sĩ chuyên khoa mắt.';
+
+export default function AppFooter({ onNavigateHome, onStartExperience, onStartScreening, onStartSimulation, onOpenAbout, onOpenCareModal }) {
+  const [panel, setPanel] = useState(null);
+  const [speaking, setSpeaking] = useState(false);
+  const dialogRef = useRef(null);
+  const info = footerInfo[panel];
+
+  useEffect(() => audioService.subscribe(snapshot => {
+    setSpeaking(snapshot.text === intro && ['SPEAKING', 'PAUSED'].includes(snapshot.state));
+  }), []);
 
   useEffect(() => {
-    const unsubscribe = audioService.subscribe((snapshot) => {
-      const active = snapshot.state === 'SPEAKING' || snapshot.state === 'PAUSED';
-      setIsSpeaking(active);
-    });
-    return () => {
-      unsubscribe();
-    };
-  }, []);
+    const dialog = dialogRef.current;
+    if (panel && !dialog.open) dialog.showModal();
+    else if (!panel && dialog.open) dialog.close();
+  }, [panel]);
 
-  const scrollToTop = () => {
+  const home = () => {
+    onNavigateHome?.();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const handleNavHome = () => {
-    if (onNavigateHome) {
-      onNavigateHome();
-    }
-    scrollToTop();
+  const listen = () => {
+    if (speaking) audioService.stop();
+    else audioService.speak(intro, { userGesture: true }).catch(error => console.warn('[AppFooter] Voice:', error));
   };
 
-  const scrollToHospitals = () => {
-    const el = document.getElementById('footer-hospital-network');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  };
-
-  const toggleIrisVoice = () => {
-    if (isSpeaking) {
-      audioService.stop();
-      return;
-    }
-
-    const script =
-      'Xin chào bạn! Mình là Iris. RemiCare AI là nền tảng ứng dụng thị giác máy tính và trí tuệ nhân tạo, hỗ trợ sàng lọc phát hiện sớm dấu hiệu mắt lác lé và nhược thị cho trẻ nhỏ ngay tại nhà. Mọi thao tác quét hình ảnh đều diễn ra hoàn toàn trên thiết bị của bạn, bảo mật tuyệt đối và phi lợi nhuận vì cộng đồng.';
-
-    audioService.speak(script, { userGesture: true }).catch((err) => {
-      console.warn('[AppFooter] Audio speak error:', err);
-    });
-  };
-
-  return (
-    <footer className="remicare-master-footer" role="contentinfo" aria-label="Chân trang RemiCare AI">
-      {/* ====================================================================
-          1. TOP INTERACTIVE COMMUNITY & ACTION RIBBON (LẤY CẢM HỨNG SÁNG TẠO TỪ VISI)
-          ==================================================================== */}
-      <div className="footer-cta-ribbon-wrap" aria-label="Khung kết nối cộng đồng RemiCare">
-        <div className="footer-cta-ribbon-inner">
-          <div className="footer-cta-text-side">
-            <span className="footer-cta-tag">✨ VÌ ÁNH MẮT TRẺ THƠ VIỆT NAM</span>
-            <h3 className="footer-cta-heading">
-              Cùng RemiCare bảo vệ <span className="footer-cta-heading-mark">ánh mắt sáng</span> cho thế hệ tương lai
-            </h3>
-            <p className="footer-cta-subtext">
-              Nền tảng ứng dụng thị giác máy tính AI nhận diện sớm nguy cơ lác lé và nhược thị trong giai đoạn vàng trước 7 tuổi.
-              Dễ sử dụng cho cả trẻ nhỏ, phụ huynh và người cao tuổi.
-            </p>
-          </div>
-
-          <div className="footer-cta-chips-grid">
-            <button
-              type="button"
-              className="footer-cta-chip-btn chip-highlight"
-              onClick={toggleIrisVoice}
-              title="Nghe Bé Iris đọc tóm tắt chân trang và hướng dẫn"
-              aria-label="Hỏi Bé Iris"
-            >
-              <span className="chip-icon">💬</span>
-              <span>{isSpeaking ? 'Dừng giọng đọc' : 'Hỏi Bé Iris'}</span>
-            </button>
-
-            <button
-              type="button"
-              className="footer-cta-chip-btn"
-              onClick={onStartSimulation}
-              title="Trải nghiệm bộ lọc Mô phỏng Lác Lé AI trên webcam"
-              aria-label="Thử Mô Phỏng Lác Lé"
-            >
-              <span className="chip-icon">🎭</span>
-              <span>Thử Mô Phỏng</span>
-            </button>
-
-            {onOpenCareModal && (
-              <button
-                type="button"
-                className="footer-cta-chip-btn"
-                onClick={onOpenCareModal}
-                title="Mở Cẩm nang chăm sóc mắt trẻ thơ"
-                aria-label="Cẩm nang Mắt bé"
-              >
-                <span className="chip-icon">📘</span>
-                <span>Cẩm nang Mắt bé</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              className="footer-cta-chip-btn"
-              onClick={scrollToHospitals}
-              title="Xem mạng lưới cơ sở nhãn khoa tham chiếu"
-              aria-label="Mạng lưới Nhãn khoa"
-            >
-              <span className="chip-icon">🏥</span>
-              <span>Mạng lưới Nhãn khoa</span>
-            </button>
-          </div>
-        </div>
+  return <footer className="remicare-master-footer remicare-footer" aria-label="Chân trang RemiCare">
+    <div className="remicare-footer-inner">
+      <div className="remicare-footer-intro">
+        <button type="button" className="remicare-footer-brand" onClick={home} aria-label="RemiCare — về trang chủ"><img src="/images/logo_co_text.jpg" alt="RemiCare" width="2406" height="818" loading="lazy" /></button>
+        <h2>Cùng bạn chủ động chăm sóc sức khỏe đôi mắt</h2>
+        <p>Ứng dụng AI hỗ trợ sàng lọc mắt ban đầu, giúp người dùng nâng cao nhận thức và chủ động hơn trong chăm sóc sức khỏe mắt.</p>
       </div>
 
-      {/* ====================================================================
-          2. MAIN 4-COLUMN ECOSYSTEM GRID
-          ==================================================================== */}
-      <div className="footer-main-container">
-        <div className="footer-grid-layout">
-          {/* Column 1: Brand, Slogan & Trust Badges */}
-          <div className="footer-brand-col">
-            <div
-              className="footer-brand-header"
-              onClick={handleNavHome}
-              role="button"
-              tabIndex={0}
-              title="Về Trang chủ RemiCare"
-            >
-              <img
-                src="/images/logo.jpg"
-                alt="Logo RemiCare AI"
-                className="footer-brand-logo-img"
-              />
-              <div className="footer-brand-titles">
-                <span className="footer-brand-title-main">RemiCare AI</span>
-                <span className="footer-brand-title-sub">AI CHĂM SÓC MẮT CỘNG ĐỒNG</span>
-              </div>
+      <div className="remicare-footer-columns">
+        <nav aria-labelledby="footer-explore-heading">
+          <h3 id="footer-explore-heading">Khám phá</h3>
+          <ul>
+            <li><button type="button" onClick={home}>Trang chủ</button></li>
+            <li><button type="button" onClick={onOpenAbout}>Giới thiệu RemiCare</button></li>
+            <li><button type="button" onClick={onStartExperience}>Trải nghiệm góc nhìn</button></li>
+            <li><button type="button" onClick={onStartSimulation}>Mô phỏng lác lé</button></li>
+            <li><button type="button" onClick={onStartScreening}>Sàng lọc bằng AI</button></li>
+            <li><button type="button" onClick={() => onOpenCareModal ? onOpenCareModal() : setPanel('care')}>Kiến thức sức khỏe mắt</button></li>
+          </ul>
+        </nav>
+        <nav aria-labelledby="footer-support-heading">
+          <h3 id="footer-support-heading">Hướng dẫn & hỗ trợ</h3>
+          <ul>
+            <li><button type="button" onClick={() => setPanel('guide')}>Hướng dẫn sàng lọc</button></li>
+            <li><button type="button" onClick={() => setPanel('results')}>Hiểu kết quả sàng lọc</button></li>
+            <li><button type="button" onClick={() => setPanel('faq')}>Câu hỏi thường gặp</button></li>
+            <li><a href="mailto:remicare.visionhealth@gmail.com" title="remicare.visionhealth@gmail.com">Liên hệ & phản hồi</a></li>
+          </ul>
+        </nav>
+        <nav aria-labelledby="footer-policy-heading">
+          <h3 id="footer-policy-heading">Chính sách & quyền riêng tư</h3>
+          <ul>
+            <li><button type="button" onClick={() => setPanel('privacy')}>Chính sách bảo mật</button></li>
+            <li><button type="button" onClick={() => setPanel('terms')}>Điều khoản sử dụng</button></li>
+            <li><button type="button" onClick={() => setPanel('ai')}>Thông tin về AI</button></li>
+          </ul>
+          <div className="remicare-footer-connect">
+            <h4>Kết nối với RemiCare</h4>
+            <div className="remicare-footer-socials" aria-label="Các kênh chính thức của RemiCare">
+              {socialLinks.map(link => <a key={link.icon} href={link.href} target={link.icon === 'mail' ? undefined : '_blank'} rel={link.icon === 'mail' ? undefined : 'noopener noreferrer'} aria-label={link.icon === 'mail' ? 'Gửi email đến remicare.visionhealth@gmail.com' : `RemiCare trên ${link.name} (mở tab mới)`} title={link.icon === 'mail' ? 'remicare.visionhealth@gmail.com' : link.name}><SocialIcon name={link.icon} /></a>)}
             </div>
-
-            <p className="footer-brand-desc">
-              Hệ sinh thái ứng dụng thị giác máy tính và trí tuệ nhân tạo hỗ trợ cha mẹ, thầy cô
-              phát hiện sớm các dấu hiệu lác lé, nhược thị ở trẻ em trong "giai đoạn vàng" trước 7 tuổi.
-              Hoàn toàn miễn phí, bảo mật và thiết kế thân thiện cho mọi thế hệ.
-            </p>
-
-            <div className="footer-badges-cluster">
-              <div className="footer-trust-pill">
-                <span className="trust-pill-icon">🔒</span>
-                <span>Ảnh Hirschberg được gửi đến AI khi bạn xác nhận phân tích</span>
-              </div>
-              <div className="footer-trust-pill">
-                <span className="trust-pill-icon">💎</span>
-                <span>Dự án cộng đồng phi lợi nhuận • Truy cập mở trọn đời</span>
-              </div>
+            <div className="remicare-footer-tools">
+              <button type="button" onClick={listen} aria-label={speaking ? 'Dừng Iris giới thiệu RemiCare' : 'Nghe Iris giới thiệu RemiCare'} aria-pressed={speaking}><AudioIcon name={speaking ? 'pause' : 'sound'} width="20" height="20" /><span>{speaking ? 'Dừng giọng đọc' : 'Nghe Iris giới thiệu'}</span></button>
+              <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Về đầu trang"><span aria-hidden="true">↑</span></button>
             </div>
           </div>
-
-          {/* Column 2: Quick Navigation Links */}
-          <div className="footer-nav-col">
-            <h4 className="footer-col-title">Khám Phá & Sàng Lọc</h4>
-            <ul className="footer-links-list">
-              <li>
-                <button
-                  type="button"
-                  className="footer-link-btn"
-                  onClick={handleNavHome}
-                >
-                  <span className="footer-link-dot" aria-hidden="true" />
-                  <span>Trang chủ</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  className="footer-link-btn"
-                  onClick={onStartExperience}
-                >
-                  <span className="footer-link-dot" aria-hidden="true" />
-                  <span>Trải nghiệm góc nhìn mắt</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  className="footer-link-btn"
-                  onClick={onStartScreening}
-                >
-                  <span className="footer-link-dot" aria-hidden="true" />
-                  <span>Sàng lọc thị lực hai mắt</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  className="footer-link-btn"
-                  onClick={onStartSimulation}
-                >
-                  <span className="footer-link-dot" aria-hidden="true" />
-                  <span>Mô phỏng lác lé AI</span>
-                  <span className="footer-badge-new">Webcam</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  className="footer-link-btn"
-                  onClick={onOpenAbout}
-                >
-                  <span className="footer-link-dot" aria-hidden="true" />
-                  <span>Giới thiệu sứ mệnh & công nghệ</span>
-                </button>
-              </li>
-              {onOpenCareModal && (
-                <li>
-                  <button
-                    type="button"
-                    className="footer-link-btn"
-                    onClick={onOpenCareModal}
-                  >
-                    <span className="footer-link-dot" aria-hidden="true" />
-                    <span>Cẩm nang chăm sóc mắt trẻ thơ</span>
-                  </button>
-                </li>
-              )}
-            </ul>
-          </div>
-
-          {/* Column 3: Technologies & Clinical Principles */}
-          <div className="footer-tech-col">
-            <h4 className="footer-col-title">Công Nghệ & Khoa Học</h4>
-            <ul className="footer-tech-list">
-              <li className="footer-tech-item">
-                <span className="tech-item-dot-icon">💡</span>
-                <div className="tech-item-text">
-                  <span className="tech-item-name">Phép Thử Hirschberg</span>
-                  <span className="tech-item-desc">Định vị đồng tử, mống mắt và phản quang để hỗ trợ sàng lọc.</span>
-                </div>
-              </li>
-              <li className="footer-tech-item">
-                <span className="tech-item-dot-icon">🎯</span>
-                <div className="tech-item-text">
-                  <span className="tech-item-name">MediaPipe FaceMesh 468</span>
-                  <span className="tech-item-desc">Theo dõi tâm con ngươi & bờ mi theo thời gian thực 60 FPS.</span>
-                </div>
-              </li>
-              <li className="footer-tech-item">
-                <span className="tech-item-dot-icon">⏱️</span>
-                <div className="tech-item-text">
-                  <span className="tech-item-name">Digital Cover Test</span>
-                  <span className="tech-item-desc">Phát hiện lác ẩn qua phản xạ đảo mắt bù trừ định thị.</span>
-                </div>
-              </li>
-              <li className="footer-tech-item">
-                <span className="tech-item-dot-icon">🎭</span>
-                <div className="tech-item-text">
-                  <span className="tech-item-name">Tái Tạo Sinh Học 3D</span>
-                  <span className="tech-item-desc">Mô phỏng tròng trắng, bóng mi và khóe mắt như giải phẫu người thật.</span>
-                </div>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 4: Ophthalmology Network & Medical Disclaimers */}
-          <div className="footer-support-col">
-            <h4 className="footer-col-title">Mạng Lưới & Khuyến Cáo</h4>
-
-            {/* Reference Hospital Network Card */}
-            <div className="footer-hospitals-card" id="footer-hospital-network">
-              <div className="hospitals-card-header">
-                <span aria-hidden="true">🏥</span>
-                <span>Cơ sở Nhãn khoa Tham chiếu</span>
-              </div>
-              <ul className="hospitals-network-list">
-                <li>
-                  <span className="hosp-dot">●</span>
-                  <span><strong>Bệnh viện Mắt VISI</strong> (Hệ thống kỹ thuật tham chiếu)</span>
-                </li>
-                <li>
-                  <span className="hosp-dot">●</span>
-                  <span><strong>BV Mắt Sài Gòn Đà Lạt</strong> (Chỉnh quang chuyên sâu)</span>
-                </li>
-                <li>
-                  <span className="hosp-dot">●</span>
-                  <span><strong>BV Mắt Sông Tiền</strong> (Nhãn nhi & Khúc xạ Tây Nam Bộ)</span>
-                </li>
-                <li>
-                  <span className="hosp-dot">●</span>
-                  <span><strong>BV Mắt Hoa Lư</strong> (Khám sàng lọc thị giác trẻ em)</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Medical Disclaimer Card */}
-            <div className="footer-medical-disclaimer-card">
-              <div className="disclaimer-card-header">
-                <span>🩺</span>
-                <span>Khuyến cáo y tế</span>
-              </div>
-              <p className="disclaimer-card-text">
-                RemiCare là công cụ giáo dục và sàng lọc định hướng ban đầu tại nhà.
-                Kết quả <strong>không thay thế chẩn đoán chuyên khoa</strong> của bác sĩ nhãn khoa.
-              </p>
-            </div>
-
-            {/* Warning Signs Box */}
-            <div className="footer-warning-signs-box">
-              <div className="warning-box-title">
-                <span>⚠️</span>
-                <span>Dấu hiệu nên đi khám ngay</span>
-              </div>
-              <p className="warning-box-text">
-                Bé hay nheo mắt, nghiêng đầu vẹo cổ khi nhìn, một mắt có xu hướng lệch trong/ngoài, hoặc sợ ánh sáng mạnh.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* ====================================================================
-            3. BOTTOM BAR (COPYRIGHT, VOICE GUIDE & BACK TO TOP)
-            ==================================================================== */}
-        <div className="footer-bottom-bar">
-          <div className="footer-copyright-text">
-            <span>© 2026 <strong>RemiCare AI</strong> — Hệ sinh thái Sàng lọc Thị giác & Mô phỏng Mắt Lác Lé Thông minh.</span>
-            <br />
-            <small style={{ color: '#527572' }}>Phát triển vì sức khỏe đôi mắt trẻ thơ và cộng đồng Việt Nam • 100% Miễn phí & Bảo mật.</small>
-          </div>
-
-          <div className="footer-bottom-actions">
-            <button
-              type="button"
-              className={`btn-footer-voice-listen ${isSpeaking ? 'speaking' : ''}`}
-              onClick={toggleIrisVoice}
-              title={isSpeaking ? 'Dừng đọc' : 'Iris đọc to nội dung chân trang'}
-              aria-label="Đọc to nội dung chân trang bằng giọng nói"
-            >
-              <span>{isSpeaking ? '⏹ Dừng giọng đọc' : '🔊 Nghe đọc chân trang'}</span>
-            </button>
-
-            <button
-              type="button"
-              className="btn-footer-back-to-top"
-              onClick={scrollToTop}
-              title="Cuộn mượt mà lên đầu trang"
-              aria-label="Lên đầu trang"
-            >
-              <span className="back-to-top-arrow">↑</span>
-              <span>Lên đầu trang</span>
-            </button>
-          </div>
-        </div>
+        </nav>
       </div>
-    </footer>
-  );
+
+      <aside className="remicare-footer-notice" aria-labelledby="footer-notice-heading">
+        <svg width="38" height="42" viewBox="0 0 32 36" fill="none" aria-hidden="true"><path d="M16 2C12 5 7 6 3 7V17C3 25 9 31 16 34C23 31 29 25 29 17V7C25 6 20 5 16 2Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /><path d="M16 11V20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /><circle cx="16" cy="25" r="1.5" fill="currentColor" /></svg>
+        <div><h3 id="footer-notice-heading">Lưu ý về kết quả sàng lọc</h3><p>RemiCare chỉ hỗ trợ sàng lọc ban đầu, không thay thế việc thăm khám, chẩn đoán hoặc điều trị của bác sĩ chuyên khoa mắt. Kết quả bình thường không loại trừ hoàn toàn các bệnh lý về mắt.</p></div>
+      </aside>
+      <p className="remicare-footer-copyright">© 2026 RemiCare. Mọi quyền được bảo lưu.</p>
+    </div>
+
+    <dialog ref={dialogRef} className="remicare-footer-dialog" aria-labelledby="footer-dialog-title" onCancel={() => setPanel(null)} onClick={event => { if (event.target === event.currentTarget) setPanel(null); }}>
+      <div className="remicare-footer-dialog-content">
+        <div className="remicare-footer-dialog-heading"><h2 id="footer-dialog-title">{info?.title}</h2><button type="button" onClick={() => setPanel(null)} aria-label="Đóng thông tin">×</button></div>
+        {info?.paragraphs?.map(text => <p key={text}>{text}</p>)}
+        {info?.items?.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}
+        {panel === 'guide' && <button type="button" className="remicare-footer-dialog-action" onClick={() => { setPanel(null); onStartScreening?.(); }}>Bắt đầu sàng lọc →</button>}
+      </div>
+    </dialog>
+  </footer>;
 }
