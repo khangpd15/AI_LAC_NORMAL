@@ -9,7 +9,7 @@ export default function HomeHero({ onStartExperience, onStartScreening }) {
       <div className="care-hero-copy">
         <span className="section-eyebrow"><span className="care-status-dot" /> CHĂM SÓC MẮT · KẾT NỐI CẢ GIA ĐÌNH</span>
         <AnimatedHeading />
-        <p>Một góc nhìn mới để hiểu con hơn. Cùng RemiCare khám phá, lắng nghe và chăm sóc đôi mắt — từng bước thật nhẹ nhàng.</p>
+        <p>Một góc nhìn mới để hiểu con hơn. Cùng RemiCare khám phá, lắng nghe và chăm sóc đôi mắt của con từng bước thật nhẹ nhàng.</p>
         <div className="care-hero-actions"><button className="care-primary" onClick={onStartExperience}>Khám phá trải nghiệm <span aria-hidden="true">↗</span></button><button className="care-secondary" onClick={onStartScreening}>Sàng lọc hai mắt <span aria-hidden="true">→</span></button></div>
         <div className="care-hero-note"><AudioIcon name="sound" width="20" height="20" /><span>Có Iris hướng dẫn bằng giọng nói, khi bạn cần.</span></div>
       </div>
