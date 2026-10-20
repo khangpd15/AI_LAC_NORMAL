@@ -54,6 +54,7 @@ export default function BinocularVisionScreening() {
   // Video element ref
   const videoRef = useRef(null);
   const coverTrackingContextRef = useRef({ phase: null, coveredEye: null, trackedEye: null });
+  const coverFrameConsumerRef = useRef(null);
   const preparationDeviceRef = useRef(getDeviceContext());
   const lastDetectionTimeRef = useRef(0);
   const isRecoveringRef = useRef(false);
@@ -82,7 +83,11 @@ export default function BinocularVisionScreening() {
       const res = processResults(results, null, {
         coveredEye: coverContext?.coveredEye || null,
         trackedEye: coverContext?.trackedEye || null,
+        applySmoothing: currentStep !== 'COVER',
       });
+      if (currentStep === 'COVER') {
+        coverFrameConsumerRef.current?.({ results, features: res?.features, quality: res?.quality });
+      }
       const aiFrameUsable =
         res?.features &&
         res?.quality?.aiFrameEligible &&
@@ -182,7 +187,7 @@ export default function BinocularVisionScreening() {
 
   const { startLoop, stopLoop, metrics: faceMeshMetrics } = useFaceMesh(
     (r) => handleResults.current?.(r),
-    { onStaleFrame: handleStaleFrame }
+    { onStaleFrame: handleStaleFrame, maxLandmarkFps: currentStep === 'COVER' ? 30 : null }
   );
 
   useEffect(() => {
@@ -539,6 +544,7 @@ export default function BinocularVisionScreening() {
 
         {(currentStep === 'COVER' || currentStep === 'COVER_TEST') && (
           <CoverTestStep
+            frameConsumerRef={coverFrameConsumerRef}
             sessionId={session.sessionId}
             videoRef={videoRef}
             stream={stream}

@@ -71,6 +71,23 @@ export async function saveCoverTestSession({
       signal,
     });
 
+    const capturedEvents = cycles.flatMap(cycle => cycle.uncoverEvents || []).filter(event => event.status === 'CAPTURED');
+    const modalities = data?.aiResult?.inputModalities || [];
+    const acknowledged = new Set(data?.aiResult?.analyzedEventIds || []);
+    const multimodalConfirmed = modalities.includes('time_series') && modalities.includes('uncover_eye_images') &&
+      capturedEvents.length > 0 && capturedEvents.every(event => acknowledged.has(event.eventId));
+    const aiResult = clientMetadata.protocolVersion === 'cover-test-multimodal-v2' && !multimodalConfirmed
+      ? {
+          ...data?.aiResult,
+          status: 'INCONCLUSIVE', prediction: 'INCONCLUSIVE',
+          reason: data?.aiResult?.reason || (capturedEvents.length ? 'MULTIMODAL_ANALYSIS_UNCONFIRMED' : 'UNCOVER_IMAGES_UNAVAILABLE'),
+          classProbabilities: null, confidence: null, isReliable: false,
+          notice: capturedEvents.length
+            ? 'Chưa có xác nhận backend đã phân tích đồng thời ảnh bỏ che và chuỗi chuyển động.'
+            : 'Chưa ghi được ảnh hai mắt lúc bỏ che. Cần thực hiện lại để phân tích kết hợp.',
+          model: { loaded: false },
+        }
+      : data?.aiResult || null;
     return {
       success: true,
       saved: Boolean(data?.saved),
@@ -79,7 +96,8 @@ export async function saveCoverTestSession({
       storageRoot: data?.storageRoot,
       cyclesSaved: data?.cyclesSaved || cycles.length,
       imagesSaved: data?.imagesSaved || 0,
-      aiResult: data?.aiResult || null,
+      aiResult,
+      multimodalConfirmed,
       message: 'Dữ liệu chuyển động mắt đã được lưu trữ thành công.',
     };
   } catch (err) {

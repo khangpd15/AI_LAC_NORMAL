@@ -376,7 +376,10 @@ export function renderContinuousEye(ctx, frame, shift, options = {}) {
         const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / Math.max(0.0001, dx * dx + dy * dy)));
         lidDistance = Math.min(lidDistance, Math.hypot(point.x - a.x - t * dx, point.y - a.y - t * dy));
       }
-      const blend = smooth(lidDistance / Math.max(1, rIris * 0.18));
+      // Leave an untouched inner rim as landmark estimates can include lashes
+      // and skin at the lid boundary, especially at the nasal corner.
+      const inset = Math.max(0.75, frame.canthalWidth * 0.012);
+      const blend = smooth((lidDistance - inset) / Math.max(1, rIris * 0.18));
       const index = (row * width + col) * 4;
       for (let channel = 0; channel < 3; channel++) {
         const sample = (x, y) => original[(y * width + x) * 4 + channel];
@@ -578,7 +581,8 @@ export function renderSimulatedEye(ctx, frame, shift, options = {}) {
       const irisBlend = (1 - smooth((irisRadius - rIris * 0.96) / Math.max(0.75, rIris * 0.08))) * sourceVisibility;
       // Preserve the true lid margin at both the source and destination.
       const lidFeather = 0.14 + (inward ? 0.03 * highAngleWeight : 0);
-      const blend = smooth(lidDistance(point) / Math.max(1, rIris * lidFeather));
+      const inset = Math.max(0.75, frame.canthalWidth * 0.012);
+      const blend = smooth((lidDistance(point) - inset) / Math.max(1, rIris * lidFeather));
       const idx = (row * width + col) * 4;
       for (let channel = 0; channel < 3; channel++) {
         const base = background[(row * width + col) * 3 + channel];
@@ -765,7 +769,7 @@ export function processStrabismusFrame({
   if (!rightFrame || !leftFrame) {
     return { hasFace: false, rightEye: null, leftEye: null };
   }
-  if (simulationConfig.renderMode === 'continuous' && trackingState) {
+  if (trackingState) {
     for (const frame of [rightFrame, leftFrame]) {
       const state = updateSimulationBlink(frame, trackingState[frame.eyeSide]);
       trackingState[frame.eyeSide] = state;

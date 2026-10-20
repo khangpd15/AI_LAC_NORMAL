@@ -125,9 +125,13 @@ export function useEyeTracking() {
       : null;
 
     const extracted = extractEyeFeatures(lm, timestamp, {
-      applySmoothing: true,
+      applySmoothing: qualityOptions.applySmoothing ?? true,
       coveredEye: qualityOptions.coveredEye || null,
     });
+    if (results?.capturedFrame) {
+      const { image: _image, ...frameMetadata } = results.capturedFrame;
+      extracted.frameMetadata = frameMetadata;
+    }
     const qualityReport = withRecoveryState(buildFrameQualityGate(baseQualityReport, extracted, {
       ...qualityOptions,
       fps: trackingFps,

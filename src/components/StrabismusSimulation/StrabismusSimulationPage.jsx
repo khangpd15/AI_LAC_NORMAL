@@ -26,7 +26,7 @@ import {
   closeFaceMesh,
 } from '../../services/faceMeshService';
 import audioService from '../../services/audioService';
-import { getSimulationProcessingSize, stabilizeSimulationLandmarks } from '../../services/cv/simulationTracking';
+import { getSimulationProcessingSize, getSimulationRenderSize, stabilizeSimulationLandmarks } from '../../services/cv/simulationTracking';
 import './strabismusSimulation.css';
 
 export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
@@ -169,8 +169,8 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
             landmarkTimeRef.current = now;
             setHasFace(true);
           } else {
-            // Hold the last matched image briefly across a missed detection.
-            if (landmarksRef.current && now - landmarkTimeRef.current < (mobilePipeline ? 350 : 120)) return;
+            // Advance the camera without an effect when detection is lost.
+            // Freezing the previous matched image causes visible stop/start.
             landmarksRef.current = null;
             eyeTrackingStateRef.current = {};
             setHasFace(false);
@@ -233,7 +233,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
           meshBusyRef.current = true;
           submittedVideoTimeRef.current = video.currentTime;
           const source = inferenceFrameRef.current;
-          const size = getSimulationProcessingSize(video.videoWidth, video.videoHeight, mobilePipeline ? 640 : 1280);
+          const size = getSimulationProcessingSize(video.videoWidth, video.videoHeight, mobilePipeline ? 640 : 960);
           if (source.width !== size.width || source.height !== size.height) {
             source.width = size.width;
             source.height = size.height;
@@ -253,12 +253,18 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
         lastRenderedVersion = frameVersionRef.current;
         const displaySource = frameVersionRef.current > 0 ? trackedFrameRef.current : video;
 
-        // Size canvas to actual display pixels (CSS rect × dpr) so there's no
-        // stretch on mobile portrait — the engine's getDrawRect handles scaling internally.
+        // Preserve viewport proportions while bounding the CPU pixel workload.
         const canvasRect = canvas.getBoundingClientRect();
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const targetW = canvasRect.width  > 0 ? Math.round(canvasRect.width  * dpr) : (displaySource.videoWidth  || displaySource.width  || 640);
-        const targetH = canvasRect.height > 0 ? Math.round(canvasRect.height * dpr) : (displaySource.videoHeight || displaySource.height || 480);
+        const sourceW = displaySource.videoWidth || displaySource.width || 640;
+        const sourceH = displaySource.videoHeight || displaySource.height || 480;
+        const renderSize = getSimulationRenderSize(
+          canvasRect.width > 0 ? canvasRect.width * dpr : sourceW,
+          canvasRect.height > 0 ? canvasRect.height * dpr : sourceH,
+          sourceW, sourceH, mobilePipeline,
+        );
+        const targetW = renderSize.width;
+        const targetH = renderSize.height;
         if (canvas.width !== targetW || canvas.height !== targetH) {
           canvas.width  = targetW;
           canvas.height = targetH;

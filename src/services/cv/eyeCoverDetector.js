@@ -62,7 +62,7 @@ export class EyeCoverDetector {
    * - Sắc tố da tay chiếm phần lớn diện tích (skinRatio > 0.70).
    */
   sampleEyePatch(video, cx, cy, width, height, destX, destY, destW, destH) {
-    if (!this.ctx || !video || video.readyState < 2) {
+    if (!this.ctx || !video || (video.readyState !== undefined && video.readyState < 2)) {
       return {
         mean: 120,
         stdDev: 0,
@@ -77,8 +77,8 @@ export class EyeCoverDetector {
       };
     }
 
-    const vW = video.videoWidth;
-    const vH = video.videoHeight;
+    const vW = video.videoWidth || video.width;
+    const vH = video.videoHeight || video.height;
     if (!vW || !vH) {
       return {
         mean: 120,

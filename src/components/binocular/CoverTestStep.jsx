@@ -15,7 +15,8 @@ import { SCREENING_CONFIG, COVER_TEST_CONFIG } from '../../constants/screeningCo
 import { RESEARCH_QUALITY_CONFIG } from '../../constants/researchScreeningConfig.js';
 import { aggregateCoverCycles, createCoverFrame, createCycleRecord, generateUUIDv4, inconclusiveCycle, isCoverSessionCurrent, isValidUUIDv4, validateBaselinePair } from '../../services/coverTestProtocolService.js';
 import { createTimeSeriesRecorder } from '../../services/coverTestTimeSeriesService.js';
-import { captureScreeningFrame, captureEyeRegionCrop } from '../../services/screeningImageCaptureService.js';
+import { captureScreeningFrame } from '../../services/screeningImageCaptureService.js';
+import { UncoverCaptureObserver, freezeEyePair, encodeEyePair } from '../../services/coverTest/uncoverCaptureService.js';
 import { saveCoverTestSession as saveCoverTestCloudSession } from '../../services/coverTest/coverTestPersistenceService.js';
 import { toCanonicalEye, getCoverInstruction } from '../../utils/eyeCoordinateMapping.js';
 
@@ -41,7 +42,6 @@ export default function CoverTestStep({
   landmarks = null,
   quality = null,
   latestFeaturesRef = null,
-  latestQualityRef = null,
   onComplete,
   speak,
   isVoiceEnabled = true,
@@ -52,6 +52,7 @@ export default function CoverTestStep({
   aiMetrics = null,
   onImageCaptured,
   onTrackingContextChange,
+  frameConsumerRef,
 }) {
   const imageCaptureAttemptedRef = useRef(false);
   // Master State Machine:
@@ -72,7 +73,22 @@ export default function CoverTestStep({
   const [_liveDisplacement, setLiveDisplacement] = useState(0);
 
   // Timestamp-downsampled time-series recording ref (no array recreation in realtime loop)
-  const timeSeriesRecorderRef = useRef(createTimeSeriesRecorder());
+  const timeSeriesRecorderRef = useRef(createTimeSeriesRecorder(0, { fullRate: true }));
+  const phaseFrameHandlerRef = useRef(null);
+  const uncoverObserverRef = useRef(null);
+  const uncoverEventsRef = useRef([]);
+  const pendingCropsRef = useRef(new Set());
+  const cycleStartRef = useRef(0);
+  const [capturedPairs, setCapturedPairs] = useState(0);
+
+  useEffect(() => {
+    if (!frameConsumerRef) return;
+    const consume = packet => phaseFrameHandlerRef.current?.(packet);
+    frameConsumerRef.current = consume;
+    return () => {
+      if (frameConsumerRef.current === consume) frameConsumerRef.current = null;
+    };
+  }, [frameConsumerRef]);
   const [telemetry, setTelemetry] = useState({
     realtimeFps: 0,
     datasetSampleRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
@@ -178,19 +194,19 @@ export default function CoverTestStep({
         clientMetadata: {
           testType: 'cover_test',
           createdAt: new Date().toISOString(),
-          samplingRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
-          samplingMode: COVER_TEST_CONFIG.datasetSamplingMode,
-          protocolVersion: 'cover-test-v1',
+          samplingRateHz: 30,
+          samplingMode: 'UNIQUE_SOURCE_FRAMES',
+          protocolVersion: 'cover-test-multimodal-v2',
           researchSchemaVersion: RESEARCH_QUALITY_CONFIG.schemaVersion,
           coverSequenceSchema: {
-            timestampField: 'realTimestampMs',
+            timestampField: 'timestampMs',
             phaseField: 'phase',
             irisXField: 'iris_x',
             eyeCornerField: 'eye_corner',
             visibilityField: 'visibility',
             thresholdSource: RESEARCH_QUALITY_CONFIG.thresholdSource,
           },
-          camera: { mirrored: true },
+          camera: { previewMirrored: true, imagesMirrored: false },
         },
         cycles: cyclesList || [],
         images: eyeImagesRef.current,
@@ -359,6 +375,8 @@ export default function CoverTestStep({
 
   const invalidateActiveRun = useCallback(() => {
     isAbortedRef.current = true;
+    phaseFrameHandlerRef.current = null;
+    uncoverObserverRef.current?.transition.reset();
     isTargetLockedRef.current = false;
     setLockedTargetPos(null);
     // Never clobber the canonical UUID v4 session ID on run invalidation
@@ -436,6 +454,7 @@ export default function CoverTestStep({
           settled = true;
           if (phaseRafRef.current !== null) cancelAnimationFrame(phaseRafRef.current);
           phaseRafRef.current = null;
+          phaseFrameHandlerRef.current = null;
           if (phaseResolveRef.current === finish) phaseResolveRef.current = null;
           resolve(value);
         };
@@ -462,9 +481,57 @@ export default function CoverTestStep({
         const leftBaselineBuffer = [];
         const rightBaselineBuffer = [];
         const startT = performance.now();
+        if (state === 'COVER') uncoverObserverRef.current?.transition.reset(coverEye);
         const initialSeconds = Math.ceil(durationMs / 1000);
         setCountdownSec(initialSeconds);
         let prevSec = initialSeconds;
+
+        // Called synchronously from each completed inference, with its frozen
+        // source image. Never sample a newer live video using older landmarks.
+        let lastTimestamp = -Infinity;
+        phaseFrameHandlerRef.current = ({ results, features: feats, quality: currentQuality }) => {
+          if (isAbortedRef.current || phaseRunToken !== activeRunTokenRef.current) return;
+          const captured = results?.capturedFrame;
+          if (!captured || captured.timestampMs < startT || captured.timestampMs <= lastTimestamp) return;
+          lastTimestamp = captured.timestampMs;
+          const { image, ...metadata } = captured;
+          const lm = results.multiFaceLandmarks?.[0];
+          const observation = uncoverObserverRef.current?.observe(image, lm, captured.timestampMs, state,
+            () => !feats || !currentQuality?.faceDetected || !currentQuality?.irisValid ||
+              currentQuality?.headPoseValid === false ? null : freezeEyePair(image, lm, metadata));
+          if (observation?.event) {
+            const cycleStart = cycleStartRef.current;
+            const pending = encodeEyePair(observation.event, cycleNum, cycleStart).then(({ images, metadata: event }) => {
+              if (isAbortedRef.current || phaseRunToken !== activeRunTokenRef.current) return;
+              if (!timeSeriesRecorderRef.current.getSamples().some(sample => sample.frameId === event.frameId &&
+                  sample.timestampMs === event.timestampMs)) throw new Error('SOURCE_SAMPLE_UNAVAILABLE');
+              Object.assign(eyeImagesRef.current, images);
+              uncoverEventsRef.current.push(event);
+              setCapturedPairs(count => count + 1);
+            }).catch(error => {
+              if (isAbortedRef.current || phaseRunToken !== activeRunTokenRef.current) return;
+              uncoverEventsRef.current.push({
+                cycle: cycleNum, uncoveredEye: observation.event.uncoveredEye.toUpperCase(),
+                status: 'FAILED', reason: error.message, timestampMs: observation.event.timestampMs,
+              });
+            }).finally(() => pendingCropsRef.current.delete(pending));
+            pendingCropsRef.current.add(pending);
+          }
+          if (!feats) return;
+          const observedFeatures = { ...feats, observedVisibility: observation?.visibility };
+          const elapsed = captured.timestampMs - startT;
+          if (state === 'BASELINE') {
+            const left = createCoverFrame(feats, currentQuality, 'left', captured.timestampMs, elapsed);
+            const right = createCoverFrame(feats, currentQuality, 'right', captured.timestampMs, elapsed);
+            if (left.frame) leftBaselineBuffer.push(left.frame);
+            if (right.frame) rightBaselineBuffer.push(right.frame);
+          } else if (state === 'TRACKING' && trackEye) {
+            const tracked = createCoverFrame(feats, currentQuality, trackEye, captured.timestampMs, elapsed);
+            if (tracked.frame) buffer.push(tracked.frame);
+          }
+          timeSeriesRecorderRef.current.processFrame(captured.timestampMs, state, observedFeatures,
+            currentQuality, currentBaselineRef.current, trackEye, coverEye);
+        };
 
         const loop = () => {
           if (isAbortedRef.current || phaseRunToken !== activeRunTokenRef.current || !isCoverSessionCurrent(phaseSessionId, sessionIdRef.current, isAbortedRef.current)) {
@@ -483,31 +550,7 @@ export default function CoverTestStep({
 
           // Sample features at high frequency
           const feats = latestFeaturesRef?.current;
-          const currentQuality = latestQualityRef?.current || quality;
           if (feats) {
-            if (state === 'BASELINE') {
-              const left = createCoverFrame(feats, currentQuality, 'left', now, elapsed);
-              const right = createCoverFrame(feats, currentQuality, 'right', now, elapsed);
-              if (left.frame) leftBaselineBuffer.push(left.frame);
-              if (right.frame) rightBaselineBuffer.push(right.frame);
-            } else if (state === 'TRACKING' && trackEye) {
-              const tracked = createCoverFrame(feats, currentQuality, trackEye, now, elapsed);
-              if (tracked.frame) {
-                buffer.push(tracked.frame);
-              }
-            }
-
-            // Timestamp-downsampled time-series recording (Sections 2, 3, 4, 7, 8, 14, 16)
-            timeSeriesRecorderRef.current.processFrame(
-              now,
-              state,
-              feats,
-              currentQuality,
-              currentBaselineRef.current,
-              trackEye,
-              coverEye
-            );
-
             // Throttle React state telemetry updates to 4 Hz (every 250ms) to avoid 60 FPS re-render churn (Section 14)
             if (now - lastTelemetryUpdateRef.current >= 250) {
               lastTelemetryUpdateRef.current = now;
@@ -576,6 +619,13 @@ export default function CoverTestStep({
     isAbortedRef.current = false;
     const runIsCurrent = () => !isAbortedRef.current && runToken === activeRunTokenRef.current;
     eyeImagesRef.current = {};
+    uncoverEventsRef.current = [];
+    pendingCropsRef.current = new Set();
+    uncoverObserverRef.current = new UncoverCaptureObserver();
+    setCapturedPairs(0);
+    hasSavedSessionRef.current = false;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
     setCompletedCyclesList([]);
     setCoverSummary(null);
     currentBaselineRef.current = null;
@@ -601,7 +651,9 @@ export default function CoverTestStep({
       if (!runIsCurrent()) return;
       setCycleIndex(c);
       // Reset timestamp-based time-series recorder for new cycle
-      timeSeriesRecorderRef.current.reset(performance.now());
+      cycleStartRef.current = performance.now();
+      timeSeriesRecorderRef.current.reset(cycleStartRef.current);
+      uncoverObserverRef.current.reset();
 
       // Phase 1: Robust Baseline Fixation (4.0s)
       const baselines = await executePhase({
@@ -662,24 +714,16 @@ export default function CoverTestStep({
 
       if (!runIsCurrent()) return;
 
-      // Phase 3a: Brief Uncover notice with Blinking pause (1.8s)
-      // Protocol-Triggered Image Capture: LEFT eye crop
-      captureEyeRegionCrop(videoRef.current, latestFeaturesRef?.current?.raw?.landmarks || landmarks, 'LEFT').then((crop) => {
-        if (crop?.blob) {
-          eyeImagesRef.current[`${c}_left`] = crop.blob;
-          onImageCaptured?.(crop.metadata);
-        }
-      }).catch((e) => console.warn('[EyeCrop] Left eye capture note:', e));
-
+      // Observe the actual removal; never capture solely because a timer expired.
       await executePhase({
         state: 'UNCOVER',
-        title: 'Bỏ tay • Chớp mắt',
-        text: 'Bỏ tay ra, chớp mắt nhẹ nhàng và nhìn vào chấm đỏ.',
-        subtext: 'Khoảng nghỉ chớp mắt để mắt nghỉ ngơi...',
+        title: 'Bỏ tay hoặc vật che',
+        text: 'Bỏ vật che ra và tiếp tục nhìn vào chấm đỏ.',
+        subtext: 'Máy tự chụp cả hai mắt khi thấy mắt trở lại.',
         coverEye: null,
         trackEye: 'right',
         durationMs: 1800,
-        speechText: 'Bỏ tay, chớp mắt nghen.',
+        speechText: 'Bỏ vật che ra, tiếp tục nhìn chấm đỏ nghen.',
         cycleNum: c,
       });
 
@@ -716,24 +760,15 @@ export default function CoverTestStep({
 
       if (!runIsCurrent()) return;
 
-      // Phase 5a: Brief Uncover notice with Blinking pause (1.8s)
-      // Protocol-Triggered Image Capture: RIGHT eye crop
-      captureEyeRegionCrop(videoRef.current, latestFeaturesRef?.current?.raw?.landmarks || landmarks, 'RIGHT').then((crop) => {
-        if (crop?.blob) {
-          eyeImagesRef.current[`${c}_right`] = crop.blob;
-          onImageCaptured?.(crop.metadata);
-        }
-      }).catch((e) => console.warn('[EyeCrop] Right eye capture note:', e));
-
       await executePhase({
         state: 'UNCOVER',
-        title: 'Bỏ tay • Chớp mắt',
-        text: 'Bỏ tay ra, chớp mắt nhẹ nhàng và nhìn vào chấm đỏ.',
-        subtext: 'Khoảng nghỉ chớp mắt để mắt nghỉ ngơi...',
+        title: 'Bỏ tay hoặc vật che',
+        text: 'Bỏ vật che ra và tiếp tục nhìn vào chấm đỏ.',
+        subtext: 'Máy tự chụp cả hai mắt khi thấy mắt trở lại.',
         coverEye: null,
         trackEye: 'left',
         durationMs: 1800,
-        speechText: 'Bỏ tay, chớp mắt nghen.',
+        speechText: 'Bỏ vật che ra, tiếp tục nhìn chấm đỏ nghen.',
         cycleNum: c,
       });
 
@@ -754,6 +789,8 @@ export default function CoverTestStep({
 
       if (!runIsCurrent()) return;
 
+      await Promise.all([...pendingCropsRef.current]);
+      if (!runIsCurrent()) return;
       // Record Cycle Result with timestamp-downsampled trajectory and summary (Sections 10, 11)
       const rawTrajectory = timeSeriesRecorderRef.current.getSamples();
       const datasetQuality = timeSeriesRecorderRef.current.getQuality();
@@ -767,6 +804,15 @@ export default function CoverTestStep({
         datasetQuality
       );
       cycleRecord.summary = timeSeriesRecorderRef.current.finalizeCycleSummary(cycleRecord);
+      cycleRecord.samplingRateHz = 30;
+      cycleRecord.samplingMode = 'UNIQUE_SOURCE_FRAMES';
+      cycleRecord.uncoverEvents = ['LEFT', 'RIGHT'].map(side =>
+        uncoverEventsRef.current.find(event => event.cycle === c && event.uncoveredEye === side) || {
+          cycle: c, uncoveredEye: side, status: 'NOT_CAPTURED',
+          reason: 'NO_CONFIRMED_VISIBLE_TRANSITION',
+        });
+      cycleRecord.occlusionMethod = 'pixel-contrast-v1';
+      cycleRecord.occlusionVerified = cycleRecord.uncoverEvents.every(event => event.status === 'CAPTURED');
 
       // Diagnostic telemetry log required by Section 22
       const activeEye = cycleRecord.trackedEye === 'RIGHT' ? cycleRecord.rightEye : cycleRecord.leftEye;
@@ -813,6 +859,8 @@ export default function CoverTestStep({
 
     if (runIsCurrent() && accumulatedCycles.length > 0) {
       const summaryPayload = aggregateCoverCycles(accumulatedCycles);
+      summaryPayload.datasetSampleRateHz = 30;
+      summaryPayload.datasetSamplingMode = 'UNIQUE_SOURCE_FRAMES';
 
       setCoverSummary(summaryPayload);
       transitionToState('FINISHED', 3);
@@ -901,6 +949,7 @@ export default function CoverTestStep({
             <span className="fullscreen-pill fullscreen-pill-active">
               ⏱️ {coverState === 'TRACKING' ? timerDisplay : `${countdownSec}s`}
             </span>
+            <span className="fullscreen-pill" role="status">Đã chụp {capturedPairs} lần bỏ che</span>
           </div>
 
           <div className="fullscreen-instruction-banner">

@@ -3,6 +3,7 @@ import {
   initializeFaceMesh,
   sendFrameToFaceMesh,
   setFaceMeshResultsCallback,
+  isFaceMeshBusy,
 } from '../services/faceMeshService';
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -66,6 +67,20 @@ export function useFaceMesh(onResults, options = {}) {
   const rafIdRef = useRef(null);
   const isLoopRunningRef = useRef(false);
   const onResultsRef = useRef(onResults);
+  const submittedFrameRef = useRef(null);
+  const frameSequenceRef = useRef(0);
+  const captureCanvasRef = useRef(null);
+  const submittedGenerationRef = useRef(null);
+  const loopGenerationRef = useRef(0);
+  const deliverResults = useCallback((results) => {
+    if (!isLoopRunningRef.current || submittedGenerationRef.current !== loopGenerationRef.current) return;
+    const frame = submittedFrameRef.current;
+    onResultsRef.current?.({
+      ...results,
+      presentationTime: frame?.timestampMs,
+      capturedFrame: frame,
+    }, frame?.timestampMs);
+  }, []);
   const deviceProfileRef = useRef(getDeviceProcessingProfile());
   const metricsRef = useRef({
     decodedFrames: 0,
@@ -81,23 +96,15 @@ export function useFaceMesh(onResults, options = {}) {
   // Keep callback ref and service callback updated without triggering re-initialization
   useEffect(() => {
     onResultsRef.current = onResults;
-    setFaceMeshResultsCallback((results) => {
-      if (onResultsRef.current) {
-        onResultsRef.current(results);
-      }
-    });
-  }, [onResults]);
+    setFaceMeshResultsCallback(deliverResults);
+  }, [onResults, deliverResults]);
 
   const init = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const instance = await initializeFaceMesh((results) => {
-        if (onResultsRef.current) {
-          onResultsRef.current(results);
-        }
-      }, options);
+      const instance = await initializeFaceMesh(deliverResults, options);
 
       faceMeshRef.current = instance;
       setIsReady(true);
@@ -109,7 +116,7 @@ export function useFaceMesh(onResults, options = {}) {
       setIsLoading(false);
       throw err;
     }
-  }, [options]);
+  }, [options, deliverResults]);
 
   const onStaleFrameRef = useRef(options?.onStaleFrame);
   useEffect(() => {
@@ -124,7 +131,6 @@ export function useFaceMesh(onResults, options = {}) {
   const lastFrameTimestampRef = useRef(0);
   const lastFreshFrameTimeRef = useRef(0);
   const lastVideoCurrentTimeRef = useRef(-1);
-  const loopGenerationRef = useRef(0);
   const isPausedRef = useRef(false);
 
   // Listen to visibilitychange to immediately suspend MediaPipe/ONNX execution in background
@@ -208,14 +214,7 @@ export function useFaceMesh(onResults, options = {}) {
       await init();
     }
 
-    setFaceMeshResultsCallback((results) => {
-      if (onResultsRef.current) {
-        if (results && typeof results === 'object') {
-          results.presentationTime = lastFrameTimestampRef.current;
-        }
-        onResultsRef.current(results, lastFrameTimestampRef.current);
-      }
-    });
+    setFaceMeshResultsCallback(deliverResults);
 
     isLoopRunningRef.current = true;
     isPausedRef.current = false;
@@ -227,7 +226,7 @@ export function useFaceMesh(onResults, options = {}) {
     }
 
     // Common frame dispatch with lock, adaptive pacing, and watchdog
-    const processSingleFrame = async (frameTimestamp) => {
+    const processSingleFrame = async (frameTimestamp, mediaTime = null) => {
       // Abort immediately if backgrounded, loop stopped, or superseded by newer loop instance
       if (
         isPausedRef.current ||
@@ -245,6 +244,7 @@ export function useFaceMesh(onResults, options = {}) {
 
       // Track frame freshness via video.currentTime progress
       const curTime = currentVideo.currentTime;
+      if (curTime === lastVideoCurrentTimeRef.current) return;
       if (curTime !== lastVideoCurrentTimeRef.current) {
         lastFreshFrameTimeRef.current = clockNow;
         lastVideoCurrentTimeRef.current = curTime;
@@ -309,7 +309,7 @@ export function useFaceMesh(onResults, options = {}) {
         maxLandmarkFps
       );
       const elapsedSinceLastProcess = frameTimestamp - lastProcessedFrameTimestampRef.current;
-      if (elapsedSinceLastProcess < adaptiveIntervalMs) {
+      if (elapsedSinceLastProcess + 1 < adaptiveIntervalMs) {
         metric.droppedFrames += 1;
         flushMetricsIfNeeded();
         return;
@@ -317,6 +317,7 @@ export function useFaceMesh(onResults, options = {}) {
 
       if (
         !isSendingRef.current &&
+        !isFaceMeshBusy(faceMeshRef.current) &&
         currentVideo.readyState >= 2 &&
         currentVideo.videoWidth > 0 &&
         !currentVideo.paused &&
@@ -328,12 +329,30 @@ export function useFaceMesh(onResults, options = {}) {
         lastProcessedFrameTimestampRef.current = frameTimestamp;
         const sendStart = performance.now();
         try {
-          await sendFrameToFaceMesh(faceMeshRef.current, currentVideo);
+          const source = captureCanvasRef.current ||= document.createElement('canvas');
+          const scale = Math.min(1, 960 / Math.max(currentVideo.videoWidth, currentVideo.videoHeight));
+          const width = Math.round(currentVideo.videoWidth * scale);
+          const height = Math.round(currentVideo.videoHeight * scale);
+          if (source.width !== width || source.height !== height) {
+            source.width = width;
+            source.height = height;
+          }
+          source.getContext('2d').drawImage(currentVideo, 0, 0, width, height);
+          submittedFrameRef.current = {
+            image: source, frameId: ++frameSequenceRef.current,
+            timestampMs: frameTimestamp,
+            timestampEpochMs: performance.timeOrigin + frameTimestamp,
+            mediaTimeMs: (mediaTime ?? curTime) * 1000,
+            timestampSource: supportsRVFC ? 'VIDEO_PRESENTATION' : 'RAF_CAPTURE',
+            sourceWidth: width, sourceHeight: height,
+          };
+          submittedGenerationRef.current = currentLoopGen;
+          const sent = await sendFrameToFaceMesh(faceMeshRef.current, currentVideo, source);
           const latency = performance.now() - sendStart;
           metric.latencyWindow.push(latency);
           if (metric.latencyWindow.length > 30) metric.latencyWindow.shift();
           metric.avgLatencyMs = metric.latencyWindow.reduce((a, b) => a + b, 0) / metric.latencyWindow.length;
-          metric.processedFrames += 1;
+          if (sent) metric.processedFrames += 1;
         } catch (err) {
           console.warn('[FaceMesh] sendFrame error:', err);
         } finally {
@@ -360,7 +379,7 @@ export function useFaceMesh(onResults, options = {}) {
           ? metadata.presentationTime
           : now;
 
-        await processSingleFrame(frameTimestamp);
+        void processSingleFrame(frameTimestamp, metadata?.mediaTime);
 
         if (isLoopRunningRef.current && loopGenerationRef.current === currentLoopGen && currentVideo?.requestVideoFrameCallback) {
           rvfcIdRef.current = currentVideo.requestVideoFrameCallback(tickRVFC);
@@ -376,7 +395,7 @@ export function useFaceMesh(onResults, options = {}) {
         if (!currentVideo) return;
 
         const frameTimestamp = typeof rafTimestamp === 'number' ? rafTimestamp : performance.now();
-        await processSingleFrame(frameTimestamp);
+        void processSingleFrame(frameTimestamp);
 
         if (isLoopRunningRef.current && loopGenerationRef.current === currentLoopGen) {
           rafIdRef.current = requestAnimationFrame(tickRAF);
@@ -385,7 +404,7 @@ export function useFaceMesh(onResults, options = {}) {
 
       rafIdRef.current = requestAnimationFrame(tickRAF);
     }
-  }, [init, supportsRVFC, maxLandmarkFps]);
+  }, [init, supportsRVFC, maxLandmarkFps, deliverResults]);
 
   // Clean up loop on unmount (shared instance is preserved)
   useEffect(() => {

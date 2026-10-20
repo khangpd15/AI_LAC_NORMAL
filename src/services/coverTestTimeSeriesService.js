@@ -61,7 +61,7 @@ const coverVisibilityStatus = ({ eye, coverEye, coordsValid, blink }) => {
  * @param {number} [initialStartTime] - performance.now() of cycle start
  * @returns {Object} Recorder controller
  */
-export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
+export function createTimeSeriesRecorder(initialStartTime = performance.now(), { fullRate = false } = {}) {
   let cycleStartTime = initialStartTime;
   let lastSampleTime = -Infinity;
   const samples = [];
@@ -71,6 +71,7 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
   let validSamples = 0;
   let rejectedSamples = 0;
   let previousKinematicSample = null;
+  let lastSourceTimestamp = -Infinity;
 
   // Realtime FPS tracking
   let lastFrameTime = performance.now();
@@ -90,6 +91,7 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
     validSamples = 0;
     rejectedSamples = 0;
     previousKinematicSample = null;
+    lastSourceTimestamp = -Infinity;
     frameTimeWindow.length = 0;
     realtimeFps = 0;
     lastFrameTime = newStartTime;
@@ -117,6 +119,9 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
     trackEye = null,
     coverEye = null
   ) => {
+    if (Number.isFinite(features?.timestamp)) now = features.timestamp;
+    if (!Number.isFinite(now) || now < cycleStartTime || now <= lastSourceTimestamp) return false;
+    lastSourceTimestamp = now;
     totalFrames += 1;
 
     // Measure realtime FPS over sliding window of native frames (30 - 60 FPS)
@@ -131,7 +136,7 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
     }
 
     // Dataset sampling target based strictly on real elapsed time, NOT frame counter (Section 2 & 16)
-    const intervalMs = COVER_TEST_CONFIG.datasetSampleIntervalMs;
+    const intervalMs = fullRate ? 0 : COVER_TEST_CONFIG.datasetSampleIntervalMs;
     const isFirstSample = lastSampleTime === -Infinity;
     const timeSinceLastSample = now - lastSampleTime;
 
@@ -253,7 +258,7 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
     }
 
     // Relative timestamp from cycle start in milliseconds (Section 5 & 10: strictly non-decreasing)
-    const rawT = Math.max(0, Math.round(now - cycleStartTime));
+    const rawT = Math.max(0, Number((now - cycleStartTime).toFixed(3)));
     const lastSampleT = samples.length > 0 ? samples[samples.length - 1].t : 0;
     const t = Math.max(lastSampleT, rawT);
 
@@ -265,12 +270,14 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
     const isBlinkR = Boolean(features?.isBlinkMaskedRight ?? features?.isBlinkRight);
     const blink = Boolean(quality.blinkDetected || isBlinkL || isBlinkR);
     const occlusion = Boolean(quality.occlusionDetected);
-    const leftValid = Boolean(leftCoordsValid && coverEye !== 'left' && !isBlinkL);
-    const rightValid = Boolean(rightCoordsValid && coverEye !== 'right' && !isBlinkR);
-    const frameValid = Boolean(isFullyValidSample && !blink && !occlusion);
+    const observed = features.observedVisibility;
+    const leftValid = Boolean(leftCoordsValid && (observed ? observed.left === 'VISIBLE' : coverEye !== 'left') && !isBlinkL);
+    const rightValid = Boolean(rightCoordsValid && (observed ? observed.right === 'VISIBLE' : coverEye !== 'right') && !isBlinkR);
+    const frameValid = Boolean(isFullyValidSample && !blink && !occlusion &&
+      (effectiveTrackEye === 'left' ? leftValid : effectiveTrackEye === 'right' ? rightValid : leftValid && rightValid));
 
     const canonicalCoveredEye = coverEye ? toCanonicalEye(coverEye) : null;
-    const epochTimestamp = Date.now();
+    const epochTimestamp = features.frameMetadata?.timestampEpochMs ?? performance.timeOrigin + now;
     const leftEyeCenterX = leftCoordsValid ? Number(((leftX + (rawLandmarks[362]?.x ?? leftX) + (rawLandmarks[263]?.x ?? leftX)) / 3).toFixed(4)) : null;
     const leftEyeCenterY = leftCoordsValid ? Number(((leftY + (rawLandmarks[386]?.y ?? leftY) + (rawLandmarks[374]?.y ?? leftY)) / 3).toFixed(4)) : null;
     const rightEyeCenterX = rightCoordsValid ? Number(((rightX + (rawLandmarks[133]?.x ?? rightX) + (rawLandmarks[33]?.x ?? rightX)) / 3).toFixed(4)) : null;
@@ -391,8 +398,12 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
       relativeY,
       signedDx,
       signedDy,
-      timestampMs: Number(now.toFixed(3)),
+      timestampMs: now,
       timestampEpochMs: epochTimestamp,
+      frameId: features.frameMetadata?.frameId ?? null,
+      mediaTimeMs: features.frameMetadata?.mediaTimeMs ?? null,
+      timestampSource: features.frameMetadata?.timestampSource ?? 'FEATURE_TIMESTAMP',
+      observedVisibility: observed ?? null,
     };
 
     samples.push(sample);
@@ -429,8 +440,8 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now()) {
    */
   const getTelemetry = () => ({
     realtimeFps,
-    datasetSampleRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
-    datasetSamplingMode: COVER_TEST_CONFIG.datasetSamplingMode,
+    datasetSampleRateHz: fullRate ? 30 : COVER_TEST_CONFIG.datasetSampleRateHz,
+    datasetSamplingMode: fullRate ? 'UNIQUE_SOURCE_FRAMES' : COVER_TEST_CONFIG.datasetSamplingMode,
     totalFrames,
     savedSamples,
     validSamples,

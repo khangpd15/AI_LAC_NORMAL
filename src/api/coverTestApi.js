@@ -45,11 +45,11 @@ export async function saveCoverTestSessionApi({
   const sessionMetaPayload = {
     sessionId,
     cycleCount: cycles.length,
-    samplingRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
-    samplingMode: COVER_TEST_CONFIG.datasetSamplingMode,
+    samplingRateHz: clientMetadata.samplingRateHz ?? COVER_TEST_CONFIG.datasetSampleRateHz,
+    samplingMode: clientMetadata.samplingMode ?? COVER_TEST_CONFIG.datasetSamplingMode,
     sourceDevice: 'WEBCAM',
     tracker: 'MEDIAPIPE_IRIS',
-    rawSchemaVersion: '1.0.0',
+    rawSchemaVersion: '2.0.0',
     clientMetadata: cleanMetadata,
   };
   formData.append('session_metadata', JSON.stringify(sessionMetaPayload));
@@ -59,19 +59,41 @@ export async function saveCoverTestSessionApi({
     const cycleNum = cycle.cycleIndex || cycle.cycleNumber || cycle.cycle || (idx + 1);
     const rawSamples = cycle.samples || cycle.rawTrajectory || [];
     const cyclePayload = {
-      schemaVersion: '1.0.0',
+      schemaVersion: '2.0.0',
       sessionId,
       cycle: cycleNum,
       coveredEye: String(cycle.coveredEye || (cycleNum % 2 === 1 ? 'LEFT' : 'RIGHT')).toUpperCase(),
       trackedEye: String(cycle.trackedEye || (cycleNum % 2 === 1 ? 'RIGHT' : 'LEFT')).toUpperCase(),
-      samplingRateHz: COVER_TEST_CONFIG.datasetSampleRateHz,
-      samplingMode: COVER_TEST_CONFIG.datasetSamplingMode,
+      samplingRateHz: cycle.samplingRateHz ?? COVER_TEST_CONFIG.datasetSampleRateHz,
+      samplingMode: cycle.samplingMode ?? COVER_TEST_CONFIG.datasetSamplingMode,
       durationMs: cycle.durationMs || 0,
       samples: rawSamples,
+      uncoverEvents: cycle.uncoverEvents || [],
     };
     const jsonBlob = new Blob([JSON.stringify(cyclePayload)], { type: 'application/json' });
     formData.append(`cycle_${cycleNum}_raw`, jsonBlob, `cycle_${cycleNum}_raw.json`);
   });
+
+  // Manifest joins each eye pair to the exact source frame in the trajectory.
+  const events = cycles.flatMap(cycle => cycle.uncoverEvents || []);
+  const manifest = {
+    schemaVersion: '2.0.0', sessionId,
+    requestedModalities: ['time_series', 'uncover_eye_images'],
+    timestampUnit: 'milliseconds', timestampClock: 'performance.timeOrigin',
+    events,
+  };
+  for (const event of events.filter(event => event.status === 'CAPTURED')) {
+    const cycle = cycles.find(item => (item.cycleIndex || item.cycleNumber || item.cycle) === event.cycle);
+    const matching = (cycle?.samples || cycle?.rawTrajectory || []).some(sample =>
+      sample.frameId === event.frameId && sample.timestampMs === event.timestampMs);
+    if (!matching) throw new Error('UNCOVER_FRAME_NOT_IN_TRAJECTORY');
+    for (const side of ['left', 'right']) {
+      const crop = event.crops?.[side];
+      if (!crop || !(images[crop.field] instanceof Blob)) throw new Error('UNCOVER_IMAGE_MISSING');
+      formData.append(crop.field, images[crop.field], crop.file);
+    }
+  }
+  formData.append('uncover_manifest', JSON.stringify(manifest));
 
   // 3. Eye crop images
   for (let c = 1; c <= 3; c++) {

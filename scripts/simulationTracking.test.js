@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { getSimulationProcessingSize, stabilizeSimulationLandmarks } from '../src/services/cv/simulationTracking.js';
+import { getSimulationProcessingSize, getSimulationRenderSize, stabilizeSimulationLandmarks } from '../src/services/cv/simulationTracking.js';
+import { LEFT_EYE_CONTOUR, RIGHT_EYE_CONTOUR } from '../src/services/cv/strabismusEngine.js';
 import { isFaceMeshBusy, sendFrameToFaceMesh } from '../src/services/faceMeshService.js';
 import { LANDMARKS } from '../src/constants/screeningConfig.js';
 
@@ -26,6 +27,28 @@ test('small iris noise is reduced without mutating camera landmarks', () => {
   assert.ok(result[468].x > before[468].x);
   assert.ok(result[468].x < before[468].x + 0.002);
   assert.equal(next[468].x, before[468].x + 0.004);
+});
+
+test('partial lid closure follows the current image on desktop and mobile', () => {
+  const before = face();
+  const next = face();
+  for (const side of ['LEFT', 'RIGHT']) {
+    next[LANDMARKS[`${side}_TOP_LID`]].y = 0.49;
+    next[LANDMARKS[`${side}_BOTTOM_LID`]].y = 0.51;
+  }
+  for (const mobile of [false, true]) {
+    const result = stabilizeSimulationLandmarks(next, before, 33, { mobile });
+    for (const index of [...LEFT_EYE_CONTOUR, ...RIGHT_EYE_CONTOUR]) {
+      assert.deepEqual(result[index], next[index], `current lid ${index}, mobile=${mobile}`);
+    }
+  }
+});
+
+test('render workload is bounded on high-DPI phones and laptops', () => {
+  assert.deepEqual(getSimulationRenderSize(1418, 1892, 480, 640, true), { width: 480, height: 640 });
+  assert.deepEqual(getSimulationRenderSize(3840, 2160, 960, 540), { width: 960, height: 540 });
+  assert.deepEqual(getSimulationRenderSize(1920, 1080, 640, 360), { width: 640, height: 360 });
+  assert.deepEqual(getSimulationRenderSize(320, 240, 640, 480, true), { width: 320, height: 240 });
 });
 
 test('naturally narrow open eyes still receive iris smoothing', () => {
