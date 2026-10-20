@@ -1,68 +1,4 @@
-/**
- * AUDIO & TEXT-TO-SPEECH (TTS) CONFIGURATION - REMICARE
- * Giọng Nữ Việt Nam ấm áp, nhẹ nhàng, truyền cảm theo hơi hướng miền Tây Nam Bộ.
- *
- * Tiêu chí thiết kế âm học:
- * - Tốc độ (Rate): 0.95x — Chậm vừa phải, phát âm tròn vành rõ chữ, không nuốt âm cuối,
- *   tối ưu khả năng tiếp thu của trẻ em và phụ huynh/người cao tuổi.
- * - Cao độ (Pitch): 1.02 — Giọng nữ tự nhiên, ấm áp, thân thiện, không kim loại / robotic.
- * - Khoảng nghỉ (Cadence): 120ms giữa các câu (giảm từ 380ms để liền mạch, ngắt nghỉ
- *   tự nhiên như bác sĩ trò chuyện trực tiếp, tránh cảm giác đứt quãng, chậm chạp).
- * - Ưu tiên tuyệt đối: Giọng Nữ (Google Tiếng Việt, Microsoft HoaiMy Online Natural, Apple Linh/Mai/Chi).
- *   Loại bỏ triệt để giọng Nam cục bộ (Microsoft An, NamMinh).
- */
-
-/**
- * Cấu hình ưu tiên giọng Nữ Việt Nam theo từng phương ngữ.
- * Mặc định: Giọng Nữ ấm áp miền Tây / Nam Bộ.
- */
-export const DIALECT_VOICE_PRIORITY = Object.freeze({
-  /**
-   * Miền Tây Nam Bộ / Miền Nam — Giọng nữ ấm áp, thân thiện, ân cần ("Dạ", "nghen", "nha")
-   * 1. Google tiếng Việt (Chrome/Android): Giọng nữ trong trẻo, tự nhiên, cực kỳ rõ lời
-   * 2. Microsoft HoaiMy Online (Natural) (Edge): Giọng nữ AI Neural ấm áp, không robotic
-   * 3. Microsoft Phuong Online (Natural): Giọng nữ Nam Bộ
-   * 4. Apple Linh / Mai / Chi (iOS/macOS): Giọng nữ Siri tiếng Việt nhẹ nhàng
-   */
-  south: [
-    { pattern: /google\s*tiếng\s*việt/i,            score: 320, label: 'Google Tiếng Việt (Female Natural)' },
-    { pattern: /hoaimy.*online.*natural/i,          score: 300, label: 'Microsoft HoaiMy Online Natural (Female)' },
-    { pattern: /hoaimy/i,                           score: 280, label: 'Microsoft HoaiMy (Female)' },
-    { pattern: /phuong\s*online/i,                  score: 270, label: 'Microsoft Phuong Online (Nam Bộ Female)' },
-    { pattern: /(south|nam\s*bộ|miền\s*tây)/i,      score: 260, label: 'Explicit Southern Vietnamese' },
-    { pattern: /linh/i,                             score: 250, label: 'Linh (Apple Siri Female)' },
-    { pattern: /mai/i,                              score: 240, label: 'Mai (Apple Vietnamese Female)' },
-    { pattern: /chi/i,                              score: 230, label: 'Chi (Apple Vietnamese Female)' },
-  ],
-
-  /**
-   * Miền Trung — Giọng nữ truyền cảm, trầm ấm
-   */
-  central: [
-    { pattern: /hoaimy.*online.*natural/i,          score: 310, label: 'Microsoft HoaiMy Online Natural' },
-    { pattern: /hoaimy/i,                           score: 290, label: 'Microsoft HoaiMy (Central Female)' },
-    { pattern: /google\s*tiếng\s*việt/i,            score: 280, label: 'Google Tiếng Việt (Female)' },
-    { pattern: /dao/i,                              score: 260, label: 'Dao (Central Female)' },
-    { pattern: /(trung|central|hue|da\s*nang)/i,    score: 250, label: 'Explicit Central Vietnamese' },
-    { pattern: /linh/i,                             score: 220, label: 'Linh (Apple Female)' },
-  ],
-
-  /**
-   * Miền Bắc — Giọng nữ chuẩn phổ thông, rõ chữ
-   */
-  north: [
-    { pattern: /google\s*tiếng\s*việt/i,            score: 310, label: 'Google Tiếng Việt (Female Natural)' },
-    { pattern: /ngoc/i,                             score: 290, label: 'Ngoc (North Vietnamese Female)' },
-    { pattern: /hoa\b/i,                            score: 280, label: 'Hoa (North Vietnamese Female)' },
-    { pattern: /hoaimy.*online.*natural/i,          score: 270, label: 'Microsoft HoaiMy Online Natural' },
-    { pattern: /(north|hà\s*nội|hanoi|bắc)/i,       score: 260, label: 'Explicit Northern Vietnamese' },
-    { pattern: /linh/i,                             score: 230, label: 'Linh (Apple Female)' },
-  ],
-});
-
-// Giọng mặc định: Ưu tiên Miền Tây Nam Bộ ấm áp, thân thiện
-export const AUDIO_CONFIG_VOICE_PRIORITY = DIALECT_VOICE_PRIORITY.south;
-
+// Iris uses the same streamed Vietnamese narrator across all screens and devices.
 export const AUDIO_CONFIG = Object.freeze({
   lang: 'vi-VN',
   rate: 1.02,               // Tốc độ chuẩn 1.02x: lưu loát, dứt khoát, tự nhiên, không bị chậm chạp
@@ -74,8 +10,6 @@ export const AUDIO_CONFIG = Object.freeze({
   pauseNormalSentenceMs: 40,  // 40ms: chuyển tiếp câu nhanh gọn, tức thì, không bị khựng đợi lâu
   pauseWarningMs: 100,        // 100ms: khoảng nhấn nhẹ trước lưu ý quan trọng
   pauseEmergencyMs: 80,       // 80ms: dứt khoát
-  // Danh sách ưu tiên giọng mặc định (tương thích ngược)
-  voicePriorityKeywords: AUDIO_CONFIG_VOICE_PRIORITY,
 });
 
 /**

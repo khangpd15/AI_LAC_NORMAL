@@ -16,7 +16,6 @@ globalThis.Audio = FakeAudio;
 function createService() {
   FakeAudio.instances = [];
   const service = new AudioService({});
-  service.waitForVoices = async () => [];
   return service;
 }
 
@@ -78,15 +77,26 @@ test('stopping between sentences cancels the delay and does not play the next se
   assert.equal(FakeAudio.instances.length, 1);
 });
 
-test('stopping native speech settles even when the browser emits no cancel event', { timeout: 1000 }, async () => {
+test('Iris keeps the streamed narrator even when another native voice is available or requested', { timeout: 1000 }, async () => {
   const service = createService();
   service.selectedVoice = { name: 'Microsoft HoaiMy Online (Natural)', lang: 'vi-VN' };
   service.Utterance = class { constructor(text) { this.text = text; } };
-  service.synth = { speak() {}, cancel() {} };
-  const playback = service.speak('Lời dẫn native.');
+  service.synth = { speak() { assert.fail('Must not switch away from Iris'); }, cancel() {} };
+  const playback = service.speak('Lời dẫn Iris.', { voice: service.selectedVoice, dialect: 'north' });
   await Promise.resolve();
-  assert.ok(service.currentUtterance);
+  assert.ok(service.currentAudio.src.startsWith('/api/tts?text='));
+  assert.equal(service.getSnapshot().voice.name, 'Iris');
+  assert.equal(service.currentUtterance, null);
   service.stop();
   assert.equal(await playback, false);
   assert.equal(service.currentUtterance, null);
+});
+
+test('unavailable Iris audio reports an error without switching narrator or reporting success', async () => {
+  const service = createService();
+  const playback = service.speak('Kiểm tra âm thanh.');
+  for (let i = 0; i < 3; i++) service.currentAudio.onerror(new Error('Unavailable'));
+  assert.equal(await playback, false);
+  assert.equal(service.getSnapshot().state, 'ERROR');
+  assert.equal(service.getSnapshot().voice.name, 'Iris');
 });

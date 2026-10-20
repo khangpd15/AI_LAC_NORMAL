@@ -1,75 +1,8 @@
-import { AUDIO_CONFIG, AUDIO_MESSAGES, AUDIO_STATES, DIALECT_VOICE_PRIORITY, SPEECH_RATE_PRESETS } from '../constants/audioConfig.js';
+import { IRIS_VOICE, getIrisAudioUrls } from '../constants/irisVoice.js';
+import { AUDIO_CONFIG, AUDIO_MESSAGES, AUDIO_STATES, SPEECH_RATE_PRESETS } from '../constants/audioConfig.js';
 
-/**
- * Kiểm tra xem một voice có phải là giọng Nữ tiếng Việt thực thụ hay không.
- * TUYỆT ĐỐI LOẠI BỎ:
- * - Giọng Nam cục bộ trên Windows: "Microsoft An - Vietnamese (Vietnam)" (giọng nam robotic, rè, méo tiếng)
- * - Giọng Nam trên Edge: "Microsoft NamMinh Online (Natural)"
- * - Giọng tiếng Anh mặc định (Microsoft David, Zira, Google US English...) phát âm tiếng Việt lơ lớ, kì dị.
- */
-export function isGenuineFemaleVoice(voice) {
-  if (!voice) return false;
-  const name = (voice.name || '').toLowerCase();
-  const lang = (voice.lang || '').toLowerCase().replace('_', '-');
-
-  // Phải là tiếng Việt
-  const isVi = lang === 'vi-vn' || lang.startsWith('vi') || /vietnam/i.test(name);
-  if (!isVi) return false;
-
-  // Loại trừ triệt để tất cả giọng Nam và giọng méo tiếng
-  if (
-    /\bmicrosoft\s+an\b/i.test(name) ||
-    /\ban\s*-\s*vietnam/i.test(name) ||
-    /\ban\b.*vietnam/i.test(name) ||
-    /namminh/i.test(name) ||
-    /\bdavid\b/i.test(name) ||
-    /\bmark\b/i.test(name) ||
-    (/\b(male|man)\b/i.test(name) && !/vietnam/i.test(name) && !/nam\s*bộ/i.test(name))
-  ) {
-    return false;
-  }
-
-  // Khớp với các giọng Nữ đã được kiểm chứng
-  const femalePatterns = [
-    /hoaimy/i,                           // Microsoft HoaiMy Online (Natural)
-    /google\s*tiếng\s*việt/i,            // Google Tiếng Việt (Female Natural)
-    /phuong/i,                           // Microsoft Phuong Online (Natural Nam Bộ)
-    /linh/i,                             // Apple Siri Linh
-    /mai/i,                              // Apple Siri Mai
-    /chi/i,                              // Apple Siri Chi
-    /ngoc/i,                             // Apple Siri Ngoc
-    /hoa\b/i,                            // Microsoft Hoa
-    /dao/i,                              // Apple Dao
-    /female/i,
-    /nữ/i,
-  ];
-
-  if (femalePatterns.some((pattern) => pattern.test(name))) {
-    return true;
-  }
-
-  // Nếu là giọng Online/Natural và không có dấu hiệu giọng Nam
-  if (/online.*natural|natural.*online/i.test(name) && !/nam/i.test(name)) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * AudioService - RemiCare Text-To-Speech (TTS)
- * Hệ thống âm thanh đa tầng (Hybrid TTS Engine):
- * 1. Tầng 1: Sử dụng giọng Nữ tiếng Việt bản địa chất lượng cao (Microsoft HoaiMy Natural, Apple Siri Linh/Mai).
- * 2. Tầng 2: Nếu trình duyệt không có sẵn giọng Nữ tiếng Việt (như Google Chrome trên Windows chỉ có
- *    Microsoft An giọng nam kì dị, hoặc Android/Linux/Firefox thiếu voice tiếng Việt), hệ thống
- *    TỰ ĐỘNG CHUYỂN SANG STREAM GIỌNG NỮ GOOGLE TIẾNG VIỆT CHUẨN Y TẾ qua HTML5 Audio.
- * 
- * Cam kết kỹ thuật:
- * - 100% Giọng NỮ ấm áp, truyền cảm, tự nhiên theo âm hưởng miền Tây Nam Bộ.
- * - Tốc độ đọc chuẩn 0.95x (tròn vành rõ chữ, chậm vừa phải cho người già và trẻ nhỏ).
- * - Khoảng nghỉ 120ms giữa các câu (liền mạch, không đơ giật, không ngắt quãng robotic).
- * - Tuyệt đối không bao giờ phát giọng nam cục bộ hoặc giọng tiếng Anh phát âm sai.
- */
+/** Shared Iris narration service. Uses the same Vietnamese stream as listening guides
+ * on every device; browser voice availability never changes the narrator. */
 export class AudioService {
   constructor(browserWindow = typeof window !== 'undefined' ? window : null) {
     this.window = browserWindow;
@@ -106,7 +39,7 @@ export class AudioService {
 
   isSupported() {
     if (typeof window === 'undefined') return false;
-    return Boolean(this.synth && this.Utterance) || typeof Audio !== 'undefined';
+    return typeof Audio !== 'undefined';
   }
 
   getVoices() {
@@ -114,19 +47,10 @@ export class AudioService {
   }
 
   getSnapshot() {
-    const isFemaleNative = isGenuineFemaleVoice(this.selectedVoice);
     return {
       supported: this.isSupported(),
       state: this.state,
-      voice: isFemaleNative ? {
-        name: this.selectedVoice.name,
-        lang: this.selectedVoice.lang,
-        type: 'native-female',
-      } : {
-        name: 'RemiCare Natural Female Voice (Google Tiếng Việt)',
-        lang: 'vi-VN',
-        type: 'stream-female',
-      },
+      voice: { name: IRIS_VOICE.name, lang: IRIS_VOICE.lang, type: 'iris-stream' },
       text: this.currentText,
       errorCount: this.errorCount,
       errorMessage: this.errorMessage,
@@ -160,89 +84,8 @@ export class AudioService {
 
   loadVoices() {
     this.voices = this.synth?.getVoices?.() || [];
-    this.selectedVoice = this.selectVietnameseVoice(this.voices);
-    if (this.selectedVoice) {
-      console.info('[AudioService] Đã chọn giọng Nữ bản địa:', this.selectedVoice.name, this.selectedVoice.lang);
-    } else {
-      console.info('[AudioService] Trình duyệt không có giọng Nữ tiếng Việt -> Sẵn sàng dùng RemiCare Female Audio Stream.');
-    }
     this.emit();
     return this.voices;
-  }
-
-  /**
-   * Chọn giọng Nữ tiếng Việt tốt nhất theo danh sách ưu tiên.
-   * Nếu chỉ có Microsoft An (nam) hoặc không có giọng Việt Nữ, trả về null để tự động
-   * kích hoạt stream âm thanh nữ Google chất lượng cao.
-   */
-  selectVietnameseVoice(voices = this.voices, priorityKeywords = AUDIO_CONFIG.voicePriorityKeywords) {
-    if (!voices || !voices.length) return null;
-
-    // Lọc duy nhất các giọng Nữ tiếng Việt
-    const femaleViVoices = voices.filter(isGenuineFemaleVoice);
-    if (!femaleViVoices.length) {
-      return null;
-    }
-
-    let bestVoice = femaleViVoices[0];
-    let bestScore = -Infinity;
-
-    for (const voice of femaleViVoices) {
-      let score = 100;
-      const name = (voice.name || '').toLowerCase();
-
-      for (const { pattern, score: bonus } of priorityKeywords) {
-        if (pattern.test(name)) {
-          score += bonus;
-        }
-      }
-
-      if (/online.*natural|natural.*online/i.test(name)) {
-        score += 50;
-      }
-
-      if (voice.default) score += 10;
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestVoice = voice;
-      }
-    }
-
-    return bestVoice;
-  }
-
-  /**
-   * Chọn giọng theo phương ngữ (dialect).
-   */
-  selectVoiceByDialect(dialect, voices = this.voices) {
-    const keywords = DIALECT_VOICE_PRIORITY[dialect];
-    if (!keywords) {
-      console.warn(`[AudioService] Dialect '${dialect}' không hợp lệ, dùng giọng mặc định (south).`);
-      return this.selectVietnameseVoice(voices, DIALECT_VOICE_PRIORITY.south);
-    }
-    return this.selectVietnameseVoice(voices, keywords);
-  }
-
-  waitForVoices(timeoutMs = AUDIO_CONFIG.voiceLoadTimeoutMs) {
-    this.initializeVoices();
-    if (this.voices.length) return Promise.resolve(this.getVoices());
-    return new Promise((resolve) => {
-      let finished = false;
-      let timer;
-      let unsubscribe = () => {};
-      const finish = () => {
-        if (finished) return;
-        finished = true;
-        clearTimeout(timer);
-        unsubscribe();
-        resolve(this.getVoices());
-      };
-      unsubscribe = this.subscribe((snapshot) => {
-        if (snapshot.voice || this.voices.length) finish();
-      });
-      timer = setTimeout(finish, timeoutMs);
-    });
   }
 
   unlock() {
@@ -419,15 +262,7 @@ export class AudioService {
         return;
       }
 
-      const encoded = encodeURIComponent(clean);
-      const urls = [
-        // Priority 1: Same-origin API endpoint (/api/tts) hosted on Vercel or Vite dev server
-        `/api/tts?text=${encoded}`,
-        // Priority 2: Direct Google Translate TTS with no-referrer
-        `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=vi&client=tw-ob`,
-        // Priority 3: Google translate API endpoint
-        `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=vi&q=${encoded}`,
-      ];
+      const urls = getIrisAudioUrls(clean);
 
       let urlIndex = 0;
       let resolved = false;
@@ -460,6 +295,7 @@ export class AudioService {
         }
 
         if (urlIndex >= urls.length) {
+          this.fail(AUDIO_MESSAGES.failed);
           console.warn('[AudioService] All TTS stream URLs exhausted for chunk:', clean.slice(0, 30));
           finish();
           return;
@@ -535,6 +371,7 @@ export class AudioService {
           if (!chunk.trim()) continue;
 
           await this.playSingleAudioChunk(chunk, rate, volume, requestId);
+          if (this.state === AUDIO_STATES.ERROR) return false;
 
           if (c < subChunks.length - 1 && requestId === this.requestId) {
             await this.waitForPause(20);
@@ -564,7 +401,7 @@ export class AudioService {
    * Phát âm thanh hướng dẫn với giọng Nữ Việt Nam chuẩn, tốc độ 0.95x, cao độ 1.02, ngắt nghỉ 120ms.
    *
    * @param {string} text - Văn bản cần đọc
-   * @param {Object} options - { rate, pitch, volume, voice, dialect, userGesture }
+   * @param {Object} options - { rate, volume, userGesture }
    * @returns {Promise<boolean>}
    */
   async speak(text, options = {}) {
@@ -584,18 +421,8 @@ export class AudioService {
     this.stop(false);
 
     const requestId = ++this.requestId;
-    await this.waitForVoices(options.voiceLoadTimeoutMs);
-    if (requestId !== this.requestId) return false;
-
-    // Chọn giọng: chỉ chấp nhận giọng Nữ thực thụ
-    const candidateVoice = options.voice ||
-      (options.dialect ? this.selectVoiceByDialect(options.dialect) : this.selectedVoice);
-    const nativeFemaleVoice = isGenuineFemaleVoice(candidateVoice) ? candidateVoice : null;
-
-    // Tốc độ chuẩn 0.95x, cao độ 1.02 ấm áp
     const rate = options.rate ??
       (options.ratePreset ? (SPEECH_RATE_PRESETS[options.ratePreset] ?? AUDIO_CONFIG.rate) : AUDIO_CONFIG.rate);
-    const pitch = options.pitch ?? AUDIO_CONFIG.pitch;   // 1.02
     const volume = options.volume ?? AUDIO_CONFIG.volume; // 1.0
 
     const segments = this.parseSpeechSegments(cleanText, options);
@@ -606,92 +433,7 @@ export class AudioService {
     this.errorMessage = '';
     this.emit();
 
-    // NẾU KHÔNG CÓ GIỌNG NỮ NATIVE (ví dụ: Google Chrome trên Windows chỉ có Microsoft An nam,
-    // hoặc máy chưa cài gói giọng tiếng Việt):
-    // TỰ ĐỘNG CHUYỂN SANG STREAM GIỌNG NỮ GOOGLE CHẤT LƯỢNG CAO, TUYỆT ĐỐI KHÔNG DÙNG MICROSOFT AN!
-    if (!nativeFemaleVoice) {
-      console.info(`[AudioService] Kích hoạt RemiCare Female Audio Stream | Tốc độ: ${rate}x (Tránh giọng nam robotic cục bộ)`);
-      return this.speakViaAudioStream(segments, { rate, volume, ...options }, requestId);
-    }
-
-    console.info(`[AudioService] Giọng Nữ Native: "${nativeFemaleVoice.name}" | Tốc độ: ${rate}x | Cao độ: ${pitch}`);
-
-    try {
-      for (let i = 0; i < segments.length; i++) {
-        if (requestId !== this.requestId) return false;
-
-        const segment = segments[i];
-
-        await new Promise((resolve, reject) => {
-          if (requestId !== this.requestId) {
-            resolve();
-            return;
-          }
-
-          const utterance = new this.Utterance(segment.text);
-          const finish = () => {
-            if (this.cancelPlayback === finish) this.cancelPlayback = null;
-            resolve();
-          };
-          this.cancelPlayback = finish;
-          utterance.lang = options.lang || AUDIO_CONFIG.lang;
-          utterance.rate = rate;
-          utterance.pitch = pitch;
-          utterance.volume = volume;
-          utterance.voice = nativeFemaleVoice;
-
-          utterance.onstart = () => {
-            if (this.requestId !== requestId) return;
-            this.state = AUDIO_STATES.SPEAKING;
-            this.errorMessage = '';
-            this.emit();
-          };
-
-          utterance.onend = () => {
-            if (this.requestId !== requestId) {
-              finish();
-              return;
-            }
-            this.currentUtterance = null;
-            finish();
-          };
-
-          utterance.onerror = (event) => {
-            if (this.requestId !== requestId) {
-              finish();
-              return;
-            }
-            if (event.error === 'canceled' || event.error === 'interrupted') {
-              finish();
-              return;
-            }
-            console.error('[AudioService] Utterance error:', event.error || event);
-            if (this.cancelPlayback === finish) this.cancelPlayback = null;
-            reject(event);
-          };
-
-          this.currentUtterance = utterance;
-          this.synth.speak(utterance);
-        });
-
-        // Khoảng nghỉ 120ms tự nhiên giữa các câu
-        if (i < segments.length - 1 && requestId === this.requestId) {
-          const pauseMs = segment.pauseAfterMs || AUDIO_CONFIG.pauseNormalSentenceMs;
-          await this.waitForPause(pauseMs);
-        }
-      }
-
-      if (requestId === this.requestId) {
-        this.clearCurrent(AUDIO_STATES.IDLE);
-      }
-      return requestId === this.requestId;
-    } catch (error) {
-      if (requestId === this.requestId) {
-        console.warn('[AudioService] Native speech failed, falling back to Female Audio Stream:', error);
-        return this.speakViaAudioStream(segments, { rate, volume, ...options }, requestId);
-      }
-      return false;
-    }
+    return this.speakViaAudioStream(segments, { ...options, rate, volume }, requestId);
   }
 
   waitForPause(durationMs) {
