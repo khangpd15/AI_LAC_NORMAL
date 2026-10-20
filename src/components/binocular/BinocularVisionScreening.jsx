@@ -98,7 +98,7 @@ export default function BinocularVisionScreening() {
 
       // Evaluate distance with the active test's independent configuration
       const isGazePos = currentStep === 'GAZE_POSITION' || currentStep === 'GAZE_4_DIRECTIONS';
-      const isCoverPos = currentStep === 'COVER_POSITION' || currentStep === 'POSITION';
+      const isCoverPos = currentStep === 'COVER_POSITION' || currentStep === 'POSITION' || currentStep === 'COVER';
 
       if (isGazePos || isCoverPos) {
         const testType = isGazePos ? 'GAZE_4_DIRECTIONS' : 'COVER_TEST';
@@ -132,6 +132,7 @@ export default function BinocularVisionScreening() {
       const isPositionStep =
         currentStep === 'GAZE_POSITION' ||
         currentStep === 'COVER_POSITION' ||
+        currentStep === 'COVER' ||
         currentStep === 'POSITION' ||
         currentStep === 'BROCK_POSITION';
       if (!isPositionStep) return;

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { checkVideoLightingAndBlur } from '../../services/positionCalibrationService.js';
+import { getCoverCycleTiming } from '../../services/coverTestTimeline.js';
 import AudioButton from '../audio/AudioButton';
 import CoverTestDebugPanel from '../debug/CoverTestDebugPanel';
 import CameraView from '../CameraView';
@@ -11,14 +13,14 @@ import {
   COVER_TEST_VERDICTS,
   FIXATION_TARGET_CONFIG,
 } from '../../constants/binocularScreeningConfig.js';
-import { SCREENING_CONFIG, COVER_TEST_CONFIG } from '../../constants/screeningConfig.js';
+import { COVER_TEST_CONFIG } from '../../constants/screeningConfig.js';
 import { RESEARCH_QUALITY_CONFIG } from '../../constants/researchScreeningConfig.js';
-import { aggregateCoverCycles, createCoverFrame, createCycleRecord, generateUUIDv4, inconclusiveCycle, isCoverSessionCurrent, isValidUUIDv4, validateBaselinePair } from '../../services/coverTestProtocolService.js';
+import { aggregateCoverCycles, createCoverFrame, createCycleRecord, generateUUIDv4, isCoverSessionCurrent, isValidUUIDv4, validateBaselinePair } from '../../services/coverTestProtocolService.js';
 import { createTimeSeriesRecorder } from '../../services/coverTestTimeSeriesService.js';
 import { captureScreeningFrame } from '../../services/screeningImageCaptureService.js';
 import { UncoverCaptureObserver, freezeEyePair, encodeEyePair } from '../../services/coverTest/uncoverCaptureService.js';
 import { saveCoverTestSession as saveCoverTestCloudSession } from '../../services/coverTest/coverTestPersistenceService.js';
-import { toCanonicalEye, getCoverInstruction } from '../../utils/eyeCoordinateMapping.js';
+import { toCanonicalEye } from '../../utils/eyeCoordinateMapping.js';
 
 
 /**
@@ -26,7 +28,7 @@ import { toCanonicalEye, getCoverInstruction } from '../../utils/eyeCoordinateMa
  * Step 2 of Digital Binocular Vision Screening.
  * 
  * Clinical Protocol State Machine:
- * IDLE -> PREPARING -> BASELINE -> COVER -> UNCOVER -> TRACKING -> CYCLE_COMPLETE -> NEXT_CYCLE -> FINISHED
+ * IDLE -> PREPARING -> BASELINE (if needed) -> COVER -> TRACKING -> CHECKING -> FINISHED
  * 
  * Features:
  * 1. Persistent camera stream (never unmounts or cuts to black).
@@ -60,12 +62,16 @@ export default function CoverTestStep({
   const [coverState, setCoverState] = useState('IDLE');
   const [cycleIndex, setCycleIndex] = useState(1);
   const [countdownSec, setCountdownSec] = useState(0);
+  const [protocolSecond, setProtocolSecond] = useState(0);
+  const protocolStartRef = useRef(null);
+  const positionReportRef = useRef(positionReport);
+  useEffect(() => { positionReportRef.current = positionReport; }, [positionReport]);
 
   // Active instructions & active eyes
   const [coveredEye, setCoveredEye] = useState(null); // 'left' | 'right' | null
   const [trackedEye, setTrackedEye] = useState(null); // 'left' | 'right' | null
   const [instructionTitle, setInstructionTitle] = useState('Cover Test');
-  const [_instructionText, setInstructionText] = useState('Sẵn sàng kiểm tra 3 chu kỳ che mở mắt.');
+  const [instructionText, setInstructionText] = useState('Sẵn sàng kiểm tra 3 chu kỳ che mở mắt.');
   const [instructionSubtext, setInstructionSubtext] = useState('Nhìn chấm đỏ và nghe hướng dẫn.');
 
   // Live real-time telemetry (internal tracking)
@@ -375,6 +381,7 @@ export default function CoverTestStep({
 
   const invalidateActiveRun = useCallback(() => {
     isAbortedRef.current = true;
+    protocolStartRef.current = null;
     phaseFrameHandlerRef.current = null;
     uncoverObserverRef.current?.transition.reset();
     isTargetLockedRef.current = false;
@@ -444,9 +451,11 @@ export default function CoverTestStep({
       speechText = null,
       baselineData = null,
       cycleNum,
+      endAt = null,
     }) => {
       return new Promise((resolve) => {
         const phaseRunToken = activeRunTokenRef.current;
+        const phaseRecorder = timeSeriesRecorderRef.current;
         const phaseSessionId = sessionIdRef.current;
         let settled = false;
         const finish = (value) => {
@@ -496,14 +505,14 @@ export default function CoverTestStep({
           lastTimestamp = captured.timestampMs;
           const { image, ...metadata } = captured;
           const lm = results.multiFaceLandmarks?.[0];
-          const observation = uncoverObserverRef.current?.observe(image, lm, captured.timestampMs, state,
+          const observation = uncoverObserverRef.current?.observe(image, lm, captured.timestampMs, state === 'PREPARING' ? 'BASELINE' : state,
             () => !feats || !currentQuality?.faceDetected || !currentQuality?.irisValid ||
               currentQuality?.headPoseValid === false ? null : freezeEyePair(image, lm, metadata));
           if (observation?.event) {
             const cycleStart = cycleStartRef.current;
             const pending = encodeEyePair(observation.event, cycleNum, cycleStart).then(({ images, metadata: event }) => {
               if (isAbortedRef.current || phaseRunToken !== activeRunTokenRef.current) return;
-              if (!timeSeriesRecorderRef.current.getSamples().some(sample => sample.frameId === event.frameId &&
+              if (!phaseRecorder.getSamples().some(sample => sample.frameId === event.frameId &&
                   sample.timestampMs === event.timestampMs)) throw new Error('SOURCE_SAMPLE_UNAVAILABLE');
               Object.assign(eyeImagesRef.current, images);
               uncoverEventsRef.current.push(event);
@@ -520,7 +529,9 @@ export default function CoverTestStep({
           if (!feats) return;
           const observedFeatures = { ...feats, observedVisibility: observation?.visibility };
           const elapsed = captured.timestampMs - startT;
-          if (state === 'BASELINE') {
+          if (state === 'BASELINE' || state === 'PREPARING') {
+            const imageQuality = checkVideoLightingAndBlur(videoRef.current);
+            if (!imageQuality.isLightingValid || !imageQuality.isBlurValid) return;
             const left = createCoverFrame(feats, currentQuality, 'left', captured.timestampMs, elapsed);
             const right = createCoverFrame(feats, currentQuality, 'right', captured.timestampMs, elapsed);
             if (left.frame) leftBaselineBuffer.push(left.frame);
@@ -529,7 +540,7 @@ export default function CoverTestStep({
             const tracked = createCoverFrame(feats, currentQuality, trackEye, captured.timestampMs, elapsed);
             if (tracked.frame) buffer.push(tracked.frame);
           }
-          timeSeriesRecorderRef.current.processFrame(captured.timestampMs, state, observedFeatures,
+          phaseRecorder.processFrame(captured.timestampMs, state, observedFeatures,
             currentQuality, currentBaselineRef.current, trackEye, coverEye);
         };
 
@@ -541,7 +552,9 @@ export default function CoverTestStep({
 
           const now = performance.now();
           const elapsed = now - startT;
-          const remainingSec = Math.max(0, Math.ceil((durationMs - elapsed) / 1000));
+          const phaseRemaining = endAt == null ? durationMs - elapsed : endAt - now;
+          const remainingSec = Math.max(0, Math.ceil(phaseRemaining / 1000));
+          if (protocolStartRef.current != null) setProtocolSecond(Math.min(40, Math.floor((now - protocolStartRef.current) / 1000)));
 
           if (remainingSec !== prevSec) {
             prevSec = remainingSec;
@@ -554,7 +567,7 @@ export default function CoverTestStep({
             // Throttle React state telemetry updates to 4 Hz (every 250ms) to avoid 60 FPS re-render churn (Section 14)
             if (now - lastTelemetryUpdateRef.current >= 250) {
               lastTelemetryUpdateRef.current = now;
-              const telem = timeSeriesRecorderRef.current.getTelemetry();
+              const telem = phaseRecorder.getTelemetry();
               setTelemetry(telem);
               setLiveSampleCount(telem.savedSamples);
 
@@ -570,12 +583,12 @@ export default function CoverTestStep({
             }
           }
 
-          if (elapsed >= durationMs) {
+          if (phaseRemaining <= 0) {
             try {
-              if (state === 'BASELINE') {
+              if (state === 'BASELINE' || state === 'PREPARING') {
                 finish({
-                  leftBaseline: calculateRobustBaseline(leftBaselineBuffer),
-                  rightBaseline: calculateRobustBaseline(rightBaselineBuffer),
+                  leftBaseline: calculateRobustBaseline(leftBaselineBuffer.filter(frame => now - frame.timestamp < 1500)),
+                  rightBaseline: calculateRobustBaseline(rightBaselineBuffer.filter(frame => now - frame.timestamp < 1500)),
                 });
               } else if (state === 'TRACKING' && trackEye) {
                 const latestEyeWidth = buffer.length && buffer.at(-1)?.eyeWidth > 0 ? buffer.at(-1).eyeWidth : null;
@@ -584,7 +597,7 @@ export default function CoverTestStep({
                   : null;
 
                 // Head pose safety check: detect head movements during uncover tracking
-                if (positionReport?.headPose && !positionReport.headPose.isValid) {
+                if (positionReportRef.current?.headPose && !positionReportRef.current.headPose.isValid) {
                   if (analysis?.dataQuality) {
                     analysis.dataQuality.isValid = false;
                     analysis.dataQuality.reason = 'Phát hiện cử động đầu trong khi đo';
@@ -632,164 +645,92 @@ export default function CoverTestStep({
     hasSentAiTransferRef.current = false;
     setAiTransferState({ status: 'idle', result: null, error: null, detail: null });
 
-    // 1. PREPARING (3 seconds countdown)
-    await executePhase({
-      state: 'PREPARING',
-      title: 'Chuẩn bị...',
-      text: 'Ngồi thẳng và nhìn vào chấm tròn ở giữa.',
-      subtext: 'Chu kỳ 1 sẽ bắt đầu trong giây lát...',
-      durationMs: 3000,
-      speechText: 'Chuẩn bị, nhìn vào chấm tròn nghen.',
-      cycleNum: 1,
-    });
-
-    if (!runIsCurrent()) return;
-
+    setCycleIndex(1);
+    setProtocolSecond(0);
+    imageCaptureAttemptedRef.current = false;
+    timeSeriesRecorderRef.current.reset(performance.now());
+    protocolStartRef.current = performance.now();
+    const instructions = [
+      'Chuẩn bị kiểm tra mắt nhé!',
+      'Giữ đầu thẳng, nhìn vào camera.',
+      'Giữ mắt nhìn vào điểm mục tiêu.',
+      'Dùng tay hoặc miếng che để che một mắt.',
+      'Không ấn vào mắt khi che.',
+      'Giữ mắt còn lại nhìn vào mục tiêu.',
+      'Khi có hiệu lệnh, bỏ che nhanh.',
+      'Sau đó đổi sang mắt bên kia.',
+      'Cố gắng giữ đầu không di chuyển.',
+      'Bắt đầu kiểm tra. Hãy làm theo hướng dẫn nhé!',
+    ];
+    let baselines;
+    for (let second = 0; second < instructions.length; second++) {
+      baselines = await executePhase({
+        state: 'PREPARING', title: 'Hướng dẫn thao tác', text: instructions[second],
+        subtext: 'Để cả hai mắt mở trong phần hướng dẫn để camera kiểm tra.',
+        durationMs: 1000, endAt: protocolStartRef.current + (second + 1) * 1000,
+        speechText: instructions[second], cycleNum: 1,
+      });
+      if (!runIsCurrent()) return;
+    }
+    // Require fresh, stable samples from BOTH eyes before starting the timed sequence.
+    protocolStartRef.current = null;
+    while (!validateBaselinePair(baselines).isValid ||
+        (positionReportRef.current && positionReportRef.current.status !== 'READY')) {
+      baselines = await executePhase({
+        state: 'BASELINE', title: 'Điều chỉnh trước khi bắt đầu',
+        text: 'Mở cả hai mắt, giữ đầu thẳng và nhìn vào mục tiêu.',
+        subtext: positionReportRef.current?.feedbackMessage || 'Đảm bảo đủ sáng, khuôn mặt và cả hai mắt nằm rõ trong camera.',
+        durationMs: 1500, cycleNum: 1,
+      });
+      if (!runIsCurrent()) return;
+    }
+    currentBaselineRef.current = baselines;
+    const sequenceStart = performance.now();
+    protocolStartRef.current = sequenceStart - 10000;
+    // Do not let image encoding delay the timed instructions.
+    captureScreeningFrame(videoRef.current, 'cover_test.jpg').then(artifact => {
+      if (runIsCurrent()) onImageCaptured?.(artifact);
+    }).catch(error => console.warn('[CoverTest] Preview capture failed', error));
     const accumulatedCycles = [];
-
-    for (let c = 1; c <= SCREENING_CONFIG.CYCLES; c++) {
+    const pendingCycleRecords = [];
+    for (let c = 1; c <= 3; c++) {
       if (!runIsCurrent()) return;
       setCycleIndex(c);
-      // Reset timestamp-based time-series recorder for new cycle
       cycleStartRef.current = performance.now();
-      timeSeriesRecorderRef.current.reset(cycleStartRef.current);
-      uncoverObserverRef.current.reset();
-
-      // Phase 1: Robust Baseline Fixation (4.0s)
-      const baselines = await executePhase({
-        state: 'BASELINE',
-        title: 'Nhìn vào chấm tròn ở giữa',
-        text: 'Cố định ánh nhìn vào chấm đỏ.',
-        subtext: 'Giữ đầu yên.',
-        coverEye: null,
-        trackEye: null,
-        durationMs: 4000,
-        speechText: c === 1 ? null : 'Nhìn vào chấm tròn nghen.',
-        cycleNum: c,
-      });
-
-      if (!runIsCurrent()) return;
-      const baselineQuality = validateBaselinePair(baselines);
-      if (!baselineQuality.isValid) {
-        const rawTrajectory = timeSeriesRecorderRef.current.getSamples();
-        const datasetQuality = timeSeriesRecorderRef.current.getQuality();
-        const failedCycle = inconclusiveCycle(
-          c,
-          baselineQuality.reason,
-          baselines,
-          rawTrajectory,
-          null,
-          datasetQuality
-        );
-        failedCycle.summary = timeSeriesRecorderRef.current.finalizeCycleSummary(failedCycle);
-        accumulatedCycles.push(failedCycle);
-        setCompletedCyclesList([...accumulatedCycles]);
-        transitionToState('CYCLE_COMPLETE', c);
-        if (c < SCREENING_CONFIG.CYCLES) {
-          await executePhase({ state: 'NEXT_CYCLE', title: 'Chuẩn bị lần tiếp theo', text: 'Dữ liệu chưa ổn định. Hãy giữ đầu yên và thử chu kỳ tiếp theo.', subtext: `Chu kỳ ${c + 1} sẽ bắt đầu sau ít giây.`, durationMs: 2500, speechText: 'Giữ đầu yên, chuẩn bị lần tiếp theo nghen.', cycleNum: c });
-        }
-        continue;
-      }
-      currentBaselineRef.current = baselines;
-
-      if (!imageCaptureAttemptedRef.current) {
-        imageCaptureAttemptedRef.current = true;
-        const artifact = await captureScreeningFrame(videoRef.current, 'cover_test.jpg');
-        onImageCaptured?.(artifact);
-      }
-
-      // Phase 2: Cover Left Eye (4.5s)
-      const leftCoverInstr = getCoverInstruction('LEFT');
+      timeSeriesRecorderRef.current = createTimeSeriesRecorder(cycleStartRef.current, { fullRate: true });
+      const timing = getCoverCycleTiming(c);
+      const leftText = c === 1 ? 'Che mắt trái, giữ mắt phải nhìn vào mục tiêu.'
+        : c === 2 ? 'Tiếp tục che mắt trái, nhìn vào mục tiêu.'
+        : 'Lần cuối, che mắt trái và nhìn vào mục tiêu.';
       await executePhase({
-        state: 'COVER',
-        title: leftCoverInstr.title,
-        text: leftCoverInstr.text,
-        subtext: leftCoverInstr.subtext,
-        coverEye: 'left',
-        trackEye: null,
-        durationMs: 4500,
-        speechText: leftCoverInstr.speechText,
-        cycleNum: c,
+        state: 'COVER', title: 'Che mắt trái', text: leftText,
+        subtext: 'Không ấn vào mắt. Giữ đầu yên.', coverEye: 'left',
+        durationMs: c === 1 ? 5000 : 4000,
+        endAt: sequenceStart + timing.uncoverLeftMs, speechText: leftText, cycleNum: c,
       });
-
       if (!runIsCurrent()) return;
-
-      // Observe the actual removal; never capture solely because a timer expired.
-      await executePhase({
-        state: 'UNCOVER',
-        title: 'Bỏ tay hoặc vật che',
-        text: 'Bỏ vật che ra và tiếp tục nhìn vào chấm đỏ.',
-        subtext: 'Máy tự chụp cả hai mắt khi thấy mắt trở lại.',
-        coverEye: null,
-        trackEye: 'right',
-        durationMs: 1800,
-        speechText: 'Bỏ vật che ra, tiếp tục nhìn chấm đỏ nghen.',
-        cycleNum: c,
-      });
-
-      if (!runIsCurrent()) return;
-
-      // Phase 3b: Tracking Right Eye (3.5s)
-      const rightEyeAnalysis = await executePhase({
-        state: 'TRACKING',
-        title: 'Nhìn thẳng vào chấm',
-        text: 'Cố định ánh nhìn vào chấm đỏ ở giữa.',
-        subtext: 'Giữ yên.',
-        coverEye: null,
-        trackEye: 'right',
-        durationMs: 3500,
-        baselineData: baselines.rightBaseline,
-        cycleNum: c,
-      });
-
-      if (!runIsCurrent()) return;
-
-      // Phase 4: Cover Right Eye (4.5s)
-      const rightCoverInstr = getCoverInstruction('RIGHT');
-      await executePhase({
-        state: 'COVER',
-        title: rightCoverInstr.title,
-        text: rightCoverInstr.text,
-        subtext: rightCoverInstr.subtext,
-        coverEye: 'right',
-        trackEye: null,
-        durationMs: 4500,
-        speechText: rightCoverInstr.speechText,
-        cycleNum: c,
-      });
-
-      if (!runIsCurrent()) return;
-
-      await executePhase({
-        state: 'UNCOVER',
-        title: 'Bỏ tay hoặc vật che',
-        text: 'Bỏ vật che ra và tiếp tục nhìn vào chấm đỏ.',
-        subtext: 'Máy tự chụp cả hai mắt khi thấy mắt trở lại.',
-        coverEye: null,
-        trackEye: 'left',
-        durationMs: 1800,
-        speechText: 'Bỏ vật che ra, tiếp tục nhìn chấm đỏ nghen.',
-        cycleNum: c,
-      });
-
-      if (!runIsCurrent()) return;
-
-      // Phase 5b: Tracking Left Eye (3.5s)
       const leftEyeAnalysis = await executePhase({
-        state: 'TRACKING',
-        title: 'Nhìn thẳng vào chấm',
-        text: 'Cố định ánh nhìn vào chấm đỏ ở giữa.',
-        subtext: 'Giữ yên.',
-        coverEye: null,
-        trackEye: 'left',
-        durationMs: 3500,
-        baselineData: baselines.leftBaseline,
-        cycleNum: c,
+        state: 'TRACKING', title: 'Bỏ che!', text: 'Bỏ che mắt trái nhanh.',
+        subtext: 'Tiếp tục nhìn vào mục tiêu, giữ đầu yên.', trackEye: 'left',
+        durationMs: 1000, endAt: sequenceStart + timing.coverRightMs,
+        baselineData: baselines.leftBaseline, speechText: 'Bỏ che!', cycleNum: c,
       });
-
       if (!runIsCurrent()) return;
-
-      await Promise.all([...pendingCropsRef.current]);
+      const rightText = c === 1 ? 'Đổi bên, che mắt phải và nhìn vào mục tiêu bằng mắt trái.' : 'Đổi bên, che mắt phải.';
+      await executePhase({
+        state: 'COVER', title: 'Che mắt phải', text: rightText,
+        subtext: 'Không ấn vào mắt. Giữ đầu yên.', coverEye: 'right',
+        durationMs: 4000, endAt: sequenceStart + timing.uncoverRightMs,
+        speechText: rightText, cycleNum: c,
+      });
+      if (!runIsCurrent()) return;
+      const rightEyeAnalysis = await executePhase({
+        state: 'TRACKING', title: 'Bỏ che!', text: 'Bỏ che mắt phải nhanh.',
+        subtext: c === 3 ? 'Đang ghi nhận phản ứng cuối và kiểm tra dữ liệu.' : 'Tiếp tục nhìn vào mục tiêu, giữ đầu yên.',
+        trackEye: 'right', durationMs: 1000,
+        endAt: sequenceStart + timing.endMs,
+        baselineData: baselines.rightBaseline, speechText: 'Bỏ che!', cycleNum: c,
+      });
       if (!runIsCurrent()) return;
       // Record Cycle Result with timestamp-downsampled trajectory and summary (Sections 10, 11)
       const rawTrajectory = timeSeriesRecorderRef.current.getSamples();
@@ -806,13 +747,7 @@ export default function CoverTestStep({
       cycleRecord.summary = timeSeriesRecorderRef.current.finalizeCycleSummary(cycleRecord);
       cycleRecord.samplingRateHz = 30;
       cycleRecord.samplingMode = 'UNIQUE_SOURCE_FRAMES';
-      cycleRecord.uncoverEvents = ['LEFT', 'RIGHT'].map(side =>
-        uncoverEventsRef.current.find(event => event.cycle === c && event.uncoveredEye === side) || {
-          cycle: c, uncoveredEye: side, status: 'NOT_CAPTURED',
-          reason: 'NO_CONFIRMED_VISIBLE_TRANSITION',
-        });
-      cycleRecord.occlusionMethod = 'pixel-contrast-v1';
-      cycleRecord.occlusionVerified = cycleRecord.uncoverEvents.every(event => event.status === 'CAPTURED');
+      pendingCycleRecords.push(cycleRecord);
 
       // Diagnostic telemetry log required by Section 22
       const activeEye = cycleRecord.trackedEye === 'RIGHT' ? cycleRecord.rightEye : cycleRecord.leftEye;
@@ -843,18 +778,23 @@ export default function CoverTestStep({
       setCompletedCyclesList([...accumulatedCycles]);
       transitionToState('CYCLE_COMPLETE', c);
 
-      // Rest interval between cycles (2.5s)
-      if (c < SCREENING_CONFIG.CYCLES) {
-        await executePhase({
-          state: 'NEXT_CYCLE',
-          title: 'Chuẩn bị lần tiếp theo',
-          text: 'Chớp mắt nhẹ nhàng và thư giãn trong giây lát.',
-          subtext: `Chu kỳ ${c + 1} sẽ bắt đầu sau ít giây.`,
-          durationMs: 2500,
-          speechText: 'Dạ, cô chú chớp mắt nhẹ nhàng nghen. Chuẩn bị lần tiếp theo nha.',
-          cycleNum: c,
+    }
+    protocolStartRef.current = null;
+    transitionToState('CHECKING', 3);
+    setInstructionTitle('Đang kiểm tra dữ liệu');
+    setInstructionText('Đã hoàn tất 3 chu kỳ che và bỏ che.');
+    setInstructionSubtext('Vui lòng chờ trong giây lát.');
+    await Promise.all([...pendingCropsRef.current]);
+    if (!runIsCurrent()) return;
+    for (const cycleRecord of pendingCycleRecords) {
+      cycleRecord.uncoverEvents = ['LEFT', 'RIGHT'].map(side =>
+        uncoverEventsRef.current.find(event => event.cycle === cycleRecord.cycle && event.uncoveredEye === side) || {
+          cycle: cycleRecord.cycle, uncoveredEye: side, status: 'NOT_CAPTURED',
+          reason: 'NO_CONFIRMED_VISIBLE_TRANSITION',
         });
-      }
+      cycleRecord.occlusionMethod = 'pixel-contrast-v1';
+      cycleRecord.occlusionVerified = cycleRecord.uncoverEvents.every(event => event.status === 'CAPTURED');
+
     }
 
     if (runIsCurrent() && accumulatedCycles.length > 0) {
@@ -944,16 +884,17 @@ export default function CoverTestStep({
         <div className="fullscreen-top-bar">
           <div className="fullscreen-pills-row">
             <span className="fullscreen-pill">
-              Chu kỳ <strong>{cycleIndex} / 3</strong>
+              {['PREPARING', 'BASELINE'].includes(coverState) ? 'Hướng dẫn & kiểm tra camera' : `Chu kỳ ${cycleIndex} / 3`}
             </span>
             <span className="fullscreen-pill fullscreen-pill-active">
-              ⏱️ {coverState === 'TRACKING' ? timerDisplay : `${countdownSec}s`}
+              ⏱️ {protocolSecond} / 40 giây · {countdownSec}s
             </span>
             <span className="fullscreen-pill" role="status">Đã chụp {capturedPairs} lần bỏ che</span>
           </div>
 
           <div className="fullscreen-instruction-banner">
             <h1 className="fullscreen-inst-title">{instructionTitle}</h1>
+            <p className="fullscreen-inst-sub" aria-live="polite">{instructionText}</p>
             <p className="fullscreen-inst-sub">{instructionSubtext}</p>
             {/* Visual Eye Representation (Section 35.6) */}
             <div
@@ -1321,7 +1262,7 @@ export default function CoverTestStep({
               Hướng dẫn thực hiện Cover Test
             </h3>
             <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '14px' }}>
-              3 chu kỳ che - mở mắt. Chỉ cần nhìn chấm đỏ và nghe giọng nói.
+              10 giây hướng dẫn, sau đó 3 chu kỳ che - mở mắt đến mốc 40 giây. Camera ghi thêm 1 giây sau hiệu lệnh cuối để thu phản ứng. Thời gian điều chỉnh camera có thể kéo dài hơn.
             </p>
 
             <div className="intro-steps-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
