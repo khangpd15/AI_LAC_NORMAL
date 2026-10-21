@@ -1,5 +1,6 @@
 import './hirschbergOutcome.css';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { hirschbergGuideVideo } from '../../content/hirschbergGuideVideo.js';
 import AudioButton from '../audio/AudioButton';
 import { predictHirschberg } from '../../api/hirschbergApi.js';
 import { toHirschbergSessionResult } from '../../services/hirschbergResultService.js';
@@ -26,6 +27,7 @@ export default function HirschbergStep({
 }) {
   const [stepStatus, setStepStatus] = useState('GUIDE'); // 'GUIDE' | 'REVIEWING' | 'COMPLETED'
   const fileInputRef = useRef(null);
+  const inspectionVersionRef = useRef(0);
   const [orientation, setOrientation] = useState('auto');
   const [fixation, setFixation] = useState('unknown');
 
@@ -41,6 +43,7 @@ export default function HirschbergStep({
   // Abort on unmount
   useEffect(() => {
     return () => {
+      inspectionVersionRef.current += 1;
       abortControllerRef.current?.abort();
     };
   }, []);
@@ -114,7 +117,10 @@ export default function HirschbergStep({
     async (event) => {
       const file = event.target.files?.[0];
       if (!file) return;
+      const inspectionVersion = ++inspectionVersionRef.current;
+      event.target.value = '';
 
+      setReviewCandidate(null);
       setOrientation('auto');
       setFixation('unknown');
       setStepStatus('REVIEWING');
@@ -123,6 +129,7 @@ export default function HirschbergStep({
 
       try {
         const result = await inspectHirschbergImage(file, { distanceCm: null });
+        if (inspectionVersion !== inspectionVersionRef.current) return;
 
         const researchLandmarks = result.landmarks
           ? result.landmarks.slice(0, 478).map((p) => ({
@@ -177,6 +184,7 @@ export default function HirschbergStep({
           validation: result.validation,
         });
       } catch (err) {
+        if (inspectionVersion !== inspectionVersionRef.current) return;
         console.error('Failed to process uploaded image:', err);
         setReviewCandidate({
           dataUrl: null,
@@ -199,8 +207,7 @@ export default function HirschbergStep({
           },
         });
       } finally {
-        setIsInspecting(false);
-        if (event.target) event.target.value = '';
+        if (inspectionVersion === inspectionVersionRef.current) setIsInspecting(false);
       }
     },
     []
@@ -214,6 +221,8 @@ export default function HirschbergStep({
 
   // Retake: back to guide
   const handleRetake = useCallback(() => {
+    inspectionVersionRef.current += 1;
+    setIsInspecting(false);
     setReviewCandidate(null);
     setStepStatus('GUIDE');
   }, []);
@@ -272,58 +281,13 @@ export default function HirschbergStep({
       {/* Upload Guide — shown when in GUIDE state */}
       {stepStatus === 'GUIDE' && (
         <div className="hirschberg-upload-guide fade-in">
-          {/* Guide header */}
-          <div className="upload-guide-header">
-            <h2 className="upload-guide-title">Cách chụp ảnh sàng lọc đúng chuẩn</h2>
-            <p className="upload-guide-subtitle">
-              Chụp ảnh theo hướng dẫn bên dưới, sau đó tải lên để AI kiểm tra chất lượng trước khi phân tích.
-            </p>
-          </div>
-
-          {/* Steps */}
-          <div className="upload-guide-steps">
-            <div className="guide-step">
-              <div className="guide-step-icon">💡</div>
-              <div className="guide-step-body">
-                <strong>1. Nguồn sáng nhỏ thẳng mắt</strong>
-                <p>Bật đèn pin nhỏ hoặc đèn flash điện thoại khác chiếu nhẹ thẳng về phía mắt để tạo điểm phản quang giác mạc.</p>
-              </div>
-            </div>
-            <div className="guide-step">
-              <div className="guide-step-icon">📏</div>
-              <div className="guide-step-body">
-                <strong>2. Khoảng cách 30–50 cm</strong>
-                <p>Giữ điện thoại cách mặt khoảng 30–50 cm. Khuôn mặt chiếm trên 50% khung hình, thấy rõ cả hai mắt.</p>
-              </div>
-            </div>
-            <div className="guide-step">
-              <div className="guide-step-icon">👁️</div>
-              <div className="guide-step-body">
-                <strong>3. Nhìn thẳng vào ống kính</strong>
-                <p>Người được test giữ đầu thẳng, không nghiêng. Hai mắt mở to, nhìn thẳng vào điểm sáng sát camera.</p>
-              </div>
-            </div>
-            <div className="guide-step">
-              <div className="guide-step-icon">📸</div>
-              <div className="guide-step-body">
-                <strong>4. Chụp rõ nét, không rung</strong>
-                <p>Cố định tay hoặc dùng giá đỡ. Ảnh chụp cần thấy rõ mống mắt, đồng tử và chấm sáng phản xạ trên giác mạc.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* AI auto-check pills */}
-          <div className="upload-guide-checklist">
-            <p className="checklist-label">Hệ thống AI sẽ kiểm tra tự động (Quality Gate):</p>
-            <div className="checklist-pills">
-              <span className="check-pill">✓ Có khuôn mặt trong ảnh</span>
-              <span className="check-pill">✓ Đủ cả hai mắt & mở rõ</span>
-              <span className="check-pill">✓ Độ sắc nét cao, không mờ</span>
-              <span className="check-pill">✓ Ánh sáng đủ, không chói lóa</span>
-              <span className="check-pill">✓ Phát hiện điểm phản xạ giác mạc</span>
-              <span className="check-pill">✓ Góc đầu thẳng (Yaw/Pitch/Roll)</span>
-            </div>
-          </div>
+          <figure className="hirschberg-guide-video">
+            <video controls playsInline preload="none" aria-label="Video hướng dẫn chụp ảnh Hirschberg"
+              src={hirschbergGuideVideo.src}>
+              Trình duyệt không hỗ trợ video. <a href={hirschbergGuideVideo.src}>Mở video</a>.
+            </video>
+            <figcaption>{hirschbergGuideVideo.caption}</figcaption>
+          </figure>
 
           {/* Upload CTA */}
           <div className="upload-guide-cta">
@@ -344,10 +308,10 @@ export default function HirschbergStep({
       )}
 
       {/* Pre-screening Review Modal */}
-      {stepStatus === 'REVIEWING' && reviewCandidate && (
+      {stepStatus === 'REVIEWING' && (
         <HirschbergQualityReviewModal
-          imageDataUrl={reviewCandidate.dataUrl}
-          validation={reviewCandidate.validation}
+          imageDataUrl={reviewCandidate?.dataUrl}
+          validation={reviewCandidate?.validation}
           isInspecting={isInspecting}
           isAnalyzing={isAnalyzing}
           analysisError={analysisError}
@@ -355,6 +319,7 @@ export default function HirschbergStep({
           onOrientationChange={setOrientation}
           fixation={fixation}
           onFixationChange={setFixation}
+          canSubmit={Boolean(reviewCandidate?.captureRecord)}
           onConfirm={handleConfirmReview}
           onRetake={handleRetake}
           onReupload={handleTriggerUpload}

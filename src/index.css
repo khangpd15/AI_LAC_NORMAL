@@ -6153,36 +6153,37 @@ textarea:focus {
   padding-top: 4px;
 }
 
-/* Review Overlay Modal - Full viewport overlay */
-.hirschberg-review-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(15, 23, 42, 0.82);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  overflow-y: auto;
-}
-
-.hirschberg-review-card {
-  width: 100%;
-  max-width: 860px;
-  max-height: 90vh;
-  max-height: 90dvh;
-  display: flex;
-  flex-direction: column;
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  overflow: hidden;
+/* Native dialog isolates the review from transformed ancestors and traps focus. */
+.hirschberg-review-dialog {
+  width: min(860px, calc(100% - 24px));
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  padding: 0;
   margin: auto;
-  animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  color: #0f172a;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 40%);
 }
+.hirschberg-review-dialog::backdrop { background: rgb(15 23 42 / 82%); }
+.hirschberg-review-card { min-width: 0; overflow-wrap: anywhere; }
+.hirschberg-review-card .header-badge-row { padding-right: 48px; }
+.hirschberg-review-card .badge { white-space: normal; }
+.hirschberg-review-card .modal-close-btn { width: 44px; height: 44px; }
+.hirschberg-review-card .hirschberg-capture-facts select {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 16px;
+  text-overflow: ellipsis;
+}
+.hirschberg-review-card .hirschberg-capture-facts label { min-width: 0; }
+.hirschberg-guide-video { margin: 0 auto 20px; width: 100%; max-width: 720px; }
+.hirschberg-guide-video video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #0f172a; border-radius: 12px; }
+.hirschberg-guide-video figcaption { margin-top: 8px; font-size: .85rem; color: var(--text-muted); text-align: center; }
 
 @keyframes modalScaleIn {
   from {
@@ -6278,9 +6279,8 @@ textarea:focus {
 .hirschberg-review-body {
   padding: 20px 24px;
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
   gap: 20px;
-  overflow-y: auto;
 }
 
 .hirschberg-preview-column {
@@ -6303,7 +6303,7 @@ textarea:focus {
 .hirschberg-preview-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -6561,4 +6561,11 @@ textarea:focus {
     width: 100%;
     justify-content: center;
   }
+}
+
+@media (max-width: 640px) {
+  .hirschberg-review-header, .hirschberg-review-body,
+  .hirschberg-review-actions { padding: 16px; }
+  .hirschberg-review-title { font-size: 1.15rem; line-height: 1.4; }
+  .hirschberg-review-card .btn { min-height: 44px; white-space: normal; }
 }

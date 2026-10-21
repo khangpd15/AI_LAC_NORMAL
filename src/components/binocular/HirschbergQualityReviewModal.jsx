@@ -1,12 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
-/**
- * HirschbergQualityReviewModal
- * Pre-screening quality inspection screen for captured or uploaded Hirschberg photos.
- * Displays multi-factor quality validation results and enforces safety gates:
- * - If acceptable: User can confirm to send to AI backend for measurement.
- * - If not acceptable: Submit button is blocked, prompting user to retake or re-upload with clear tips.
- */
 export default function HirschbergQualityReviewModal({
   imageDataUrl,
   validation,
@@ -17,25 +11,43 @@ export default function HirschbergQualityReviewModal({
   onOrientationChange,
   fixation = 'unknown',
   onFixationChange,
+  canSubmit = true,
   onConfirm,
   onRetake,
   onReupload,
 }) {
+  const dialogRef = useRef(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = 'hidden';
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   const isAcceptable = Boolean(validation?.isAcceptable);
   const errors = validation?.errors || [];
   const warnings = validation?.warnings || [];
   const passedChecks = validation?.passedChecks || [];
   const metrics = validation?.metrics || {};
 
-  return (
-    <div className="hirschberg-review-overlay fade-in">
-      <div className="card hirschberg-review-card">
+  return createPortal(
+    <dialog ref={dialogRef} className="hirschberg-review-dialog"
+      aria-labelledby="hirschberg-review-title" aria-describedby="hirschberg-review-summary"
+      aria-busy={isInspecting || isAnalyzing}
+      onCancel={event => { event.preventDefault(); if (!isAnalyzing) onRetake?.(); }}>
+      <div className="hirschberg-review-card">
         {/* Top Header */}
         <div className="hirschberg-review-header">
           <button
             type="button"
             className="modal-close-btn"
             onClick={onRetake}
+            disabled={isAnalyzing}
+            autoFocus
             title="Đóng / Trở lại hướng dẫn"
             aria-label="Đóng"
           >
@@ -52,16 +64,16 @@ export default function HirschbergQualityReviewModal({
               </span>
             ) : (
               <span className="badge badge-danger">
-                ⚠️ Ảnh chưa tối ưu - Khuyên chụp lại hoặc vẫn gửi AI thử nghiệm
+                ⚠ Ảnh chưa tối ưu
               </span>
             )}
           </div>
-          <h2 className="hirschberg-review-title">
+          <h2 id="hirschberg-review-title" className="hirschberg-review-title">
             {isInspecting
               ? 'Đang kiểm tra chất lượng ảnh...'
               : validation?.title || 'Kiểm tra ảnh Hirschberg'}
           </h2>
-          <p className="hirschberg-review-subtitle">
+          <p id="hirschberg-review-summary" className="hirschberg-review-subtitle" role="status">
             {isInspecting
               ? 'AI đang quét khuôn mặt, độ nét, ánh sáng và phản xạ giác mạc...'
               : validation?.summary || 'Kết quả kiểm tra trước khi gửi về AI'}
@@ -76,7 +88,7 @@ export default function HirschbergQualityReviewModal({
               {imageDataUrl ? (
                 <img
                   src={imageDataUrl}
-                  alt="Hirschberg preview"
+                  alt="Ảnh được chọn để sàng lọc Hirschberg"
                   className="hirschberg-preview-image"
                 />
               ) : (
@@ -196,15 +208,15 @@ export default function HirschbergQualityReviewModal({
         <div className="hirschberg-capture-facts">
           <label>Hướng ảnh khi chụp
             <select aria-label="Hướng ảnh khi chụp" value={orientation} onChange={e => onOrientationChange?.(e.target.value)} disabled={isAnalyzing}>
-              <option value="auto">Tôi chưa xác định ảnh có bị lật hay không</option>
+              <option value="auto">Chưa xác định</option>
               <option value="unmirrored">Ảnh gốc không bị lật ngang</option>
               <option value="mirrored">Ảnh đã bị lật ngang</option>
             </select>
           </label>
           <label>Hướng nhìn khi chụp
             <select aria-label="Hướng nhìn khi chụp" value={fixation} onChange={e => onFixationChange?.(e.target.value)} disabled={isAnalyzing}>
-              <option value="unknown">Tôi chưa xác nhận hướng nhìn</option>
-              <option value="confirmed">Xác nhận đang nhìn nguồn sáng gần camera khi chụp</option>
+              <option value="unknown">Chưa xác nhận</option>
+              <option value="confirmed">Nhìn nguồn sáng gần camera</option>
               <option value="offaxis">Đang nhìn lệch khỏi nguồn sáng</option>
             </select>
           </label>
@@ -237,7 +249,7 @@ export default function HirschbergQualityReviewModal({
                 type="button"
                 className="btn btn-action-override"
                 onClick={onConfirm}
-                disabled={isAnalyzing}
+                disabled={isAnalyzing || !canSubmit}
                 title="Vẫn gửi ảnh này cho AI backend kiểm tra và đo đạc"
               >
                 {isAnalyzing ? (
@@ -268,7 +280,7 @@ export default function HirschbergQualityReviewModal({
                 type="button"
                 className="btn btn-success btn-action-confirm"
                 onClick={onConfirm}
-                disabled={isAnalyzing}
+                disabled={isAnalyzing || !canSubmit}
               >
                 {isAnalyzing ? (
                   <span className="btn-loading-flex">
@@ -283,6 +295,7 @@ export default function HirschbergQualityReviewModal({
           )}
         </div>
       </div>
-    </div>
+    </dialog>,
+    document.body
   );
 }
