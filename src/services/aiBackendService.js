@@ -211,8 +211,14 @@ export async function saveCoverTestSession(sessionData, options = {}) {
     samples: sessionData.samples,
   };
 
+  const specificBase = (
+    import.meta.env?.VITE_COVER_TEST_BACKEND_URL ||
+    import.meta.env?.VITE_COVER_BACKEND_URL
+  )?.trim().replace(/\/+$/, '');
+  const coverPath = specificBase ? `${specificBase}/api/cover-test/sessions` : '/api/cover-test/sessions';
+
   try {
-    const data = await apiClient('/api/cover-test/sessions', {
+    const data = await apiClient(coverPath, {
       method: 'POST',
       body: payload,
       timeoutMs,

@@ -1,7 +1,7 @@
 import { apiClient } from './client.js';
 
-export async function ensureBackendReady(signal) {
-  const result = await apiClient('/ping', {
+export async function ensureBackendReady(signal, pingUrl = '/ping') {
+  const result = await apiClient(pingUrl, {
     timeoutMs: 90000,
     cacheTtlMs: 30000,
     signal,

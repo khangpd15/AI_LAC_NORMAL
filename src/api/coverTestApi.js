@@ -10,6 +10,15 @@ import { COVER_TEST_CONFIG } from '../constants/screeningConfig.js';
 
 const PERSISTENCE_TIMEOUT_MS = 60000;
 
+function endpoint(path) {
+  const specificBase = (
+    import.meta.env?.VITE_COVER_TEST_BACKEND_URL ||
+    import.meta.env?.VITE_COVER_BACKEND_URL
+  )?.trim().replace(/\/+$/, '');
+  return specificBase ? `${specificBase}${path}` : path;
+}
+
+
 /**
  * Saves complete 3-cycle Cover Test session, trajectories, and eye crops.
  * 
@@ -107,10 +116,10 @@ export async function saveCoverTestSessionApi({
     }
   }
 
-  const endpoint = `/api/v1/cover-test/sessions?run_inference=${runInference ? 'true' : 'false'}`;
+  const sessionUrl = endpoint(`/api/v1/cover-test/sessions?run_inference=${runInference ? 'true' : 'false'}`);
 
-  await ensureBackendReady(signal);
-  return apiClient(endpoint, {
+  await ensureBackendReady(signal, endpoint('/ping'));
+  return apiClient(sessionUrl, {
     method: 'POST',
     body: formData,
     timeoutMs: PERSISTENCE_TIMEOUT_MS,
