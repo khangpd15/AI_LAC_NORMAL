@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { checkVideoLightingAndBlur } from '../../services/positionCalibrationService.js';
 import { getCoverCycleTiming } from '../../services/coverTestTimeline.js';
+import { coverTestGuideVideo } from '../../content/coverTestGuideVideo.js';
 import AudioButton from '../audio/AudioButton';
 import CoverTestDebugPanel from '../debug/CoverTestDebugPanel';
 import CameraView from '../CameraView';
@@ -1261,35 +1262,13 @@ export default function CoverTestStep({
             <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', color: 'var(--color-deep-teal)' }}>
               Hướng dẫn thực hiện Cover Test
             </h3>
-            <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '14px' }}>
-              10 giây hướng dẫn, sau đó 3 chu kỳ che - mở mắt đến mốc 40 giây. Camera ghi thêm 1 giây sau hiệu lệnh cuối để thu phản ứng. Thời gian điều chỉnh camera có thể kéo dài hơn.
-            </p>
-
-            <div className="intro-steps-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '10px' }}>
-                <span style={{ fontSize: '1.4rem' }}>🔴</span>
-                <div style={{ fontSize: '0.88rem' }}>
-                  <strong style={{ color: 'var(--color-deep-teal)' }}>Nhìn chấm đỏ</strong>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Giữ đầu yên.</div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '10px' }}>
-                <span style={{ fontSize: '1.4rem' }}>✋</span>
-                <div style={{ fontSize: '0.88rem' }}>
-                  <strong style={{ color: 'var(--color-deep-teal)' }}>Che đúng bên</strong>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Làm theo giọng nói.</div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '10px' }}>
-                <span style={{ fontSize: '1.4rem' }}>👀</span>
-                <div style={{ fontSize: '0.88rem' }}>
-                  <strong style={{ color: 'var(--color-deep-teal)' }}>Bỏ che</strong>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Vẫn nhìn chấm đỏ.</div>
-                </div>
-              </div>
-            </div>
+            <figure className="hirschberg-guide-video">
+              <video controls playsInline preload="none" src={coverTestGuideVideo.src}
+                aria-label="Video mẫu cho hướng dẫn Cover Test">
+                Trình duyệt không hỗ trợ video. <a href={coverTestGuideVideo.src}>Mở video</a>.
+              </video>
+              <figcaption>{coverTestGuideVideo.caption}</figcaption>
+            </figure>
           </div>
 
           <div className="cover-action-box" style={{ marginTop: '14px' }}>

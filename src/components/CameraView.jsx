@@ -31,6 +31,7 @@ export default function CameraView({
   videoWidth: propWidth = 640,
   videoHeight: propHeight = 480,
   onVideoReady,
+  onPlaybackReadyChange,
   occluderEye = null, // 'left' | 'right' | 'LEFT' | 'RIGHT' | null (eye being covered)
   trackedEye = null,  // 'left' | 'right' | 'LEFT' | 'RIGHT' | null (eye being tracked)
   cleanMode = false,  // Child-friendly test mode: suppresses technical tracking badges
@@ -41,6 +42,36 @@ export default function CameraView({
   voiceEnabled = false,
 }) {
   const nodeRef = useRef(null);
+  const [playbackReady, setPlaybackReady] = useState(false);
+  const [playbackDelayed, setPlaybackDelayed] = useState(false);
+  const [playbackError, setPlaybackError] = useState(null);
+  useEffect(() => {
+    let waitingSince = Date.now();
+    const checkPlayback = () => {
+      const video = nodeRef.current;
+      const ready = Boolean(stream && video?.srcObject === stream &&
+        video.readyState >= 2 && video.videoWidth > 0 && !video.paused && !video.ended);
+      if (ready) waitingSince = Date.now();
+      setPlaybackReady(ready);
+      setPlaybackDelayed(!ready && Date.now() - waitingSince >= 8000);
+    };
+    checkPlayback();
+    const timer = setInterval(checkPlayback, 250);
+    return () => clearInterval(timer);
+  }, [stream, isActive, isLoading]);
+  useEffect(() => {
+    onPlaybackReadyChange?.(playbackReady);
+  }, [playbackReady, onPlaybackReadyChange]);
+  const resumePlayback = async () => {
+    setPlaybackError(null);
+    try {
+      const video = nodeRef.current;
+      if (video?.srcObject) await video.play();
+      await onVideoReady?.(video);
+    } catch {
+      setPlaybackError('Chưa mở được camera. Hãy kiểm tra quyền camera hoặc mở trang bằng Safari / Chrome.');
+    }
+  };
   const [actualDimensions, setActualDimensions] = useState(() => {
     const isPortrait = typeof window !== 'undefined' && window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
     if (isPortrait && propWidth === 640 && propHeight === 480) {
@@ -266,10 +297,15 @@ export default function CameraView({
           </div>
         )}
 
-        {isLoading && (
-          <div className="camera-loading-overlay">
-            <div className="spinner" aria-hidden="true"></div>
-            <p>Đang kết nối camera &amp; MediaPipe Face Mesh...</p>
+        {!error && !playbackReady && (isLoading || isActive || stream) && (
+          <div className="camera-loading-overlay camera-playback-status" role="status">
+            {!playbackDelayed && <div className="spinner" aria-hidden="true" />}
+            <p>{playbackDelayed ? 'Camera chưa hiển thị hình ảnh' : 'Đang mở camera…'}</p>
+            {playbackDelayed && <>
+              <small>Cho phép truy cập camera. Nếu đang mở trong ứng dụng khác, hãy thử mở trang bằng Safari hoặc Chrome.</small>
+              {(stream || onVideoReady) && <button type="button" className="btn btn-primary" onClick={resumePlayback}>Thử mở lại camera</button>}
+            </>}
+            {playbackError && <p role="alert">{playbackError}</p>}
           </div>
         )}
 

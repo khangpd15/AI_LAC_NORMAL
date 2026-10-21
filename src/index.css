@@ -6569,3 +6569,36 @@ textarea:focus {
   .hirschberg-review-title { font-size: 1.15rem; line-height: 1.4; }
   .hirschberg-review-card .btn { min-height: 44px; white-space: normal; }
 }
+
+/* Keep Cover Test controls in reach on narrow/short screens. The video and
+   tracking canvas share object-fit: cover and the existing coordinate mapper. */
+.camera-playback-status {
+  z-index: 10;
+  background: #f0f9f8;
+  color: #153b40;
+  text-align: center;
+  overflow-y: auto;
+}
+.camera-playback-status p { margin: 0; }
+.camera-playback-status small { max-width: 32em; line-height: 1.5; }
+.position-check-card .camera-frame { background: #102a30; }
+@media (max-width: 768px) {
+  .position-check-card .camera-frame,
+  .cover-test-card .cam-column .camera-frame {
+    aspect-ratio: 4 / 3;
+    height: auto;
+    min-height: 0;
+    max-height: 42vh;
+    max-height: 42dvh;
+  }
+  .position-check-card .distance-gauge-header {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+  .position-check-card .distance-gauge-header > div:first-child {
+    display: block !important;
+    font-size: .85rem;
+  }
+  .position-check-card .checklist-actions { flex-wrap: wrap; }
+  .position-check-card .checklist-actions .btn { min-height: 44px; flex: 1 1 140px; }
+}

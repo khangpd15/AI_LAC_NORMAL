@@ -37,8 +37,9 @@ export default function PositionCheck({
   speak = null,
   isVoiceEnabled = true,
 }) {
+  const [playbackReady, setPlaybackReady] = React.useState(false);
   const config = POSITION_CONFIG[testType] || POSITION_CONFIG.COVER_TEST;
-  const isInitializing = isLoading || !isActive || !stream;
+  const isInitializing = isLoading || !isActive || !stream || !playbackReady || Boolean(error);
   const status = isInitializing ? POSITION_STATUS.INITIALIZING : (positionReport?.status || POSITION_STATUS.INITIALIZING);
   const isReady = !isInitializing && status === POSITION_STATUS.READY;
 
@@ -115,8 +116,8 @@ export default function PositionCheck({
 
   const estimatedDistanceCm = isInitializing ? null : (positionReport?.estimatedDistanceCm ?? null);
   const stableDistanceCm = isInitializing ? null : (positionReport?.stableDistanceCm ?? estimatedDistanceCm);
-  const feedbackMessage = isInitializing
-    ? 'Đang kết nối camera và nhận diện khuôn mặt...'
+  const feedbackMessage = error ? 'Chưa thể bắt đầu. Vui lòng kiểm tra camera và thử lại.' : isInitializing
+    ? 'Bật camera và chờ hình ảnh hiển thị.'
     : (positionReport?.feedbackMessage || 'Đang kết nối camera và nhận diện khuôn mặt...');
   const centeringConfig = POSITION_QUALITY_CONFIG.FACE_CENTERING;
 
@@ -237,7 +238,7 @@ export default function PositionCheck({
             </div>
           )}
 
-          <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', display: (isActive || isLoading) ? 'block' : 'none' }}>
+          <div className="position-camera-preview" style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', display: (isActive || isLoading) ? 'block' : 'none' }}>
             <CameraView
               videoRef={videoRef}
               stream={stream}
@@ -247,13 +248,14 @@ export default function PositionCheck({
               isActive={isActive}
               isLoading={isLoading}
               error={null}
-              onVideoReady={undefined}
+              onVideoReady={onCameraActivate || onVideoReady}
+              onPlaybackReadyChange={setPlaybackReady}
               speak={speak}
               voiceEnabled={isVoiceEnabled}
             />
 
-            {/* Safe zone for the center point of the detected face. */}
-            <div
+            {/* Show alignment only once real video frames are available. */}
+            {!isInitializing && <div
               aria-hidden="true"
               style={{
                 position: 'absolute',
@@ -282,7 +284,7 @@ export default function PositionCheck({
                   transform: 'translate(-50%, -50%)',
                 }}
               />
-            </div>
+            </div>}
 
             {/* Face Bounding Box indicator if face detected (mirrored to match scaleX(-1) camera feed) */}
             {positionReport?.boundingBox && checks.faceDetected && (
