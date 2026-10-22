@@ -6,9 +6,8 @@ export default function HirschbergOutcome({ result }) {
   const view = normalizeHirschbergResult(result);
   return <section className="hirschberg-outcome" aria-label="Kết quả sàng lọc Hirschberg" aria-live="polite">
     {view.proposal && <span className={`badge ${view.badge}`}>{view.statusLabel}</span>}
-    <h3>{view.title}</h3>
-    <p>{view.message}</p>
-    {view.proposal && <p className="hirschberg-proposal"><strong>Gợi ý sàng lọc:</strong> {HIRSCHBERG_CLASSES[view.proposal]}</p>}
+    <h3>{view.proposal ? HIRSCHBERG_CLASSES[view.proposal] : view.title}</h3>
+    {view.proposal !== 'NORMAL' && <p>{view.message}</p>}
     {view.hasScores ? <div className="hirschberg-scores">
       <h4>{view.scoreLabel}</h4>
       {view.scores.map(score => <div className="hirschberg-score" key={score.key}>

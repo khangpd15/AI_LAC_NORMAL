@@ -104,7 +104,7 @@ export default function HirschbergStep({
       onComplete?.({
         method: 'HIRSCHBERG',
         completedAt: new Date().toISOString(),
-        captures: { hirschberg: captureRecord },
+        captures: { hirschberg: { ...captureRecord, captureMetadata: { orientation, fixation } } },
         hirschbergResult,
         ...toHirschbergSessionResult(hirschbergResult),
       });

@@ -3,3 +3,24 @@
 .binocular-screening-page .stage-title{color:var(--text-heading,#153b40)}
 
 .binocular-screening-page .hirschberg-outcome h3{color:#153b40}
+
+/* Result actions fit narrow phones and remain aligned on desktop. */
+.binocular-screening-page .hirschberg-result-card{width:100%;min-width:0;box-sizing:border-box;padding:clamp(16px,3vw,28px)}
+.binocular-screening-page .hirschberg-outcome h3{margin-top:10px;font-size:1.15rem}
+.hirschberg-result-card .hirschberg-outcome{min-width:0}
+.hirschberg-result-card .hirschberg-score>div{align-items:flex-start}
+.hirschberg-result-card .hirschberg-score strong{flex-shrink:0}
+.hirschberg-retry-panel{padding:16px;border:1px solid #d6e5e4;background:#f5fbfa;border-radius:12px}
+.hirschberg-retry-actions,.hirschberg-cover-actions{display:flex;gap:12px;flex-wrap:wrap}
+.hirschberg-retry-actions .btn,.hirschberg-cover-actions .btn{flex:1 1 220px;min-width:0;min-height:48px;white-space:normal;line-height:1.45;padding:12px 16px}
+.hirschberg-retry-panel .hirschberg-retry-hint{font-size:.85rem;line-height:1.6;color:#536b70;margin:12px 0 0}
+.hirschberg-retry-panel .hirschberg-retry-error{color:#9f1239;line-height:1.6;margin:10px 0 0}
+.hirschberg-disclaimer{background:#f8fafc;border-left:4px solid #3b82f6;padding:12px 16px;border-radius:4px;margin:20px 0;font-size:.85rem;color:#475569;line-height:1.6}
+.hirschberg-cover-options{background:#f0fdfa;border:1px solid #ccfbf1;border-radius:12px;padding:20px;margin-top:24px;text-align:center}
+.hirschberg-result-card .btn:disabled{opacity:.6;cursor:wait}
+@media(max-width:700px){
+  .hirschberg-retry-actions,.hirschberg-cover-actions{flex-direction:column}
+  .hirschberg-retry-actions .btn,.hirschberg-cover-actions .btn{flex:auto;width:100%}
+  .hirschberg-cover-options{padding:16px}
+  .hirschberg-result-card .hirschberg-outcome{padding:16px}
+}

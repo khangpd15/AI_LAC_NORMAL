@@ -118,7 +118,7 @@ input[type='range'] { min-height: 44px; accent-color: var(--color-deep-green); c
 .door-action-desc { color: var(--text-muted); font-size: 14px; line-height: 1.8; }
 .door-giant-action-btn { border-radius: 999px; min-height: 44px; padding: 12px 16px; font-size: 12px; color: var(--text-heading); background: var(--bg-elevated); border: 0; box-shadow: none; }
 .btn-door-voice, .btn-mini-voice { background: var(--bg-elevated); color: var(--text-heading); box-shadow: none; border: 0; min-width: 44px; }
-.home-listening-section { padding: 56px 0 64px; border-top: 1px solid var(--border-subtle); }
+.home-listening-section { padding: 56px 0 32px; border-top: 1px solid var(--border-subtle); }
 .listening-section-heading { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; }
 .listening-section-heading h2 { margin-top: 16px; font-size: 32px; letter-spacing: -1px; }
 .listening-section-heading > p { font-size: 14px; color: var(--text-muted); line-height: 1.8; }
@@ -297,7 +297,7 @@ body:has(.listening-mini) .sim-main-stage { padding-bottom: 128px; }
   .door-action-desc { font-size: 14px; }
   .door-illustration-box { height: 80px; }
   .door-svg-art { width: 64px; height: 64px; }
-  .home-listening-section { padding: 40px 0; }
+  .home-listening-section { padding: 40px 0 24px; }
   .listening-section-heading { display: block; }
   .listening-section-heading > p { margin-top: 16px; }
   .home-listening-grid { grid-template-columns: 1fr; }
@@ -415,3 +415,6 @@ body:has(.listening-mini) .sim-main-stage { padding-bottom: 128px; }
 .strabismus-sim-container .sim-camera-guidance { position: absolute; bottom: 83px; left: 18px; right: 18px; display: flex; align-items: center; justify-content: center; gap: 7px; margin: auto; width: fit-content; max-width: calc(100% - 36px); border: 1px solid #ffffff24; border-radius: 7px; background: #102c32d9; padding: 7px 10px; color: #d9e7e7; font-size: 11px; text-align: center; pointer-events: none; }
 .sim-camera-guidance > span { width: 6px; height: 6px; border-radius: 50%; background: #e5be71; flex-shrink: 0; }
 .sim-camera-guidance.tracking > span { background: #8cdcc5; }
+
+/* Keep the listening, vision and parent sections on the same content edges. */
+.home-main-scrollable > :is(.home-story-visual-section, .home-parents-visual-section) { width: 100%; max-width: none; margin-inline: 0; padding: 0 0 32px; box-sizing: border-box; }

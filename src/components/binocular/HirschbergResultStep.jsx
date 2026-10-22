@@ -1,4 +1,6 @@
 import React from 'react';
+import { predictHirschberg } from '../../api/hirschbergApi.js';
+import { toHirschbergSessionResult } from '../../services/hirschbergResultService.js';
 import HirschbergOutcome from './HirschbergOutcome.jsx';
 import { normalizeHirschbergResult } from '../../services/hirschbergResultService.js';
 
@@ -17,13 +19,46 @@ export default function HirschbergResultStep({
   hirschbergData,
   onProceedToCoverTest,
   onSkipCoverTest,
+  onRetake,
+  onAnalysisComplete,
+  sessionId,
   speak,
   isVoiceEnabled = true,
 }) {
   const measurement = hirschbergData?.hirschbergResult || {};
   const capture = hirschbergData?.captures?.hirschberg || hirschbergData?.captures?.straight || null;
   const imageSrc = capture?.image || capture?.originalFrame || null;
-  const { title, message } = normalizeHirschbergResult(measurement);
+  const { title, message, status } = normalizeHirschbergResult(measurement);
+  const [isResending, setIsResending] = React.useState(false);
+  const [retryError, setRetryError] = React.useState(null);
+  const retryRef = React.useRef(null);
+  React.useEffect(() => () => retryRef.current?.abort(), []);
+  const resend = async () => {
+    if (!imageSrc || retryRef.current || status === 'INELIGIBLE') return;
+    const controller = new AbortController();
+    retryRef.current = controller;
+    setIsResending(true);
+    setRetryError(null);
+    try {
+      const metadata = capture?.captureMetadata || {};
+      const raw = await predictHirschberg(imageSrc, {
+        orientation: metadata.orientation || (['mirrored', 'unmirrored'].includes(measurement.aiPrediction?.orientation) ? measurement.aiPrediction.orientation : 'auto'),
+        fixation: metadata.fixation || 'unknown',
+        sessionId, signal: controller.signal,
+      });
+      if (!controller.signal.aborted) onAnalysisComplete?.({
+        ...hirschbergData, completedAt: new Date().toISOString(),
+        ...toHirschbergSessionResult(raw),
+      });
+    } catch {
+      if (!controller.signal.aborted) setRetryError('Chưa gửi lại được ảnh. Bạn hãy thử lại sau hoặc chụp ảnh mới.');
+    } finally {
+      if (!controller.signal.aborted) {
+        retryRef.current = null;
+        setIsResending(false);
+      }
+    }
+  };
   React.useEffect(() => {
     if (isVoiceEnabled && speak) speak(`${title}. ${message}`);
   }, [isVoiceEnabled, speak, title, message]);
@@ -63,13 +98,28 @@ export default function HirschbergResultStep({
         </div>
       </div>
 
+      <div className="hirschberg-retry-panel" aria-busy={isResending}>
+        <div className="hirschberg-retry-actions">
+          <button type="button" className="btn btn-primary" onClick={onRetake} disabled={isResending}>
+            Chụp lại / chọn ảnh khác
+          </button>
+          {imageSrc && status !== 'INELIGIBLE' && <button type="button" className="btn btn-secondary" onClick={resend} disabled={isResending}>
+            {isResending ? 'Đang gửi lại…' : 'Gửi lại ảnh này'}
+          </button>}
+        </div>
+        <p className="hirschberg-retry-hint" role="status">{isResending
+          ? 'Đang phân tích lại ảnh. Bạn vui lòng đợi.'
+          : 'Chọn ảnh mới để kiểm tra lại, hoặc gửi lại ảnh hiện tại nếu lần phân tích trước bị gián đoạn.'}</p>
+        {retryError && <p className="hirschberg-retry-error" role="alert">{retryError}</p>}
+      </div>
+
       {/* Safety Medical Disclaimer */}
-      <div style={{ background: '#f8fafc', borderLeft: '4px solid #3b82f6', padding: '12px 16px', borderRadius: '4px', margin: '20px 0', fontSize: '0.85rem', color: '#475569', lineHeight: 1.5 }}>
+      <div className="hirschberg-disclaimer">
         <strong>Lưu ý y tế quan trọng:</strong> Kết quả sàng lọc hình ảnh mang tính tham khảo ban đầu và <em>không thay thế chẩn đoán chuyên khoa của bác sĩ mắt</em>.
       </div>
 
       {/* Decision CTA Section */}
-      <div style={{ background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '12px', padding: '20px', marginTop: '24px', textAlign: 'center' }}>
+      <div className="hirschberg-cover-options">
         <h4 style={{ margin: '0 0 6px 0', color: '#115e59', fontSize: '1.1rem' }}>
           Bạn có muốn kiểm tra bổ sung bằng Cover Test?
         </h4>
@@ -77,12 +127,12 @@ export default function HirschbergResultStep({
           Cover Test kiểm tra sự dịch chuyển nhãn cầu qua 3 chu kỳ che - mở mắt, giúp tăng độ chính xác của sàng lọc.
         </p>
 
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div className="hirschberg-cover-actions">
           <button
             type="button"
             className="btn btn-primary btn-large"
             onClick={onProceedToCoverTest}
-            style={{ minWidth: '260px' }}
+            disabled={isResending}
           >
             🔬 Kiểm tra bổ sung bằng Cover Test
           </button>
@@ -91,6 +141,7 @@ export default function HirschbergResultStep({
             type="button"
             className="btn btn-secondary btn-large"
             onClick={onSkipCoverTest}
+            disabled={isResending}
           >
             📊 Xem kết quả sàng lọc ngay
           </button>

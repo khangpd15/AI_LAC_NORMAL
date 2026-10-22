@@ -517,6 +517,9 @@ export default function BinocularVisionScreening() {
         {currentStep === 'HIRSCHBERG_RESULT' && (
           <HirschbergResultStep
             hirschbergData={session?.gazeTracking}
+            sessionId={session?.sessionId}
+            onRetake={handleRestart}
+            onAnalysisComplete={handleHirschbergComplete}
             onProceedToCoverTest={handleProceedToCoverTest}
             onSkipCoverTest={handleSkipCoverTest}
             speak={speak}

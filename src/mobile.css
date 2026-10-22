@@ -159,3 +159,7 @@
   .experience-fullscreen-container .stage-prompt-text { display: none; }
   .strabismus-sim-container .sim-viewport-frame { min-height: 280px; aspect-ratio: 16 / 9; max-height: none; }
 }
+
+@media (max-width: 720px) {
+  .home-main-scrollable > :is(.home-story-visual-section, .home-parents-visual-section) { padding: 0 0 24px; }
+}
