@@ -22,14 +22,17 @@ test('INCONCLUSIVE without scores never becomes 0 percent or normal', () => {
   assert.equal(result.hasScores, false);
   assert.equal(result.confidence, null);
   assert.equal(result.proposal, null);
-  assert.equal(result.message, 'Chưa thấy phản quang.');
+  assert.match(result.message, /chụp lại/);
+  assert.doesNotMatch(result.message, /phản quang/);
 });
-test('INCONCLUSIVE with real scores displays scores while retaining inconclusive status', () => {
+test('INCONCLUSIVE hides scores while retaining inconclusive status', () => {
   const result = normalizeHirschbergResult({ ...scored, status: 'INCONCLUSIVE' });
-  assert.equal(result.hasScores, true);
+  assert.equal(result.hasScores, false);
+  assert.equal(result.confidence, null);
+  assert.deepEqual(result.scores, []);
   assert.equal(result.proposal, null);
   assert.equal(result.status, 'INCONCLUSIVE');
-  assert.match(result.title, /Chưa đủ/);
+  assert.match(result.title, /Chưa thể đánh giá/);
 });
 test('class labels cannot override an INCONCLUSIVE backend status', () => {
   assert.equal(normalizeHirschbergResult({ ...scored, status: 'INCONCLUSIVE', predictedClass: 'NORMAL' }).proposal, null);
@@ -88,4 +91,16 @@ test('busy HTTP response is a retryable system message, never a fabricated scree
   try {
     await assert.rejects(predictHirschberg(new Blob(['image'], { type: 'image/png' })), error => error.status === 503 && /khởi động hoặc bận/.test(error.userMessage));
   } finally { globalThis.fetch = originalFetch; }
+});
+
+test('technical backend explanations never leak into an inconclusive result', () => {
+  for (const reason of ['common_direction_ambiguous', 'invalid_input_contract', 'invalid_reflex_landmark']) {
+    const result = normalizeHirschbergResult({ status: 'INCONCLUSIVE', reason,
+      message: 'Hai vector phản xạ có thành phần cùng hướng. Invalid Landmark / Low Confidence',
+      screening: { classifier_called: false } });
+    assert.match(result.message, /chụp lại/);
+    assert.doesNotMatch(result.message, /vector|Landmark|Confidence/);
+    assert.equal(result.hasScores, false);
+    assert.equal(result.proposal, null);
+  }
 });

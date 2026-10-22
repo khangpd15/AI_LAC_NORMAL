@@ -149,7 +149,7 @@ function Gaze4DirectionsSummarySection({ gazeTracking }) {
       {measurement?.reasonCodes?.length > 0 && (
         <div className="final-screening-info-row">
           <span>Lý do/ghi chú</span>
-          <strong>{measurement.reasonCodes.join(' | ')}</strong>
+          <strong>{normalizeHirschbergResult(measurement).message}</strong>
         </div>
       )}
     </div>
