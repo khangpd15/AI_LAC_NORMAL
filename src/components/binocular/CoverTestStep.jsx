@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { checkVideoLightingAndBlur } from '../../services/positionCalibrationService.js';
 import { getCoverCycleTiming } from '../../services/coverTestTimeline.js';
+import { createCoverBaselineBuffer } from '../../services/coverTestBaselineBuffer.js';
 import { coverTestGuideVideo } from '../../content/coverTestGuideVideo.js';
 import AudioButton from '../audio/AudioButton';
 import CoverTestDebugPanel from '../debug/CoverTestDebugPanel';
 import CameraView from '../CameraView';
 import FixationTarget from './FixationTarget';
 import {
-  calculateRobustBaseline,
   analyzeUncoverTrajectory,
 } from '../../services/coverTestMeasurementService.js';
 import {
@@ -65,6 +65,8 @@ export default function CoverTestStep({
   const [cycleIndex, setCycleIndex] = useState(1);
   const [countdownSec, setCountdownSec] = useState(0);
   const [protocolSecond, setProtocolSecond] = useState(0);
+  const [baselineError, setBaselineError] = useState(null);
+  const baselineBufferRef = useRef(createCoverBaselineBuffer());
   const protocolStartRef = useRef(null);
   const positionReportRef = useRef(positionReport);
   useEffect(() => { positionReportRef.current = positionReport; }, [positionReport]);
@@ -489,8 +491,6 @@ export default function CoverTestStep({
         }
 
         const buffer = [];
-        const leftBaselineBuffer = [];
-        const rightBaselineBuffer = [];
         const startT = performance.now();
         if (state === 'COVER') uncoverObserverRef.current?.transition.reset(coverEye);
         const initialSeconds = Math.ceil(durationMs / 1000);
@@ -536,8 +536,8 @@ export default function CoverTestStep({
             if (!imageQuality.isLightingValid || !imageQuality.isBlurValid) return;
             const left = createCoverFrame(feats, currentQuality, 'left', captured.timestampMs, elapsed);
             const right = createCoverFrame(feats, currentQuality, 'right', captured.timestampMs, elapsed);
-            if (left.frame) leftBaselineBuffer.push(left.frame);
-            if (right.frame) rightBaselineBuffer.push(right.frame);
+            baselineBufferRef.current.add('left', left.frame);
+            baselineBufferRef.current.add('right', right.frame);
           } else if (state === 'TRACKING' && trackEye) {
             const tracked = createCoverFrame(feats, currentQuality, trackEye, captured.timestampMs, elapsed);
             if (tracked.frame) buffer.push(tracked.frame);
@@ -588,10 +588,7 @@ export default function CoverTestStep({
           if (phaseRemaining <= 0) {
             try {
               if (state === 'BASELINE' || state === 'PREPARING') {
-                finish({
-                  leftBaseline: calculateRobustBaseline(leftBaselineBuffer.filter(frame => now - frame.timestamp < 1500)),
-                  rightBaseline: calculateRobustBaseline(rightBaselineBuffer.filter(frame => now - frame.timestamp < 1500)),
-                });
+                finish(baselineBufferRef.current.read(now));
               } else if (state === 'TRACKING' && trackEye) {
                 const latestEyeWidth = buffer.length && buffer.at(-1)?.eyeWidth > 0 ? buffer.at(-1).eyeWidth : null;
                 const analysis = buffer.length
@@ -627,6 +624,8 @@ export default function CoverTestStep({
   // Automated 3-cycle runner
   const startCoverTestProtocol = async () => {
     invalidateActiveRun();
+    setBaselineError(null);
+    baselineBufferRef.current = createCoverBaselineBuffer();
     // LOCK fixation target position at test start (Sections 10, 11)
     isTargetLockedRef.current = true;
     setLockedTargetPos(fixationTargetPos);
@@ -676,13 +675,20 @@ export default function CoverTestStep({
     }
     // Require fresh, stable samples from BOTH eyes before starting the timed sequence.
     protocolStartRef.current = null;
+    const baselineDeadline = performance.now() + 20000;
     while (!validateBaselinePair(baselines).isValid ||
         (positionReportRef.current && positionReportRef.current.status !== 'READY')) {
+      if (performance.now() >= baselineDeadline) {
+        invalidateActiveRun();
+        setBaselineError('Chưa thu đủ mẫu mắt ổn định. Hãy đặt điện thoại cố định, mở cả hai mắt, kiểm tra ánh sáng và thử lại.');
+        setCoverState('IDLE');
+        return;
+      }
       baselines = await executePhase({
         state: 'BASELINE', title: 'Điều chỉnh trước khi bắt đầu',
         text: 'Mở cả hai mắt, giữ đầu thẳng và nhìn vào mục tiêu.',
         subtext: positionReportRef.current?.feedbackMessage || 'Đảm bảo đủ sáng, khuôn mặt và cả hai mắt nằm rõ trong camera.',
-        durationMs: 1500, cycleNum: 1,
+        durationMs: Math.min(1500, baselineDeadline - performance.now()), cycleNum: 1,
       });
       if (!runIsCurrent()) return;
     }
@@ -819,6 +825,17 @@ export default function CoverTestStep({
 
   // Determine state label color and badge
   const isTestingActive = coverState !== 'IDLE' && coverState !== 'FINISHED';
+  // Intro/fullscreen use different video nodes. Rebind inference to the node
+  // that now owns the existing stream when switching layouts.
+  const onVideoReadyRef = useRef(onVideoReady);
+  useEffect(() => { onVideoReadyRef.current = onVideoReady; }, [onVideoReady]);
+  useEffect(() => {
+    if (stream && videoRef?.current) {
+      Promise.resolve(onVideoReadyRef.current?.(videoRef.current)).catch(error => {
+        console.warn('[CoverTest] Camera rebind failed', error);
+      });
+    }
+  }, [isTestingActive, stream, videoRef]);
 
   // 1. FULL-SCREEN TEST MODE (Section 35, 37, 38, 40)
   if (isTestingActive) {
@@ -890,7 +907,9 @@ export default function CoverTestStep({
               {['PREPARING', 'BASELINE'].includes(coverState) ? 'Hướng dẫn & kiểm tra camera' : `Chu kỳ ${cycleIndex} / 3`}
             </span>
             <span className="fullscreen-pill fullscreen-pill-active">
-              ⏱️ {protocolSecond} / 40 giây · {countdownSec}s
+              {coverState === 'BASELINE'
+                ? '⏳ Đang thu mẫu mắt — giữ đầu yên'
+                : `⏱️ ${protocolSecond} / 40 giây · ${countdownSec}s`}
             </span>
             <span className="fullscreen-pill" role="status">Đã chụp {capturedPairs} lần bỏ che</span>
           </div>
@@ -1275,6 +1294,7 @@ export default function CoverTestStep({
           </div>
 
           <div className="cover-action-box" style={{ marginTop: '14px' }}>
+            {baselineError && <p role="alert">{baselineError}</p>}
             <button
               type="button"
               className="btn btn-primary btn-large btn-block"
