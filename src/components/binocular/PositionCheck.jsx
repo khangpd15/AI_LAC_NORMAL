@@ -26,6 +26,7 @@ export default function PositionCheck({
   videoRef,
   stream = null,
   landmarks,
+  landmarksRef = null,
   features = null,
   positionReport,
   onProceed,
@@ -215,6 +216,7 @@ export default function PositionCheck({
               videoRef={videoRef}
               stream={stream}
               landmarks={landmarks}
+              landmarksRef={landmarksRef}
               features={features}
               quality={positionReport?.quality}
               isActive={isActive}

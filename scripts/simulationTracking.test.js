@@ -4,6 +4,25 @@ import { getSimulationProcessingSize, getSimulationRenderSize, stabilizeSimulati
 import { LEFT_EYE_CONTOUR, RIGHT_EYE_CONTOUR } from '../src/services/cv/strabismusEngine.js';
 import { isFaceMeshBusy, sendFrameToFaceMesh } from '../src/services/faceMeshService.js';
 import { LANDMARKS } from '../src/constants/screeningConfig.js';
+import { createScreeningDisplayTracker } from '../src/services/cv/screeningDisplayTracking.js';
+
+test('screening display uses simulation smoothing without changing measurement input', () => {
+  for (const mobile of [false, true]) {
+    const tracker = createScreeningDisplayTracker();
+    const first = face();
+    const next = face();
+    next[468].x += 0.004;
+    const original = structuredClone(next);
+    tracker.update(first, 100, mobile);
+    assert.deepEqual(tracker.update(next, 133, mobile), stabilizeSimulationLandmarks(next, first, 33, { mobile }));
+    assert.deepEqual(next, original);
+    assert.equal(tracker.update(null, 166, mobile), null);
+    assert.equal(tracker.update(next, 199, mobile), next);
+    assert.equal(tracker.update(first, 1000, mobile), first);
+    tracker.reset();
+    assert.equal(tracker.update(next, 1033, mobile), next);
+  }
+});
 
 function face() {
   const points = Array.from({ length: 478 }, () => ({ x: 0.5, y: 0.5, z: 0 }));

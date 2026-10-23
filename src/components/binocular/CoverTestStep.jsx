@@ -43,6 +43,7 @@ export default function CoverTestStep({
   videoRef,
   stream = null,
   landmarks = null,
+  landmarksRef = null,
   quality = null,
   latestFeaturesRef = null,
   onComplete,
@@ -859,6 +860,7 @@ export default function CoverTestStep({
             stream={stream}
             landmarks={landmarks}
             featuresRef={latestFeaturesRef}
+            landmarksRef={landmarksRef}
             quality={quality}
             isActive={true}
             cleanMode={true}
@@ -1247,6 +1249,7 @@ export default function CoverTestStep({
             stream={stream}
             landmarks={landmarks}
             featuresRef={latestFeaturesRef}
+            landmarksRef={landmarksRef}
             quality={quality}
             isActive={true}
             cleanMode={false}

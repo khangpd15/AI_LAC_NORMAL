@@ -22,6 +22,7 @@ export default function CameraView({
   videoRef,
   stream = null,
   landmarks = null,
+  landmarksRef = null,
   features = null,
   featuresRef = null,
   quality = null,
@@ -222,6 +223,7 @@ export default function CameraView({
         {isActive && !isLoading && (cameraStatus === 'TRACKING' || cameraStatus === 'VIDEO_READY') && (
           <EyeOverlay
             landmarks={landmarks}
+            landmarksRef={landmarksRef}
             features={features}
             featuresRef={featuresRef}
             quality={quality}

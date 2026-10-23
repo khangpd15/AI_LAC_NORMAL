@@ -17,7 +17,8 @@ const RIGHT_EYE_CONTOUR = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 1
  * - Toggleable Debug HUD Telemetry Panel (Press 'D' key or click HUD toggle)
  */
 export default function EyeOverlay({
-  landmarks,
+  landmarks: stateLandmarks,
+  landmarksRef = null,
   videoWidth = 640,
   videoHeight = 480,
   isTrackingValid = true,
@@ -48,6 +49,12 @@ export default function EyeOverlay({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    let animationId;
+    let lastDrawn;
+    const draw = () => {
+    // A supplied ref is authoritative, including null on face loss.
+    const landmarks = landmarksRef ? landmarksRef.current : stateLandmarks;
+
     // Use display size (CSS pixels × dpr) for canvas resolution
     // so overlay stays pixel-perfect on high-DPI mobile screens.
     const dpr = window.devicePixelRatio || 1;
@@ -56,10 +63,13 @@ export default function EyeOverlay({
     const displayW = rect.width  > 0 ? Math.round(rect.width  * dpr) : (videoWidth  || 640);
     const displayH = rect.height > 0 ? Math.round(rect.height * dpr) : (videoHeight || 480);
 
-    if (canvas.width !== displayW || canvas.height !== displayH) {
+    const resized = canvas.width !== displayW || canvas.height !== displayH;
+    if (resized) {
       canvas.width = displayW;
       canvas.height = displayH;
     }
+    if (landmarksRef && !resized && lastDrawn === landmarks) return;
+    lastDrawn = landmarks;
 
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -78,7 +88,7 @@ export default function EyeOverlay({
 
     if (!landmarks) return;
 
-    const effectiveFeatures = features || featuresRef?.current || null;
+    const effectiveFeatures = featuresRef ? featuresRef.current : features;
 
     // Canvas draw space = display pixels
     const cW = canvas.width;   // display width in physical px
@@ -268,7 +278,15 @@ export default function EyeOverlay({
       if (leftIris)  drawGazeVector(leftIris,  effectiveFeatures.leftHorizontalRatio,  effectiveFeatures.leftVerticalRatio,  'rgba(255,255,255,0.6)');
       if (rightIris) drawGazeVector(rightIris, effectiveFeatures.rightHorizontalRatio, effectiveFeatures.rightVerticalRatio, 'rgba(255,255,255,0.6)');
     }
-  }, [landmarks, videoWidth, videoHeight, isTrackingValid, features, featuresRef, showRoi]);
+    };
+    const tick = () => {
+      draw();
+      animationId = requestAnimationFrame(tick);
+    };
+    if (landmarksRef) tick();
+    else draw();
+    return () => cancelAnimationFrame(animationId);
+  }, [stateLandmarks, landmarksRef, videoWidth, videoHeight, isTrackingValid, features, featuresRef, showRoi]);
 
   return (
     <>

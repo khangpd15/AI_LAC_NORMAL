@@ -71,7 +71,7 @@ export default function BinocularVisionScreening() {
     checkHealth,
     recover: recoverCam,
   } = useCamera();
-  const { quality, features, latestFeaturesRef, latestQualityRef, rawLandmarks, processResults } = useEyeTracking();
+  const { quality, features, latestFeaturesRef, latestQualityRef, rawLandmarks, displayLandmarksRef, processResults } = useEyeTracking();
   const { speak, cancel: cancelSpeech, isVoiceEnabled, toggleSound } = useSpeech(true);
   const { smoothedPrediction, processFrameAI, inferenceFps, avgInferenceLatencyMs } = useStrabismusAI();
 
@@ -533,6 +533,7 @@ export default function BinocularVisionScreening() {
             videoRef={videoRef}
             stream={stream}
             landmarks={rawLandmarks}
+            landmarksRef={displayLandmarksRef}
             features={features}
             positionReport={positionReport}
             onProceed={handleCoverPositionProceed}
@@ -553,6 +554,7 @@ export default function BinocularVisionScreening() {
             videoRef={videoRef}
             stream={stream}
             landmarks={rawLandmarks}
+            landmarksRef={displayLandmarksRef}
             quality={quality}
             latestFeaturesRef={latestFeaturesRef}
             latestQualityRef={latestQualityRef}

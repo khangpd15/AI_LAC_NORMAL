@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { createScreeningDisplayTracker } from '../services/cv/screeningDisplayTracking.js';
 import {
   validateEyeTrackingQuality,
   extractEyeFeatures,
@@ -23,6 +24,8 @@ export function useEyeTracking() {
   const [smoothedLandmarks, setSmoothedLandmarks] = useState(null);
 
   const latestFeaturesRef = useRef(null);
+  const displayLandmarksRef = useRef(null);
+  const displayTrackerRef = useRef(createScreeningDisplayTracker());
   const latestLandmarksRef = useRef(null);
   const latestRawLandmarksRef = useRef(null);
   const latestQualityRef = useRef(quality);
@@ -42,6 +45,8 @@ export function useEyeTracking() {
         now - lastValidFrameTimeRef.current > 300
       ) {
         latestFeaturesRef.current = null;
+        displayLandmarksRef.current = null;
+        displayTrackerRef.current.reset();
         latestLandmarksRef.current = null;
         latestRawLandmarksRef.current = null;
         lastValidFrameTimeRef.current = 0;
@@ -91,6 +96,8 @@ export function useEyeTracking() {
       const qualityReport = withRecoveryState(buildFrameQualityGate(baseQualityReport, null, qualityOptions));
       latestQualityRef.current = qualityReport;
       latestFeaturesRef.current = null;
+      displayLandmarksRef.current = null;
+      displayTrackerRef.current.reset();
       latestLandmarksRef.current = null;
       latestRawLandmarksRef.current = null;
       lastValidFrameTimeRef.current = 0;
@@ -112,6 +119,10 @@ export function useEyeTracking() {
           : performance.now());
 
     // FPS CALCULATION
+    displayLandmarksRef.current = displayTrackerRef.current.update(
+      lm, timestamp, typeof navigator !== 'undefined' &&
+        (navigator.maxTouchPoints > 0 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)),
+    );
     if (lastFrameTimestampRef.current !== null) {
       const dt = timestamp - lastFrameTimestampRef.current;
       if (dt > 0 && dt < 1000) {
@@ -170,6 +181,8 @@ export function useEyeTracking() {
       irisValid: false,
     });
     latestFeaturesRef.current = null;
+    displayLandmarksRef.current = null;
+    displayTrackerRef.current.reset();
     latestLandmarksRef.current = null;
     latestRawLandmarksRef.current = null;
     frameTimeWindowRef.current = [];
@@ -183,6 +196,7 @@ export function useEyeTracking() {
     rawLandmarks,
     smoothedLandmarks,
     latestFeaturesRef,
+    displayLandmarksRef,
     latestLandmarksRef,
     latestRawLandmarksRef,
     latestQualityRef,
