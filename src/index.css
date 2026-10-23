@@ -2489,9 +2489,30 @@ textarea:focus {
 
 .position-check-layout {
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
   gap: 24px;
   margin-top: 16px;
+}
+
+@media (min-width: 861px) {
+  .position-check-card .position-camera-idle {
+    aspect-ratio: 4 / 3;
+    box-sizing: border-box;
+  }
+
+  .position-check-card .checklist-items {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .position-check-card .checklist-card { gap: 12px; }
+  .position-check-card .checklist-item { gap: 6px; padding: 10px; }
+  .position-check-card .check-icon { flex-shrink: 0; }
+  .position-check-card .checklist-actions { flex-wrap: wrap; }
+  .position-check-card .checklist-actions .btn { min-height: 44px; white-space: normal; }
+  .position-check-card .distance-gauge-header { flex-wrap: wrap; gap: 8px; }
 }
 
 @media (max-width: 860px) {

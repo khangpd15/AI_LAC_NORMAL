@@ -1,5 +1,7 @@
 # So sánh bắt mắt và timestamp ở 30 FPS
 
+> Cập nhật 23/10/2026: xem [đối chiếu desktop hiện tại](desktop/REPORT.md). COVER hiện đã tắt smoothing và loại timestamp trùng; các mô tả pipeline bên dưới là lịch sử ngày 20/10.
+
 Ngày thực hiện: 20/10/2026. Phân tích bản mã đang làm việc sau sửa vùng mí của mô phỏng.
 
 **Mô phỏng phản ứng với mí nhanh hơn bộ lọc của cover test trong phép thử này. Nhưng phản ứng nhanh không đồng nghĩa đo đúng thời điểm chuyển động mắt hơn. Cách ghi timestamp hiện tại của cả hai cần được phân biệt với thời gian khung hình gốc.**

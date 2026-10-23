@@ -1,6 +1,7 @@
 import React from 'react';
 import CameraView from '../CameraView';
 import AudioButton from '../audio/AudioButton';
+import PositionGuideVideo from './PositionGuideVideo';
 import {
   POSITION_CONFIG,
   POSITION_QUALITY_CONFIG,
@@ -43,38 +44,6 @@ export default function PositionCheck({
   const status = isInitializing ? POSITION_STATUS.INITIALIZING : (positionReport?.status || POSITION_STATUS.INITIALIZING);
   const isReady = !isInitializing && status === POSITION_STATUS.READY;
 
-  // Section VI: Pre-test 5-item confirmation checklist
-  const [checklist, setChecklist] = React.useState({
-    hasHelper: true,
-    phoneFixed: true,
-    headStraight: true,
-    goodLighting: true,
-    assistiveLight: true,
-  });
-
-  const isChecklistComplete = Boolean(
-    checklist.hasHelper &&
-    checklist.phoneFixed &&
-    checklist.headStraight &&
-    checklist.goodLighting &&
-    checklist.assistiveLight
-  );
-
-  const toggleChecklistItem = (key) => {
-    setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const toggleAllChecklist = () => {
-    const nextVal = !isChecklistComplete;
-    setChecklist({
-      hasHelper: nextVal,
-      phoneFixed: nextVal,
-      headStraight: nextVal,
-      goodLighting: nextVal,
-      assistiveLight: nextVal,
-    });
-  };
-
   const spokenIntroRef = React.useRef(false);
   React.useEffect(() => {
     if (isVoiceEnabled && speak && !spokenIntroRef.current) {
@@ -88,11 +57,11 @@ export default function PositionCheck({
 
   const spokenReadyRef = React.useRef(false);
   React.useEffect(() => {
-    if (isReady && isChecklistComplete && isVoiceEnabled && speak && !spokenReadyRef.current) {
+    if (isReady && isVoiceEnabled && speak && !spokenReadyRef.current) {
       spokenReadyRef.current = true;
       speak('Vị trí tốt, bấm bắt đầu nghen.');
     }
-  }, [isReady, isChecklistComplete, isVoiceEnabled, speak]);
+  }, [isReady, isVoiceEnabled, speak]);
 
   const checks = isInitializing
     ? {
@@ -113,6 +82,8 @@ export default function PositionCheck({
         headPoseValid: false,
         isStable: false,
       });
+
+  const faceClear = checks.faceDetected && checks.faceCentered && checks.bothEyesDetected && checks.irisDetected && checks.headPoseValid;
 
   const estimatedDistanceCm = isInitializing ? null : (positionReport?.estimatedDistanceCm ?? null);
   const stableDistanceCm = isInitializing ? null : (positionReport?.stableDistanceCm ?? estimatedDistanceCm);
@@ -178,6 +149,7 @@ export default function PositionCheck({
           {/* Camera Activate Button: shown before camera starts. Uses user gesture to avoid iOS Safari block. */}
           {!isActive && !isLoading && !error && (onCameraActivate || onVideoReady) && (
             <div
+              className="position-camera-idle"
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -390,155 +362,26 @@ export default function PositionCheck({
           </div>
         </div>
 
-        {/* Right Column: Pre-test Safety Checklist & Strict Gating */}
         <div className="position-checklist-column">
-          <div className="checklist-card">
+          <div className="checklist-card position-start-card">
             <h3 className="checklist-title">Điều kiện bắt đầu</h3>
             <ul className="checklist-items" role="list">
-              <li className={`checklist-item ${checks.faceDetected ? 'pass' : 'fail'}`}>
-                <span className="check-icon" aria-hidden="true">
-                  {checks.faceDetected ? '✓' : '○'}
-                </span>
+              <li className={`checklist-item ${faceClear ? 'pass' : 'fail'}`}>
+                <span className="check-icon" aria-hidden="true">{faceClear ? '✓' : '○'}</span>
                 <div className="check-text">
-                  <strong>Thấy khuôn mặt</strong>
-                  <span>MediaPipe Face Mesh nhận diện rõ viền mặt</span>
+                  <strong>Thấy rõ mặt</strong>
+                  <span>{faceClear ? 'Đã đạt' : 'Nhìn thẳng vào camera'}</span>
                 </div>
               </li>
-
-              <li className={`checklist-item ${checks.faceCentered ? 'pass' : 'fail'}`}>
-                <span className="check-icon" aria-hidden="true">
-                  {checks.faceCentered ? '✓' : '○'}
-                </span>
-                <div className="check-text">
-                  <strong>Mặt ở giữa khung</strong>
-                  <span>
-                    {positionReport?.faceCentering
-                      ? `Lệch ngang ${Math.round(Math.abs(positionReport.faceCentering.offsetX) * 100)}%, dọc ${Math.round(Math.abs(positionReport.faceCentering.offsetY) * 100)}%`
-                      : 'Đưa tâm khuôn mặt vào vùng hướng dẫn'}
-                  </span>
-                </div>
-              </li>
-
-              <li className={`checklist-item ${checks.bothEyesDetected ? 'pass' : 'fail'}`}>
-                <span className="check-icon" aria-hidden="true">
-                  {checks.bothEyesDetected ? '✓' : '○'}
-                </span>
-                <div className="check-text">
-                  <strong>Hai mắt rõ</strong>
-                  <span>Khóe mắt trong và ngoài mở đều</span>
-                </div>
-              </li>
-
-              <li className={`checklist-item ${checks.irisDetected ? 'pass' : 'fail'}`}>
-                <span className="check-icon" aria-hidden="true">
-                  {checks.irisDetected ? '✓' : '○'}
-                </span>
-                <div className="check-text">
-                  <strong>Mống mắt rõ</strong>
-                  <span>Mống mắt trái (468) & phải (473)</span>
-                </div>
-              </li>
-
-              <li className={`checklist-item ${checks.headPoseValid ? 'pass' : 'fail'}`}>
-                <span className="check-icon" aria-hidden="true">
-                  {checks.headPoseValid ? '✓' : '○'}
-                </span>
-                <div className="check-text">
-                  <strong>Đầu thẳng</strong>
-                  <span>
-                    Nghiêng (Roll): {positionReport?.headPose?.rollDeg ?? 0}°, Quay (Yaw): {positionReport?.headPose?.yawDeg ?? 0}°
-                  </span>
-                </div>
-              </li>
-
               <li className={`checklist-item ${checks.distanceValid ? 'pass' : 'fail'}`}>
-                <span className="check-icon" aria-hidden="true">
-                  {checks.distanceValid ? '✓' : '○'}
-                </span>
+                <span className="check-icon" aria-hidden="true">{checks.distanceValid ? '✓' : '○'}</span>
                 <div className="check-text">
                   <strong>Đúng khoảng cách</strong>
-                  <span>Ổn định liên tục qua nhiều khung hình</span>
+                  <span>{checks.distanceValid ? 'Đã đạt' : config.targetRangeLabel}</span>
                 </div>
               </li>
             </ul>
-
-            {/* Section VI: Pre-test confirmation checklist */}
-            <div className="pretest-checklist-box" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <strong style={{ fontSize: '0.9rem', color: '#1e293b' }}>
-                  Xác nhận điều kiện Cover Test
-                </strong>
-                <button
-                  type="button"
-                  onClick={toggleAllChecklist}
-                  style={{ background: 'none', border: 'none', color: '#0284c7', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}
-                >
-                  {isChecklistComplete ? 'Bỏ chọn' : 'Chọn tất cả'}
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.82rem', color: '#334155' }}>
-                <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', alignItems: 'flex-start' }}>
-                  <input
-                    type="checkbox"
-                    checked={checklist.hasHelper}
-                    onChange={() => toggleChecklistItem('hasHelper')}
-                    style={{ marginTop: '2px' }}
-                  />
-                  <span><strong>1. Người hỗ trợ:</strong> Có người hỗ trợ đứng bên cạnh để thực hiện thao tác cover.</span>
-                </label>
-
-                <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', alignItems: 'flex-start' }}>
-                  <input
-                    type="checkbox"
-                    checked={checklist.phoneFixed}
-                    onChange={() => toggleChecklistItem('phoneFixed')}
-                    style={{ marginTop: '2px' }}
-                  />
-                  <span><strong>2. Cố định máy:</strong> Điện thoại được cố định trên giá đỡ/bàn, không cầm tay.</span>
-                </label>
-
-                <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', alignItems: 'flex-start' }}>
-                  <input
-                    type="checkbox"
-                    checked={checklist.headStraight}
-                    onChange={() => toggleChecklistItem('headStraight')}
-                    style={{ marginTop: '2px' }}
-                  />
-                  <span><strong>3. Đầu thẳng:</strong> Người được test giữ đầu thẳng và hướng về điện thoại.</span>
-                </label>
-
-                <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', alignItems: 'flex-start' }}>
-                  <input
-                    type="checkbox"
-                    checked={checklist.goodLighting}
-                    onChange={() => toggleChecklistItem('goodLighting')}
-                    style={{ marginTop: '2px' }}
-                  />
-                  <span><strong>4. Ánh sáng:</strong> Khu vực kiểm tra đủ sáng, rõ hai mắt.</span>
-                </label>
-
-                <label style={{ display: 'flex', gap: '8px', cursor: 'pointer', alignItems: 'flex-start' }}>
-                  <input
-                    type="checkbox"
-                    checked={checklist.assistiveLight}
-                    onChange={() => toggleChecklistItem('assistiveLight')}
-                    style={{ marginTop: '2px' }}
-                  />
-                  <span><strong>5. Đèn hỗ trợ:</strong> Người hỗ trợ chiếu đèn nhỏ từ phía sau camera theo protocol.</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="checklist-safety-note" style={{ background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', padding: '10px 14px', borderRadius: '8px', marginTop: '12px' }}>
-              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-                💡 <strong>Ghi chú:</strong> {config.clinicalNote}
-              </p>
-              <p style={{ margin: '6px 0 0 0', fontSize: '0.78rem', color: 'var(--text-muted)', opacity: 0.85 }}>
-                * Khoảng cách hiển thị là giá trị ước tính quang học tương đối để định hướng tư thế, không phải thước đo vật lý tuyệt đối.
-              </p>
-            </div>
-
+            <PositionGuideVideo />
             <div className="checklist-actions" style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
               {onRetry && (
                 <button
@@ -547,22 +390,22 @@ export default function PositionCheck({
                   onClick={onRetry}
                   aria-label="Thử lại kiểm tra vị trí"
                 >
-                  🔄 THỬ LẠI
+                  Thử lại
                 </button>
               )}
               <button
                 type="button"
                 className="btn btn-primary btn-large btn-block"
-                disabled={!isChecklistComplete || !isReady || !checks.distanceValid || !checks.faceDetected || !checks.bothEyesDetected}
+                disabled={!isReady || !checks.distanceValid || !faceClear}
                 onClick={onProceed}
                 aria-label={config.buttonLabel}
                 style={{ flex: 1 }}
               >
-                {!isChecklistComplete
-                  ? 'Cần xác nhận 5 điều kiện trên'
-                  : isReady && checks.distanceValid && checks.faceDetected && checks.bothEyesDetected
-                  ? '✓ BẮT ĐẦU KIỂM TRA (3 CHU KỲ)'
-                  : 'Đang điều chỉnh cự ly (30–50 cm)'}
+                {isReady && checks.distanceValid && faceClear
+                  ? 'Bắt đầu kiểm tra'
+                  : isInitializing
+                  ? error ? 'Kiểm tra lại camera' : isLoading ? 'Đang bật camera…' : !isActive ? 'Cần bật camera để tiếp tục' : 'Đang chờ hình ảnh camera…'
+                  : `Đang kiểm tra vị trí (${config.targetRangeLabel})`}
               </button>
             </div>
           </div>

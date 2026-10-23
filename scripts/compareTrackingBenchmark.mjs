@@ -7,7 +7,8 @@ import { LEFT_EYE_CONTOUR, RIGHT_EYE_CONTOUR, getEyeAnatomicalFrame, updateSimul
 import { LANDMARKS } from '../src/constants/screeningConfig.js';
 
 const root = path.resolve(import.meta.dirname, '..');
-const output = path.join(root, 'docs', 'tracking-benchmark');
+const desktop = process.argv.includes('--desktop');
+const output = path.join(root, 'docs', 'tracking-benchmark', ...(desktop ? ['desktop'] : []));
 fs.mkdirSync(output, { recursive: true });
 const mean = values => values.reduce((a, b) => a + b, 0) / Math.max(1, values.length);
 const percentile = (values, fraction) => [...values].sort((a, b) => a - b)[Math.floor((values.length - 1) * fraction)] ?? null;
@@ -65,7 +66,7 @@ for (const file of fs.readdirSync(path.join(root, 'tracking-benchmark.local')).f
       continue;
     }
     const raw = landmarks.map(([x, y, z]) => ({ x, y, z }));
-    const sim = stabilizeSimulationLandmarks(raw, previous, previousTime === null ? 1000 / 30 : ptsMs - previousTime, { mobile: true });
+    const sim = stabilizeSimulationLandmarks(raw, previous, previousTime === null ? 1000 / 30 : ptsMs - previousTime, { mobile: !desktop });
     const cover = extractEyeFeatures(raw, ptsMs, { applySmoothing: true, resetBlinkBuffer: detected === 0 });
     previous = sim;
     previousTime = ptsMs;
@@ -77,6 +78,16 @@ for (const file of fs.readdirSync(path.join(root, 'tracking-benchmark.local')).f
       if (cover[`isBlinkMasked${side === 'LEFT' ? 'Left' : 'Right'}`]) coverMasked++;
     }
     rows.push({ index, ptsMs, raw, sim, cover: cover.raw.landmarks });
+  }
+  // Separate pass: feature extraction owns shared blink state. Do not feed it
+  // the same timestamp twice while measuring POSITION mask behavior.
+  let firstActiveFrame = true;
+  for (const row of rows) {
+    if (!row.raw) continue;
+    row.activeCover = extractEyeFeatures(row.raw, row.ptsMs, {
+      applySmoothing: false, resetBlinkBuffer: firstActiveFrame,
+    }).raw.landmarks;
+    firstActiveFrame = false;
   }
   const summary = {
     ...metadata, frames: rows.length, detected, detectionPercent: 100 * detected / rows.length,
@@ -90,6 +101,8 @@ for (const file of fs.readdirSync(path.join(root, 'tracking-benchmark.local')).f
     coverIrisLagFrames: lag(rows, 'cover', 'IRIS_CENTER'),
     simulationRelativeGazeLagFrames: lag(rows, 'sim', 'GAZE'),
     coverRelativeGazeLagFrames: lag(rows, 'cover', 'GAZE'),
+    activeCoverLidLagFrames: lag(rows, 'activeCover', 'TOP_LID'),
+    activeCoverRelativeGazeLagFrames: lag(rows, 'activeCover', 'GAZE'),
     simulationClosedEyePercent: 100 * simClosed / (2 * detected),
     coverMaskedEyePercent: 100 * coverMasked / (2 * detected),
   };
@@ -106,7 +119,7 @@ for (const file of fs.readdirSync(path.join(root, 'tracking-benchmark.local')).f
   console.log(JSON.stringify(summary));
 }
 
-// Reproduce the phase-loop's repeated reads with 60Hz display / 30Hz camera.
+// Historical scheduling model, NOT the current capture subscriber (which deduplicates).
 // Artificial delivery delay is explicit; this is a scheduling model, not a device measurement.
 const clockScenarios = [0, 15, 40, 70].map(latencyMs => {
   const source = Array.from({ length: 300 }, (_, i) => i * 1000 / 30);
@@ -126,6 +139,6 @@ const clockScenarios = [0, 15, 40, 70].map(latencyMs => {
   };
 });
 fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ summaries, clockScenarios }, null, 2));
-fs.writeFileSync(path.join(root, 'tracking-benchmark.local', 'overlay-traces.json'), JSON.stringify(traces));
+fs.writeFileSync(path.join(root, 'tracking-benchmark.local', desktop ? 'overlay-traces-desktop.json' : 'overlay-traces.json'), JSON.stringify(traces));
 const columns = Object.keys(summaries[0]);
 fs.writeFileSync(path.join(output, 'results.csv'), columns.join(',') + '\n' + summaries.map(row => columns.map(key => row[key]).join(',')).join('\n') + '\n');
