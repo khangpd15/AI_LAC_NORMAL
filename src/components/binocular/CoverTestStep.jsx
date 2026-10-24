@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { checkVideoLightingAndBlur } from '../../services/positionCalibrationService.js';
 import { getCoverCycleTiming } from '../../services/coverTestTimeline.js';
-import { createCoverBaselineBuffer } from '../../services/coverTestBaselineBuffer.js';
+import { createCoverBaselineBuffer, isCoverFrameInPhase } from '../../services/coverTestBaselineBuffer.js';
 import { coverTestGuideVideo } from '../../content/coverTestGuideVideo.js';
 import AudioButton from '../audio/AudioButton';
 import CoverTestDebugPanel from '../debug/CoverTestDebugPanel';
@@ -14,7 +14,7 @@ import {
   COVER_TEST_VERDICTS,
   FIXATION_TARGET_CONFIG,
 } from '../../constants/binocularScreeningConfig.js';
-import { COVER_TEST_CONFIG } from '../../constants/screeningConfig.js';
+import { COVER_TEST_CONFIG, SCREENING_CONFIG } from '../../constants/screeningConfig.js';
 import { RESEARCH_QUALITY_CONFIG } from '../../constants/researchScreeningConfig.js';
 import { aggregateCoverCycles, createCoverFrame, createCycleRecord, generateUUIDv4, isCoverSessionCurrent, isValidUUIDv4, validateBaselinePair } from '../../services/coverTestProtocolService.js';
 import { createTimeSeriesRecorder } from '../../services/coverTestTimeSeriesService.js';
@@ -67,6 +67,9 @@ export default function CoverTestStep({
   const [protocolSecond, setProtocolSecond] = useState(0);
   const [baselineError, setBaselineError] = useState(null);
   const baselineBufferRef = useRef(createCoverBaselineBuffer());
+  const baselineStartRef = useRef(0);
+  const baselineFeedbackRef = useRef('Đang chờ hình ảnh camera.');
+  const [baselineProgress, setBaselineProgress] = useState(null);
   const protocolStartRef = useRef(null);
   const positionReportRef = useRef(positionReport);
   useEffect(() => { positionReportRef.current = positionReport; }, [positionReport]);
@@ -503,7 +506,7 @@ export default function CoverTestStep({
         phaseFrameHandlerRef.current = ({ results, features: feats, quality: currentQuality }) => {
           if (isAbortedRef.current || phaseRunToken !== activeRunTokenRef.current) return;
           const captured = results?.capturedFrame;
-          if (!captured || captured.timestampMs < startT || captured.timestampMs <= lastTimestamp) return;
+          if (!captured || !isCoverFrameInPhase(captured.timestampMs, state, startT, baselineStartRef.current, lastTimestamp)) return;
           lastTimestamp = captured.timestampMs;
           const { image, ...metadata } = captured;
           const lm = results.multiFaceLandmarks?.[0];
@@ -528,16 +531,29 @@ export default function CoverTestStep({
             }).finally(() => pendingCropsRef.current.delete(pending));
             pendingCropsRef.current.add(pending);
           }
-          if (!feats) return;
+          if (!feats) {
+            baselineFeedbackRef.current = 'Chưa nhận diện được khuôn mặt. Đưa mặt vào giữa camera.';
+            return;
+          }
           const observedFeatures = { ...feats, observedVisibility: observation?.visibility };
           const elapsed = captured.timestampMs - startT;
           if (state === 'BASELINE' || state === 'PREPARING') {
             const imageQuality = checkVideoLightingAndBlur(videoRef.current);
-            if (!imageQuality.isLightingValid || !imageQuality.isBlurValid) return;
+            if (!imageQuality.isLightingValid || !imageQuality.isBlurValid) {
+              baselineFeedbackRef.current = !imageQuality.isLightingValid
+                ? 'Ánh sáng chưa phù hợp. Tránh ngược sáng và chiếu sáng đều khuôn mặt.'
+                : 'Hình ảnh chưa rõ. Lau camera và giữ điện thoại cố định.';
+              return;
+            }
             const left = createCoverFrame(feats, currentQuality, 'left', captured.timestampMs, elapsed);
             const right = createCoverFrame(feats, currentQuality, 'right', captured.timestampMs, elapsed);
             baselineBufferRef.current.add('left', left.frame);
             baselineBufferRef.current.add('right', right.frame);
+            const rejection = left.reason || right.reason;
+            baselineFeedbackRef.current = rejection === 'BLINK'
+              ? 'Camera đang nhận diện mắt nhắm. Để rõ cả hai mắt và nhìn vào camera.'
+              : rejection === 'HEAD_MOTION' ? 'Giữ đầu thẳng, tránh nghiêng hoặc quay đầu.'
+              : rejection ? 'Chưa thấy rõ mống mắt. Điều chỉnh vị trí và ánh sáng.' : null;
           } else if (state === 'TRACKING' && trackEye) {
             const tracked = createCoverFrame(feats, currentQuality, trackEye, captured.timestampMs, elapsed);
             if (tracked.frame) buffer.push(tracked.frame);
@@ -554,6 +570,10 @@ export default function CoverTestStep({
 
           const now = performance.now();
           const elapsed = now - startT;
+          const collectingBaseline = state === 'BASELINE' || state === 'PREPARING';
+          const baseline = collectingBaseline ? baselineBufferRef.current.read(now) : null;
+          const baselineReady = baseline && validateBaselinePair(baseline).isValid &&
+            (!positionReportRef.current || positionReportRef.current.status === 'READY');
           const phaseRemaining = endAt == null ? durationMs - elapsed : endAt - now;
           const remainingSec = Math.max(0, Math.ceil(phaseRemaining / 1000));
           if (protocolStartRef.current != null) setProtocolSecond(Math.min(40, Math.floor((now - protocolStartRef.current) / 1000)));
@@ -569,6 +589,13 @@ export default function CoverTestStep({
             // Throttle React state telemetry updates to 4 Hz (every 250ms) to avoid 60 FPS re-render churn (Section 14)
             if (now - lastTelemetryUpdateRef.current >= 250) {
               lastTelemetryUpdateRef.current = now;
+              if (baseline) {
+                setBaselineProgress({ left: baseline.leftBaseline.sampleCount, right: baseline.rightBaseline.sampleCount });
+                setInstructionSubtext(baselineFeedbackRef.current ||
+                  (positionReportRef.current?.status !== 'READY' && positionReportRef.current?.feedbackMessage) ||
+                  (validateBaselinePair(baseline).reason === 'BASELINE_UNSTABLE'
+                    ? 'Mẫu mắt chưa ổn định. Giữ đầu yên và nhìn vào mục tiêu.' : 'Đang tích lũy mẫu rõ từ cả hai mắt.'));
+              }
               const telem = phaseRecorder.getTelemetry();
               setTelemetry(telem);
               setLiveSampleCount(telem.savedSamples);
@@ -585,7 +612,7 @@ export default function CoverTestStep({
             }
           }
 
-          if (phaseRemaining <= 0) {
+          if (phaseRemaining <= 0 || (state === 'BASELINE' && baselineReady)) {
             try {
               if (state === 'BASELINE' || state === 'PREPARING') {
                 finish(baselineBufferRef.current.read(now));
@@ -626,6 +653,9 @@ export default function CoverTestStep({
     invalidateActiveRun();
     setBaselineError(null);
     baselineBufferRef.current = createCoverBaselineBuffer();
+    baselineStartRef.current = performance.now();
+    baselineFeedbackRef.current = 'Đang chờ hình ảnh camera.';
+    setBaselineProgress({ left: 0, right: 0 });
     // LOCK fixation target position at test start (Sections 10, 11)
     isTargetLockedRef.current = true;
     setLockedTargetPos(fixationTargetPos);
@@ -675,23 +705,25 @@ export default function CoverTestStep({
     }
     // Require fresh, stable samples from BOTH eyes before starting the timed sequence.
     protocolStartRef.current = null;
-    const baselineDeadline = performance.now() + 20000;
-    while (!validateBaselinePair(baselines).isValid ||
+    if (!validateBaselinePair(baselines).isValid ||
         (positionReportRef.current && positionReportRef.current.status !== 'READY')) {
-      if (performance.now() >= baselineDeadline) {
-        invalidateActiveRun();
-        setBaselineError('Chưa thu đủ mẫu mắt ổn định. Hãy đặt điện thoại cố định, mở cả hai mắt, kiểm tra ánh sáng và thử lại.');
-        setInstructionTitle('Chưa thu đủ mẫu mắt');
-        setCoverState('BASELINE_RETRY');
-        return;
-      }
       baselines = await executePhase({
         state: 'BASELINE', title: 'Điều chỉnh trước khi bắt đầu',
         text: 'Mở cả hai mắt, giữ đầu thẳng và nhìn vào mục tiêu.',
         subtext: positionReportRef.current?.feedbackMessage || 'Đảm bảo đủ sáng, khuôn mặt và cả hai mắt nằm rõ trong camera.',
-        durationMs: Math.min(1500, baselineDeadline - performance.now()), cycleNum: 1,
+        durationMs: 20000, cycleNum: 1,
       });
       if (!runIsCurrent()) return;
+    }
+    if (!validateBaselinePair(baselines).isValid ||
+        (positionReportRef.current && positionReportRef.current.status !== 'READY')) {
+      invalidateActiveRun();
+      setBaselineError(baselineFeedbackRef.current ||
+        (positionReportRef.current?.status !== 'READY' && positionReportRef.current?.feedbackMessage) ||
+        'Chưa thu đủ mẫu mắt ổn định. Giữ điện thoại cố định và thử lại.');
+      setInstructionTitle('Chưa thu đủ mẫu mắt');
+      setCoverState('BASELINE_RETRY');
+      return;
     }
     currentBaselineRef.current = baselines;
     const sequenceStart = performance.now();
@@ -917,6 +949,8 @@ export default function CoverTestStep({
 
           <div className="fullscreen-instruction-banner">
             <h1 className="fullscreen-inst-title">{instructionTitle}</h1>
+            {['PREPARING', 'BASELINE', 'BASELINE_RETRY'].includes(coverState) && baselineProgress &&
+              <p className="fullscreen-inst-sub" role="status">Mẫu mắt trái: {baselineProgress.left}/{SCREENING_CONFIG.MIN_VALID_SAMPLES_BASELINE} · Mắt phải: {baselineProgress.right}/{SCREENING_CONFIG.MIN_VALID_SAMPLES_BASELINE}</p>}
             <p className="fullscreen-inst-sub" aria-live="polite">{baselineError || instructionText}</p>
             {!baselineError && <p className="fullscreen-inst-sub">{instructionSubtext}</p>}
             {coverState === 'BASELINE_RETRY' && <button type="button" className="btn btn-primary" style={{ pointerEvents: 'auto' }} onClick={startCoverTestProtocol}>Thu mẫu lại</button>}
