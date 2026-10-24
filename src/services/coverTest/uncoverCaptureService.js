@@ -20,6 +20,8 @@ export function classifyEyeVisibility(patch, frame, baseline) {
 /** Keeps the FIRST clear frame while waiting for a second clear observation.
  * The event time is bounded by the last occluded and first clear frames.
  */
+const UNCOVER_WINDOW_MS = 700;
+
 export class UncoverTransition {
   constructor() { this.reset(); }
   reset(expectedEye = null) {
@@ -53,11 +55,11 @@ export class UncoverTransition {
       // A hand passing away from an already-confirmed cover may briefly be
       // ambiguous. Preserve evidence only while the other eye stays visible.
       this.armed = this.armed && visibility[opposite] === 'VISIBLE' &&
-        timestampMs - this.lastCovered <= 500;
+        timestampMs - this.lastCovered <= UNCOVER_WINDOW_MS;
       this.candidate = null;
       return null;
     }
-    if (!this.armed || (!this.candidate && timestampMs - this.lastCovered > 500)) {
+    if (!this.armed || (!this.candidate && timestampMs - this.lastCovered > UNCOVER_WINDOW_MS)) {
       this.armed = false;
       this.coverStart = null;
       return null;

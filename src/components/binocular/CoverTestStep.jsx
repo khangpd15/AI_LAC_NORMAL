@@ -115,6 +115,10 @@ export default function CoverTestStep({
   const cycleStartRef = useRef(0);
   const [capturedPairs, setCapturedPairs] = useState(0);
   const captureFeedbackRef = useRef('');
+  const [captureFeedback, setCaptureFeedback] = useState('');
+  const lastFeedbackUpdateRef = useRef(0);
+  const [recentCaptureNotice, setRecentCaptureNotice] = useState(null);
+  const captureNoticeTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (!frameConsumerRef) return;
@@ -416,6 +420,10 @@ export default function CoverTestStep({
     uncoverObserverRef.current?.transition.reset();
     isTargetLockedRef.current = false;
     setLockedTargetPos(null);
+    if (captureNoticeTimeoutRef.current) clearTimeout(captureNoticeTimeoutRef.current);
+    captureNoticeTimeoutRef.current = null;
+    setRecentCaptureNotice(null);
+    setCaptureFeedback('');
     // Never clobber the canonical UUID v4 session ID on run invalidation
     if (phaseRafRef.current !== null) cancelAnimationFrame(phaseRafRef.current);
     phaseRafRef.current = null;
@@ -546,6 +554,11 @@ export default function CoverTestStep({
               ? 'Đã nhận diện bỏ che. Giữ đầu yên để ghi phản ứng mắt.'
               : 'Bỏ tay ra hoàn toàn để camera nhìn rõ cả hai mắt.';
           }
+          const nowMs = performance.now();
+          if (nowMs - lastFeedbackUpdateRef.current > 150) {
+            lastFeedbackUpdateRef.current = nowMs;
+            setCaptureFeedback(captureFeedbackRef.current);
+          }
           if (observation?.event) {
             const cycleStart = cycleStartRef.current;
             const pending = encodeEyePair(observation.event, cycleNum, cycleStart).then(({ images, metadata: event }) => {
@@ -555,6 +568,10 @@ export default function CoverTestStep({
               Object.assign(eyeImagesRef.current, images);
               uncoverEventsRef.current.push(event);
               setCapturedPairs(count => count + 1);
+              playCue('capture');
+              setRecentCaptureNotice(`📸 Đã chụp ảnh hai mắt lúc bỏ che (Lần ${cycleNum})!`);
+              if (captureNoticeTimeoutRef.current) clearTimeout(captureNoticeTimeoutRef.current);
+              captureNoticeTimeoutRef.current = setTimeout(() => setRecentCaptureNotice(null), 2400);
             }).catch(error => {
               if (isAbortedRef.current || phaseRunToken !== activeRunTokenRef.current) return;
               uncoverEventsRef.current.push({
@@ -988,6 +1005,44 @@ export default function CoverTestStep({
               <p className="fullscreen-inst-sub" role="status">Mẫu mắt trái: {baselineProgress.left}/{SCREENING_CONFIG.MIN_VALID_SAMPLES_BASELINE} · Mắt phải: {baselineProgress.right}/{SCREENING_CONFIG.MIN_VALID_SAMPLES_BASELINE}</p>}
             <p className="fullscreen-inst-sub" aria-live="polite">{baselineError || instructionText}</p>
             {!baselineError && <p className="fullscreen-inst-sub">{instructionSubtext}</p>}
+            {['COVER', 'TRACKING'].includes(coverState) && captureFeedback && (
+              <div
+                role="status"
+                style={{
+                  margin: '6px auto 0 auto',
+                  padding: '4px 12px',
+                  borderRadius: '16px',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: captureFeedback.includes('Đã nhận diện') ? 'rgba(46, 125, 50, 0.22)' : 'rgba(230, 81, 0, 0.22)',
+                  color: captureFeedback.includes('Đã nhận diện') ? '#1b5e20' : '#e65100',
+                  border: `1px solid ${captureFeedback.includes('Đã nhận diện') ? '#81c784' : '#ffb74d'}`,
+                }}
+              >
+                <span>{captureFeedback.includes('Đã nhận diện') ? '✅' : '👉'}</span>
+                <span>{captureFeedback}</span>
+              </div>
+            )}
+            {recentCaptureNotice && (
+              <div
+                role="status"
+                style={{
+                  margin: '6px auto 0 auto',
+                  padding: '4px 14px',
+                  borderRadius: '16px',
+                  fontSize: '0.84rem',
+                  fontWeight: 700,
+                  background: 'rgba(21, 101, 192, 0.25)',
+                  color: '#0d47a1',
+                  border: '1px solid #64b5f6',
+                }}
+              >
+                {recentCaptureNotice}
+              </div>
+            )}
             {coverState === 'BASELINE_RETRY' && <button type="button" className="btn btn-primary" style={{ pointerEvents: 'auto' }} onClick={startCoverTestProtocol}>Thu mẫu lại</button>}
             {/* Visual Eye Representation (Section 35.6) */}
             <div
@@ -1270,10 +1325,26 @@ export default function CoverTestStep({
                   Đã xử lý {sessionSaveState.sampleCount} mẫu. Máy chủ không lưu ảnh hoặc dữ liệu phiên kiểm tra.
             </p>}
             <p role="status">Đã chụp {capturedPairs}/6 cặp ảnh hai mắt lúc bỏ che.</p>
-            {capturedPairs < 6 && <p role="alert">
-              Còn thiếu {6 - capturedPairs} lần chụp. Phân tích lại chỉ gửi lại dữ liệu hiện có;
-              hãy đo lại để bổ sung ảnh, che kín đúng mắt rồi bỏ tay hoàn toàn khi có hiệu lệnh.
-            </p>}
+            {capturedPairs < 6 && (
+              <div
+                role="alert"
+                style={{
+                  background: 'rgba(239, 108, 0, 0.1)',
+                  border: '1px solid #ffb74d',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  marginTop: '8px',
+                  fontSize: '0.82rem',
+                  color: '#8c5a00',
+                  lineHeight: '1.5',
+                }}
+              >
+                <div><strong>⚠️ Còn thiếu {6 - capturedPairs} lần chụp:</strong> Có lượt thao tác tay hạ chưa dứt khoát hoặc chưa che đủ kín.</div>
+                <div style={{ marginTop: '4px', color: 'var(--text-muted)' }}>
+                  Nút <em>Phân tích lại</em> chỉ gửi lại dữ liệu hiện có; bạn nên chọn <strong>Đo lại Cover Test</strong> để bổ sung đầy đủ 6 lần chụp.
+                </div>
+              </div>
+            )}
 
             {sessionSaveState.status === 'error' && (
               <div style={{ background: 'rgba(242, 140, 123, 0.15)', border: '1px solid var(--color-warm-coral)', borderRadius: '8px', padding: '10px 14px' }}>
@@ -1295,19 +1366,19 @@ export default function CoverTestStep({
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '14px', maxWidth: '640px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', gap: '14px', maxWidth: '640px', margin: '0 auto', flexWrap: 'wrap' }}>
             <button
               type="button"
-              className="btn btn-secondary"
-              style={{ flex: 1 }}
+              className={capturedPairs < 6 ? 'btn btn-primary' : 'btn btn-secondary'}
+              style={{ flex: 1, minWidth: '220px' }}
               onClick={startCoverTestProtocol}
             >
-              🔄 Đo lại Cover Test
+              🔄 {capturedPairs < 6 ? 'Đo lại để đủ 6 lần chụp' : 'Đo lại Cover Test'}
             </button>
             <button
               type="button"
-              className="btn btn-primary btn-large"
-              style={{ flex: 2 }}
+              className={capturedPairs < 6 ? 'btn btn-secondary btn-large' : 'btn btn-primary btn-large'}
+              style={{ flex: 2, minWidth: '260px' }}
               onClick={() => onComplete?.({ ...coverSummary, aiResult: aiTransferState.result,
                 analysisStatus: aiTransferState.status, capturedPairs })}
             >

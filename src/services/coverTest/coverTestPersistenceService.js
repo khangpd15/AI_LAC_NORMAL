@@ -76,7 +76,8 @@ export async function saveCoverTestSession({
     const acknowledged = new Set(data?.aiResult?.analyzedEventIds || []);
     const multimodalConfirmed = modalities.includes('time_series') && modalities.includes('uncover_eye_images') &&
       capturedEvents.length > 0 && capturedEvents.every(event => acknowledged.has(event.eventId));
-    const aiResult = clientMetadata.protocolVersion === 'cover-test-multimodal-v2' && !multimodalConfirmed
+    const isFallbackTrajectory = Boolean(data?.aiResult?.fallbackMode === 'TRAJECTORY_CONSENSUS' || data?.aiResult?.modelSource === 'fps_10_15_model');
+    const aiResult = (clientMetadata.protocolVersion === 'cover-test-multimodal-v2' && !multimodalConfirmed && !isFallbackTrajectory)
       ? {
           ...data?.aiResult,
           status: 'INCONCLUSIVE', prediction: 'INCONCLUSIVE',
