@@ -6,8 +6,8 @@
 .remicare-about-root {
   width: 100%;
   min-height: 100vh;
-  background-color: #F7FFFD;
-  color: #123330;
+  background-color: #F8F9FA;
+  color: #1E293B;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   display: flex;
   flex-direction: column;
@@ -677,6 +677,7 @@
 .btn-cta-large-primary:hover {
   transform: translateY(-2px);
   background: #F0FDF9;
+  color: #05544F;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
 }
 

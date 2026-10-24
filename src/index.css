@@ -21,7 +21,7 @@
   --font-mono: 'JetBrains Mono', monospace;
 
   /* 3. Semantic Tokens — Default (Light: Warm White + Medical Clean) */
-  --bg-page: var(--color-warm-white);
+  --bg-page: #F8F9FA;
   --bg-surface: #ffffff;
   --bg-card: #ffffff;
   --bg-elevated: var(--color-pale-teal);
@@ -36,8 +36,8 @@
   --text-muted: #3a565c;
   --text-dim: #60797e;
 
-  --primary: var(--color-mint);
-  --primary-hover: var(--color-deep-green);
+  --primary: #00545D;
+  --primary-hover: #267A78;
   --primary-glow: rgba(0, 171, 155, 0.22);
 
   --accent-amber: var(--color-soft-amber);
@@ -46,13 +46,13 @@
   --accent-coral: var(--color-warm-coral);
   --accent-purple: var(--color-deep-teal);
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
   --radius-full: 9999px;
 
-  --shadow-sm: 0 1px 3px rgba(0, 84, 93, 0.06);
-  --shadow-md: 0 4px 16px rgba(0, 84, 93, 0.08);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06);
   --shadow-glow: 0 0 20px var(--primary-glow);
 
   --transition-fast: 0.15s ease;

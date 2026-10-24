@@ -1,10 +1,12 @@
 /* ==========================================================================
-   REMICARE AI — UNIFIED MASTER NAVBAR STYLES
-   Đồng bộ 1 mẫu Navbar duy nhất, chuẩn chỉ trên toàn bộ các trang:
-   Trang chủ • Trải nghiệm • Mô phỏng lác lé • Sàng lọc • Giới thiệu
-   Ghim cố định (Sticky) ở đỉnh màn hình, chuẩn trợ năng mọi thế hệ.
+   REMICARE AI — ECOKA STYLE NAVIGATION SYSTEM
+   Header • Sidebar Drawer (Left Slide-In) • Mobile Bottom Navigation Bar
+   Deep Teal (#00545D) & Mint (#00AB9B) • Clean Slate & White • Soft Neutrals
    ========================================================================== */
 
+/* --------------------------------------------------------------------------
+   1. TOP NAVIGATION HEADER
+   -------------------------------------------------------------------------- */
 .remicare-unified-navbar {
   position: sticky;
   top: 0;
@@ -12,28 +14,32 @@
   width: 100%;
   z-index: 1000;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1.5px solid rgba(0, 171, 155, 0.22);
-  box-shadow: 0 2px 16px rgba(8, 127, 120, 0.06);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-subtle, #E2E8F0);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
   transition: all 0.25s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+}
+
+[data-theme='dark'] .remicare-unified-navbar {
+  background: rgba(15, 23, 42, 0.94);
+  border-bottom-color: var(--border-subtle, #334155);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
 }
 
 .unified-navbar-inner {
-  max-width: 1240px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 10px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  min-height: 68px;
+  gap: 20px;
+  min-height: 64px;
 }
 
-/* --------------------------------------------------------------------------
-   BRAND & LOGO
-   -------------------------------------------------------------------------- */
+/* Brand */
 .unified-navbar-brand {
   display: flex;
   align-items: center;
@@ -44,22 +50,24 @@
   background: transparent;
   border: none;
   padding: 0;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  flex-shrink: 0;
 }
 
 .unified-navbar-brand:hover {
-  transform: scale(1.02);
+  transform: translateY(-1px);
+  opacity: 0.92;
 }
 
 .unified-brand-logo-img {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
   object-fit: contain;
   background: #FFFFFF;
   padding: 2px;
-  border: 1.5px solid rgba(0, 171, 155, 0.3);
-  box-shadow: 0 3px 12px rgba(0, 171, 155, 0.18);
+  border: 1px solid var(--border-subtle, #E2E8F0);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
   flex-shrink: 0;
 }
 
@@ -71,27 +79,30 @@
 }
 
 .unified-brand-title {
-  font-size: 1.35rem;
-  font-weight: 900;
-  color: #087F78;
-  letter-spacing: -0.3px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-heading, #0F172A);
+  letter-spacing: -0.4px;
 }
 
 .unified-brand-subtitle {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  color: #00AB9B;
+  color: #00545D;
   letter-spacing: 1.2px;
   text-transform: uppercase;
 }
 
-/* --------------------------------------------------------------------------
-   NAV ITEMS LIST
-   -------------------------------------------------------------------------- */
+/* Desktop Nav Items */
+.unified-navbar-nav {
+  display: flex;
+  align-items: center;
+}
+
 .unified-navbar-items {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -101,45 +112,46 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 18px;
-  min-height: 44px;
+  padding: 9px 16px;
+  min-height: 42px;
   border-radius: 9999px;
   background: transparent;
-  border: 1.5px solid transparent;
-  color: #2D4A47;
-  font-size: 0.94rem;
-  font-weight: 700;
+  border: 1px solid transparent;
+  color: var(--text-muted, #64748B);
+  font-size: 0.92rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.22s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
   font-family: inherit;
   user-select: none;
 }
 
 .unified-nav-btn:hover {
-  background: rgba(0, 171, 155, 0.08);
-  color: #00AB9B;
-  border-color: rgba(0, 171, 155, 0.25);
+  background: var(--bg-elevated, #E1F4F0);
+  color: #00545D;
+  border-color: #B8E8DF;
   transform: translateY(-1px);
 }
 
 .unified-nav-btn:focus-visible {
-  outline: 2px solid #00AB9B;
+  outline: 2px solid #00545D;
   outline-offset: 2px;
 }
 
-/* ACTIVE STATE */
+/* Active State */
 .unified-nav-btn.active {
-  background: linear-gradient(135deg, #00AB9B 0%, #087F78 100%);
-  color: #FFFFFF;
-  border-color: #00AB9B;
-  box-shadow: 0 4px 16px rgba(0, 171, 155, 0.35);
+  background: #E1F4F0;
+  color: #00545D;
+  border-color: #B8E8DF;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 84, 93, 0.12);
 }
 
-.unified-nav-btn.active:hover {
-  background: linear-gradient(135deg, #00C7B4 0%, #066B65 100%);
-  color: #FFFFFF;
-  transform: translateY(-1px);
+[data-theme='dark'] .unified-nav-btn.active {
+  background: rgba(0, 171, 155, 0.16);
+  border-color: rgba(0, 171, 155, 0.35);
+  color: #B8E8DF;
 }
 
 .unified-nav-icon {
@@ -150,71 +162,648 @@
 }
 
 .unified-nav-badge-new {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 800;
-  background: #00FFEA;
-  color: #04221D;
+  background: #00AB9B;
+  color: #FFFFFF;
   padding: 2px 7px;
   border-radius: 9999px;
-  margin-left: 4px;
-  letter-spacing: 0.3px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  margin-left: 2px;
+  letter-spacing: 0.4px;
 }
 
-.unified-nav-btn.active .unified-nav-badge-new {
-  background: #FFFFFF;
-  color: #087F78;
+/* Right Actions */
+.unified-navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navbar-quick-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  min-height: 40px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #00AB9B 0%, #087F78 100%);
+  color: #FFFFFF;
+  border: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 12px rgba(0, 171, 155, 0.3);
+  white-space: nowrap;
+}
+
+.navbar-quick-cta:hover {
+  background: linear-gradient(135deg, #00C7B4 0%, #066B65 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 16px rgba(0, 171, 155, 0.42);
+}
+
+.navbar-quick-cta .cta-arrow {
+  transition: transform 0.2s ease;
+}
+
+.navbar-quick-cta:hover .cta-arrow {
+  transform: translateX(3px);
+}
+
+.care-theme-toggle {
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle, #E2E8F0);
+  background: var(--bg-surface, #FFFFFF);
+  color: var(--text-heading, #0F172A);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.care-theme-toggle:hover {
+  border-color: #00545D;
+  color: #00545D;
+  transform: scale(1.05);
+}
+
+/* Hamburger button */
+.navbar-hamburger-btn {
+  display: none;
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, #E2E8F0);
+  background: var(--bg-surface, #FFFFFF);
+  color: var(--text-heading, #0F172A);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.navbar-hamburger-btn:hover {
+  border-color: #00545D;
+  color: #00545D;
+}
+
+.hamburger-box {
+  width: 20px;
+  height: 16px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hamburger-inner {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background-color: currentColor;
+  border-radius: 2px;
+  position: relative;
+  transition: all 0.25s ease;
+}
+
+.hamburger-box::before,
+.hamburger-box::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 2px;
+  background-color: currentColor;
+  border-radius: 2px;
+  transition: all 0.25s ease;
+}
+
+.hamburger-inner.is-active {
+  opacity: 0;
+}
+
+.hamburger-inner.is-active ~ .hamburger-box::before,
+.navbar-hamburger-btn[aria-expanded='true'] .hamburger-box::before {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.navbar-hamburger-btn[aria-expanded='true'] .hamburger-inner {
+  opacity: 0;
+}
+
+.navbar-hamburger-btn[aria-expanded='true'] .hamburger-box::after {
+  transform: translateY(-7px) rotate(-45deg);
 }
 
 /* --------------------------------------------------------------------------
-   RESPONSIVE DESIGN (TABLET & MOBILE)
+   2. SIDEBAR / NAVIGATION DRAWER (SLIDE-IN FROM LEFT)
    -------------------------------------------------------------------------- */
-@media (max-width: 960px) {
-  .unified-navbar-inner {
-    padding: 8px 16px;
-    gap: 12px;
+.remicare-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.remicare-drawer-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.remicare-sidebar-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 320px;
+  max-width: 86vw;
+  background: var(--bg-surface, #FFFFFF);
+  z-index: 1101;
+  transform: translateX(-100%);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 8px 0 32px rgba(15, 23, 42, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+[data-theme='dark'] .remicare-sidebar-drawer {
+  background: #1E293B;
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.4);
+}
+
+.remicare-sidebar-drawer.is-open {
+  transform: translateX(0);
+}
+
+/* Drawer Header */
+.drawer-header {
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-subtle, #E2E8F0);
+}
+
+.drawer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.drawer-logo-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  object-fit: contain;
+  border: 1px solid var(--border-subtle, #E2E8F0);
+}
+
+.drawer-brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-brand-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-heading, #0F172A);
+  line-height: 1.2;
+}
+
+.drawer-brand-sub {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748B);
+}
+
+.drawer-close-btn {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle, #E2E8F0);
+  background: var(--bg-page, #F8F9FA);
+  color: var(--text-heading, #0F172A);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.drawer-close-btn:hover {
+  background: #E1F4F0;
+  border-color: #00545D;
+  color: #00545D;
+  transform: scale(1.05);
+}
+
+/* Drawer Body */
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.drawer-section-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--text-dim, #94A3B8);
+  padding: 0 8px;
+}
+
+.drawer-nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.drawer-nav-item {
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: transparent;
+  border: 1.5px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-main, #1E293B);
+}
+
+.drawer-nav-item:hover {
+  background: var(--bg-elevated, #E1F4F0);
+  border-color: #B8E8DF;
+  color: #00545D;
+  transform: translateX(3px);
+}
+
+.drawer-nav-item.is-active {
+  background: #E1F4F0;
+  border-color: #B8E8DF;
+  border-left: 3.5px solid #00545D;
+  color: #00545D;
+  box-shadow: 0 2px 8px rgba(0, 84, 93, 0.08);
+}
+
+[data-theme='dark'] .drawer-nav-item.is-active {
+  background: rgba(0, 171, 155, 0.15);
+  border-color: rgba(0, 171, 155, 0.35);
+  border-left: 3.5px solid #00AB9B;
+  color: #B8E8DF;
+}
+
+.drawer-item-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--bg-page, #F8F9FA);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.drawer-nav-item.is-active .drawer-item-icon-box {
+  background: #00545D;
+  color: #FFFFFF;
+}
+
+.drawer-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.drawer-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.drawer-item-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: inherit;
+  line-height: 1.3;
+}
+
+.drawer-item-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  background: #00AB9B;
+  color: #FFFFFF;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.drawer-item-desc {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--text-muted, #64748B);
+  line-height: 1.3;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drawer-item-arrow {
+  font-size: 1.2rem;
+  color: var(--text-dim, #94A3B8);
+  font-weight: 400;
+}
+
+.drawer-card-box {
+  margin-top: auto;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #E1F4F0 0%, #D2EFEB 100%);
+  border: 1px solid #B8E8DF;
+  color: #00545D;
+}
+
+[data-theme='dark'] .drawer-card-box {
+  background: rgba(0, 171, 155, 0.12);
+  border-color: rgba(0, 171, 155, 0.25);
+  color: #B8E8DF;
+}
+
+.drawer-card-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #087F78;
+  margin-bottom: 4px;
+}
+
+.drawer-card-box h4 {
+  font-size: 0.92rem;
+  font-weight: 800;
+  margin: 0 0 4px;
+  color: inherit;
+}
+
+.drawer-card-box p {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  margin: 0;
+  color: inherit;
+  opacity: 0.9;
+}
+
+/* Drawer Footer */
+.drawer-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border-subtle, #E2E8F0);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-surface, #FFFFFF);
+}
+
+[data-theme='dark'] .drawer-footer {
+  background: #1E293B;
+}
+
+.drawer-cta-btn {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #00AB9B 0%, #087F78 100%);
+  color: #FFFFFF;
+  border: none;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 171, 155, 0.32);
+}
+
+.drawer-cta-btn:hover {
+  background: linear-gradient(135deg, #00C7B4 0%, #066B65 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 171, 155, 0.42);
+}
+
+.drawer-footer-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.drawer-footer-version {
+  font-size: 0.72rem;
+  color: var(--text-dim, #94A3B8);
+  font-weight: 500;
+}
+
+.drawer-theme-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle, #E2E8F0);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748B);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.drawer-theme-btn:hover {
+  border-color: #00545D;
+  color: #00545D;
+}
+
+/* --------------------------------------------------------------------------
+   3. MOBILE BOTTOM NAVIGATION BAR (FIXED BOTTOM)
+   -------------------------------------------------------------------------- */
+.remicare-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 990;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-top: 1px solid var(--border-subtle, #E2E8F0);
+  box-shadow: 0 -2px 14px rgba(15, 23, 42, 0.06);
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+[data-theme='dark'] .remicare-bottom-nav {
+  background: rgba(15, 23, 42, 0.96);
+  border-top-color: var(--border-subtle, #334155);
+  box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.3);
+}
+
+.bottom-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 4px 2px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748B;
+  transition: all 0.22s ease;
+  border-radius: 12px;
+  position: relative;
+  text-decoration: none;
+  font-family: inherit;
+  user-select: none;
+}
+
+[data-theme='dark'] .bottom-nav-item {
+  color: #94A3B8;
+}
+
+.bottom-nav-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.22s ease;
+}
+
+.bottom-nav-label {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 3px;
+  line-height: 1.15;
+  transition: color 0.2s ease, font-weight 0.2s ease;
+  white-space: nowrap;
+}
+
+/* Hover */
+.bottom-nav-item:hover {
+  color: #00545D;
+}
+
+/* Active State */
+.bottom-nav-item.active {
+  color: #00545D;
+}
+
+.bottom-nav-item.active .bottom-nav-icon-wrap {
+  transform: translateY(-2px) scale(1.12);
+  color: #00545D;
+}
+
+.bottom-nav-item.active .bottom-nav-label {
+  color: #00545D;
+  font-weight: 700;
+}
+
+[data-theme='dark'] .bottom-nav-item:hover,
+[data-theme='dark'] .bottom-nav-item.active,
+[data-theme='dark'] .bottom-nav-item.active .bottom-nav-icon-wrap,
+[data-theme='dark'] .bottom-nav-item.active .bottom-nav-label {
+  color: #00AB9B;
+}
+
+/* Active indicator pill behind icon */
+.bottom-nav-item.active::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  width: 32px;
+  height: 24px;
+  border-radius: 12px;
+  background: #E1F4F0;
+  z-index: -1;
+  opacity: 0.95;
+}
+
+[data-theme='dark'] .bottom-nav-item.active::before {
+  background: rgba(0, 171, 155, 0.22);
+}
+
+/* --------------------------------------------------------------------------
+   4. RESPONSIVE BREAKPOINTS
+   -------------------------------------------------------------------------- */
+@media (max-width: 992px) {
+  .unified-navbar-nav .unified-nav-btn {
+    padding: 8px 12px;
+    font-size: 0.86rem;
   }
-  .unified-brand-subtitle {
+  .navbar-quick-cta {
     display: none;
-  }
-  .unified-nav-btn {
-    padding: 8px 14px;
-    font-size: 0.88rem;
-    gap: 6px;
   }
 }
 
 @media (max-width: 768px) {
-  .unified-navbar-items {
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    max-width: 100%;
-    padding: 4px 0;
+  /* On mobile: Hide desktop navigation links */
+  .unified-navbar-nav {
+    display: none !important;
   }
-  .unified-navbar-items::-webkit-scrollbar {
-    display: none;
-  }
-  .unified-nav-btn {
-    padding: 8px 12px;
-    font-size: 0.84rem;
-  }
-}
 
-@media (max-width: 540px) {
+  /* Show hamburger button in header */
+  .navbar-hamburger-btn {
+    display: inline-flex !important;
+  }
+
+  /* Show bottom navigation bar */
+  .remicare-bottom-nav {
+    display: block;
+  }
+
+  .unified-navbar-inner {
+    padding: 8px 16px;
+    min-height: 56px;
+  }
+
   .unified-brand-title {
     font-size: 1.15rem;
   }
-  .unified-brand-logo-img {
-    width: 38px;
-    height: 38px;
-  }
-  .unified-nav-btn {
-    padding: 6px 10px;
-    font-size: 0.8rem;
-    min-height: 40px;
-  }
-  .unified-nav-badge-new {
+
+  .unified-brand-subtitle {
     display: none;
+  }
+
+  .unified-brand-logo-img {
+    width: 36px;
+    height: 36px;
   }
 }
