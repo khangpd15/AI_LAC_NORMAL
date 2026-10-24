@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { checkVideoLightingAndBlur } from '../../services/positionCalibrationService.js';
-import { getCoverCycleTiming } from '../../services/coverTestTimeline.js';
+import { COVER_PHASE_MS, isCoverPhaseComplete } from '../../services/coverTestTimeline.js';
+import { createCoverTestCues } from '../../services/coverTestCues.js';
+import audioService from '../../services/audioService.js';
 import { createCoverBaselineBuffer, isCoverFrameInPhase } from '../../services/coverTestBaselineBuffer.js';
 import { coverTestGuideVideo } from '../../content/coverTestGuideVideo.js';
 import AudioButton from '../audio/AudioButton';
@@ -59,6 +61,8 @@ export default function CoverTestStep({
   frameConsumerRef,
 }) {
   const imageCaptureAttemptedRef = useRef(false);
+  const cuesRef = useRef(null);
+  useEffect(() => () => { cuesRef.current?.close(); audioService.stop(); }, []);
   // Master State Machine:
   // 'IDLE' | 'PREPARING' | 'BASELINE' | 'COVER' | 'UNCOVER' | 'TRACKING' | 'CYCLE_COMPLETE' | 'NEXT_CYCLE' | 'FINISHED'
   const [coverState, setCoverState] = useState('IDLE');
@@ -167,11 +171,9 @@ export default function CoverTestStep({
     if (!summary || hasSentAiTransferRef.current) return;
     hasSentAiTransferRef.current = true;
     setAiTransferState({
-      status: 'success',
-      result: { status: 'INCONCLUSIVE', prediction: 'INCONCLUSIVE',
-        reason: 'AI_RESULT_UNAVAILABLE', model: { loaded: false },
-        notice: 'Chưa nhận được kết quả AI Cover Test. Bác sĩ cần đánh giá phiên đo này.' },
-      error: null,
+      status: 'error',
+      result: null,
+      error: 'Chưa nhận được kết quả phân tích từ máy chủ. Hãy thử phân tích lại bên dưới.',
       detail: null,
     });
   }, []);
@@ -227,9 +229,9 @@ export default function CoverTestStep({
         signal: abortControllerRef.current?.signal,
       });
 
-      if (result.saved && result.success) {
+      if (result.success) {
         setSessionSaveState({
-          status: 'saved',
+          status: result.saved ? 'saved' : 'processed',
           sessionId: targetSessionId,
           sessionPath: result.storageRoot,
           sampleCount: totalSamples,
@@ -284,6 +286,7 @@ export default function CoverTestStep({
 
   const retrySessionSave = useCallback(() => {
     hasSavedSessionRef.current = false;
+    hasSentAiTransferRef.current = false;
     persistSessionSampling(canonicalSessionId, accumulatedCyclesRef.current, coverSummary);
   }, [canonicalSessionId, coverSummary, persistSessionSampling]);
 
@@ -387,6 +390,7 @@ export default function CoverTestStep({
   const timerDisplay = `${elapsedSecFormatted}s`;
 
   const invalidateActiveRun = useCallback(() => {
+    audioService.stop();
     isAbortedRef.current = true;
     protocolStartRef.current = null;
     phaseFrameHandlerRef.current = null;
@@ -458,7 +462,6 @@ export default function CoverTestStep({
       speechText = null,
       baselineData = null,
       cycleNum,
-      endAt = null,
     }) => {
       return new Promise((resolve) => {
         const phaseRunToken = activeRunTokenRef.current;
@@ -489,8 +492,10 @@ export default function CoverTestStep({
         setLiveSampleCount(0);
         setLiveDisplacement(0);
 
-        if (speechText && speak) {
-          speak(speechText);
+        let speechFinished = !speechText || !speak || !isVoiceEnabled;
+        if (!speechFinished) Promise.resolve(speak(speechText)).catch(() => false).finally(() => { speechFinished = true; });
+        if (isVoiceEnabled && (state === 'COVER' || state === 'TRACKING')) {
+          cuesRef.current?.play(state === 'TRACKING' ? 'uncover' : 'cover');
         }
 
         const buffer = [];
@@ -574,9 +579,9 @@ export default function CoverTestStep({
           const baseline = collectingBaseline ? baselineBufferRef.current.read(now) : null;
           const baselineReady = baseline && validateBaselinePair(baseline).isValid &&
             (!positionReportRef.current || positionReportRef.current.status === 'READY');
-          const phaseRemaining = endAt == null ? durationMs - elapsed : endAt - now;
+          const phaseRemaining = durationMs - elapsed;
           const remainingSec = Math.max(0, Math.ceil(phaseRemaining / 1000));
-          if (protocolStartRef.current != null) setProtocolSecond(Math.min(40, Math.floor((now - protocolStartRef.current) / 1000)));
+          if (protocolStartRef.current != null) setProtocolSecond(Math.floor((now - protocolStartRef.current) / 1000));
 
           if (remainingSec !== prevSec) {
             prevSec = remainingSec;
@@ -612,7 +617,7 @@ export default function CoverTestStep({
             }
           }
 
-          if (phaseRemaining <= 0 || (state === 'BASELINE' && baselineReady)) {
+          if (isCoverPhaseComplete(elapsed, durationMs, speechFinished) || (state === 'BASELINE' && baselineReady)) {
             try {
               if (state === 'BASELINE' || state === 'PREPARING') {
                 finish(baselineBufferRef.current.read(now));
@@ -650,6 +655,9 @@ export default function CoverTestStep({
 
   // Automated 3-cycle runner
   const startCoverTestProtocol = async () => {
+    audioService.stop();
+    cuesRef.current ||= createCoverTestCues();
+    if (isVoiceEnabled) cuesRef.current.unlock();
     invalidateActiveRun();
     setBaselineError(null);
     baselineBufferRef.current = createCoverBaselineBuffer();
@@ -680,25 +688,19 @@ export default function CoverTestStep({
     setProtocolSecond(0);
     imageCaptureAttemptedRef.current = false;
     timeSeriesRecorderRef.current.reset(performance.now());
-    protocolStartRef.current = performance.now();
+    protocolStartRef.current = null;
     const instructions = [
-      'Chuẩn bị kiểm tra mắt nhé!',
-      'Giữ đầu thẳng, nhìn vào camera.',
-      'Giữ mắt nhìn vào điểm mục tiêu.',
-      'Dùng tay hoặc miếng che để che một mắt.',
-      'Không ấn vào mắt khi che.',
-      'Giữ mắt còn lại nhìn vào mục tiêu.',
-      'Khi có hiệu lệnh, bỏ che nhanh.',
-      'Sau đó đổi sang mắt bên kia.',
-      'Cố gắng giữ đầu không di chuyển.',
-      'Bắt đầu kiểm tra. Hãy làm theo hướng dẫn nhé!',
+      'Giữ đầu thẳng, mở cả hai mắt và nhìn vào chấm tròn.',
+      'Chờ hiệu lệnh rồi che mắt được yêu cầu. Không ấn vào mắt.',
+      'Khi nghe hai tiếng bíp hoặc thấy chữ Bỏ che, bỏ tay ra ngay.',
+      'Lặp lại ba lần mỗi bên. Bây giờ chuẩn bị bắt đầu.',
     ];
     let baselines;
     for (let second = 0; second < instructions.length; second++) {
       baselines = await executePhase({
         state: 'PREPARING', title: 'Hướng dẫn thao tác', text: instructions[second],
         subtext: 'Để cả hai mắt mở trong phần hướng dẫn để camera kiểm tra.',
-        durationMs: 1000, endAt: protocolStartRef.current + (second + 1) * 1000,
+        durationMs: COVER_PHASE_MS.preparation,
         speechText: instructions[second], cycleNum: 1,
       });
       if (!runIsCurrent()) return;
@@ -727,7 +729,7 @@ export default function CoverTestStep({
     }
     currentBaselineRef.current = baselines;
     const sequenceStart = performance.now();
-    protocolStartRef.current = sequenceStart - 10000;
+    protocolStartRef.current = sequenceStart;
     // Do not let image encoding delay the timed instructions.
     captureScreeningFrame(videoRef.current, 'cover_test.jpg').then(artifact => {
       if (runIsCurrent()) onImageCaptured?.(artifact);
@@ -739,21 +741,20 @@ export default function CoverTestStep({
       setCycleIndex(c);
       cycleStartRef.current = performance.now();
       timeSeriesRecorderRef.current = createTimeSeriesRecorder(cycleStartRef.current, { fullRate: true });
-      const timing = getCoverCycleTiming(c);
       const leftText = c === 1 ? 'Che mắt trái, giữ mắt phải nhìn vào mục tiêu.'
         : c === 2 ? 'Tiếp tục che mắt trái, nhìn vào mục tiêu.'
         : 'Lần cuối, che mắt trái và nhìn vào mục tiêu.';
       await executePhase({
         state: 'COVER', title: 'Che mắt trái', text: leftText,
         subtext: 'Không ấn vào mắt. Giữ đầu yên.', coverEye: 'left',
-        durationMs: c === 1 ? 5000 : 4000,
-        endAt: sequenceStart + timing.uncoverLeftMs, speechText: leftText, cycleNum: c,
+        durationMs: COVER_PHASE_MS.cover,
+        speechText: 'Che mắt trái.', cycleNum: c,
       });
       if (!runIsCurrent()) return;
       const leftEyeAnalysis = await executePhase({
         state: 'TRACKING', title: 'Bỏ che!', text: 'Bỏ che mắt trái nhanh.',
         subtext: 'Tiếp tục nhìn vào mục tiêu, giữ đầu yên.', trackEye: 'left',
-        durationMs: 1000, endAt: sequenceStart + timing.coverRightMs,
+        durationMs: COVER_PHASE_MS.uncover,
         baselineData: baselines.leftBaseline, speechText: 'Bỏ che!', cycleNum: c,
       });
       if (!runIsCurrent()) return;
@@ -761,15 +762,14 @@ export default function CoverTestStep({
       await executePhase({
         state: 'COVER', title: 'Che mắt phải', text: rightText,
         subtext: 'Không ấn vào mắt. Giữ đầu yên.', coverEye: 'right',
-        durationMs: 4000, endAt: sequenceStart + timing.uncoverRightMs,
-        speechText: rightText, cycleNum: c,
+        durationMs: COVER_PHASE_MS.cover,
+        speechText: 'Che mắt phải.', cycleNum: c,
       });
       if (!runIsCurrent()) return;
       const rightEyeAnalysis = await executePhase({
         state: 'TRACKING', title: 'Bỏ che!', text: 'Bỏ che mắt phải nhanh.',
         subtext: c === 3 ? 'Đang ghi nhận phản ứng cuối và kiểm tra dữ liệu.' : 'Tiếp tục nhìn vào mục tiêu, giữ đầu yên.',
-        trackEye: 'right', durationMs: 1000,
-        endAt: sequenceStart + timing.endMs,
+        trackEye: 'right', durationMs: COVER_PHASE_MS.uncover,
         baselineData: baselines.rightBaseline, speechText: 'Bỏ che!', cycleNum: c,
       });
       if (!runIsCurrent()) return;
@@ -825,6 +825,10 @@ export default function CoverTestStep({
     setInstructionTitle('Đang kiểm tra dữ liệu');
     setInstructionText('Đã hoàn tất 3 chu kỳ che và bỏ che.');
     setInstructionSubtext('Vui lòng chờ trong giây lát.');
+    if (isVoiceEnabled) {
+      cuesRef.current?.play('complete');
+      speak?.('Đã kết thúc kiểm tra. Bạn có thể hạ tay và nghỉ.');
+    }
     await Promise.all([...pendingCropsRef.current]);
     if (!runIsCurrent()) return;
     for (const cycleRecord of pendingCycleRecords) {
@@ -918,7 +922,7 @@ export default function CoverTestStep({
             occluderEye={coveredEye}
             trackedEye={trackedEye}
             speak={speak}
-            voiceEnabled={isVoiceEnabled}
+            voiceEnabled={false}
           />
         </div>
 
@@ -942,7 +946,8 @@ export default function CoverTestStep({
             <span className="fullscreen-pill fullscreen-pill-active">
               {coverState === 'BASELINE_RETRY' ? 'Cần thử lại' : coverState === 'BASELINE'
                 ? '⏳ Đang thu mẫu mắt — giữ đầu yên'
-                : `⏱️ ${protocolSecond} / 40 giây · ${countdownSec}s`}
+                : coverState === 'PREPARING' ? `Hướng dẫn · ${countdownSec}s`
+                : `⏱️ ${protocolSecond}s · Bước này ${countdownSec}s`}
             </span>
             {!['PREPARING', 'BASELINE', 'BASELINE_RETRY'].includes(coverState) && <span className="fullscreen-pill" role="status">Đã chụp {capturedPairs} lần bỏ che</span>}
           </div>
@@ -1071,7 +1076,7 @@ export default function CoverTestStep({
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.2rem' }}>🔬</span>
                 <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-deep-teal)' }}>
-                  AI Transfer Experiment
+                  Phân tích Cover Test
                 </h4>
               </div>
               <span
@@ -1121,16 +1126,13 @@ export default function CoverTestStep({
                   {aiTransferState.error || 'Không thể kết nối tới hệ thống AI.'}
                 </div>
                 <p style={{ margin: '0 0 10px 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Vui lòng đảm bảo backend FastAPI đang hoạt động trên cổng được cấu hình (VITE_AI_BACKEND_URL).
+                  Kiểm tra kết nối mạng rồi thử phân tích lại phiên vừa đo.
                 </p>
                 <button
                   type="button"
                   className="btn btn-secondary"
                   style={{ fontSize: '0.82rem', padding: '5px 12px' }}
-                  onClick={() => {
-                    hasSentAiTransferRef.current = false;
-                    requestAiTransfer(coverSummary);
-                  }}
+                  onClick={retrySessionSave}
                 >
                   🔄 Thử lại gửi AI
                 </button>
@@ -1209,7 +1211,7 @@ export default function CoverTestStep({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-deep-teal)' }}>
-                💾 Dữ liệu nghiên cứu (Sampling Data)
+                Xử lý phiên kiểm tra
               </span>
               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                 {sessionSaveState.sessionId || canonicalSessionId}
@@ -1219,7 +1221,7 @@ export default function CoverTestStep({
             {sessionSaveState.status === 'saving' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                 <span className="spinner-small" aria-hidden="true" />
-                <span>Đang tự động lưu trữ sampling thô vào thư mục data/...</span>
+                <span>Đang gửi mẫu để phân tích tạm thời, không lưu trữ dữ liệu người dùng...</span>
               </div>
             )}
 
@@ -1234,10 +1236,14 @@ export default function CoverTestStep({
               </div>
             )}
 
+            {sessionSaveState.status === 'processed' && <p role="status">
+              Đã xử lý {sessionSaveState.sampleCount} mẫu. Máy chủ không lưu ảnh hoặc dữ liệu phiên kiểm tra.
+            </p>}
+
             {sessionSaveState.status === 'error' && (
               <div style={{ background: 'rgba(242, 140, 123, 0.15)', border: '1px solid var(--color-warm-coral)', borderRadius: '8px', padding: '10px 14px' }}>
                 <div style={{ color: '#8a1f12', fontWeight: 600, fontSize: '0.88rem', marginBottom: '4px' }}>
-                  ⚠️ Không thể lưu dữ liệu kiểm tra. Vui lòng thử lại.
+                  ⚠️ Chưa phân tích được phiên kiểm tra. Vui lòng thử lại.
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
                   {sessionSaveState.message || sessionSaveState.error}
@@ -1248,7 +1254,7 @@ export default function CoverTestStep({
                   style={{ fontSize: '0.8rem', padding: '4px 10px' }}
                   onClick={retrySessionSave}
                 >
-                  🔄 Thử lại lưu dữ liệu
+                  🔄 Phân tích lại
                 </button>
               </div>
             )}

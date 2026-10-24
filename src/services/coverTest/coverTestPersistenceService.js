@@ -98,7 +98,7 @@ export async function saveCoverTestSession({
       imagesSaved: data?.imagesSaved || 0,
       aiResult,
       multimodalConfirmed,
-      message: 'Dữ liệu chuyển động mắt đã được lưu trữ thành công.',
+      message: data?.saved ? 'Máy chủ đã lưu dữ liệu.' : 'Đã xử lý phiên kiểm tra, không lưu trữ dữ liệu.',
     };
   } catch (err) {
     if (err.name === 'AbortError') throw err;
@@ -119,7 +119,7 @@ export async function saveCoverTestSession({
         saved: false,
         sessionId,
         error: 'SERVER_REJECTED',
-        message: `Máy chủ từ chối lưu dữ liệu: ${errDetail}`,
+        message: `Máy chủ chưa xử lý được phiên kiểm tra: ${errDetail}`,
         detail: err.data,
       };
     }
@@ -129,7 +129,7 @@ export async function saveCoverTestSession({
       saved: false,
       sessionId,
       error: 'NETWORK_ERROR',
-      message: 'Không thể kết nối đến máy chủ lưu trữ. Vui lòng kiểm tra mạng và thử lại.',
+      message: 'Không thể kết nối đến máy chủ phân tích. Vui lòng kiểm tra mạng và thử lại.',
       detail: err.message,
     };
   }
