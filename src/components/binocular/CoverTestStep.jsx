@@ -681,7 +681,8 @@ export default function CoverTestStep({
       if (performance.now() >= baselineDeadline) {
         invalidateActiveRun();
         setBaselineError('Chưa thu đủ mẫu mắt ổn định. Hãy đặt điện thoại cố định, mở cả hai mắt, kiểm tra ánh sáng và thử lại.');
-        setCoverState('IDLE');
+        setInstructionTitle('Chưa thu đủ mẫu mắt');
+        setCoverState('BASELINE_RETRY');
         return;
       }
       baselines = await executePhase({
@@ -904,20 +905,21 @@ export default function CoverTestStep({
         <div className="fullscreen-top-bar">
           <div className="fullscreen-pills-row">
             <span className="fullscreen-pill">
-              {['PREPARING', 'BASELINE'].includes(coverState) ? 'Hướng dẫn & kiểm tra camera' : `Chu kỳ ${cycleIndex} / 3`}
+              {['PREPARING', 'BASELINE', 'BASELINE_RETRY'].includes(coverState) ? 'Kiểm tra camera' : `Chu kỳ ${cycleIndex} / 3`}
             </span>
             <span className="fullscreen-pill fullscreen-pill-active">
-              {coverState === 'BASELINE'
+              {coverState === 'BASELINE_RETRY' ? 'Cần thử lại' : coverState === 'BASELINE'
                 ? '⏳ Đang thu mẫu mắt — giữ đầu yên'
                 : `⏱️ ${protocolSecond} / 40 giây · ${countdownSec}s`}
             </span>
-            <span className="fullscreen-pill" role="status">Đã chụp {capturedPairs} lần bỏ che</span>
+            {!['PREPARING', 'BASELINE', 'BASELINE_RETRY'].includes(coverState) && <span className="fullscreen-pill" role="status">Đã chụp {capturedPairs} lần bỏ che</span>}
           </div>
 
           <div className="fullscreen-instruction-banner">
             <h1 className="fullscreen-inst-title">{instructionTitle}</h1>
-            <p className="fullscreen-inst-sub" aria-live="polite">{instructionText}</p>
-            <p className="fullscreen-inst-sub">{instructionSubtext}</p>
+            <p className="fullscreen-inst-sub" aria-live="polite">{baselineError || instructionText}</p>
+            {!baselineError && <p className="fullscreen-inst-sub">{instructionSubtext}</p>}
+            {coverState === 'BASELINE_RETRY' && <button type="button" className="btn btn-primary" style={{ pointerEvents: 'auto' }} onClick={startCoverTestProtocol}>Thu mẫu lại</button>}
             {/* Visual Eye Representation (Section 35.6) */}
             <div
               className="fullscreen-eye-visual"

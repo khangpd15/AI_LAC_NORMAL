@@ -138,6 +138,8 @@ export function useEyeTracking() {
     const extracted = extractEyeFeatures(lm, timestamp, {
       applySmoothing: qualityOptions.applySmoothing ?? true,
       coveredEye: qualityOptions.coveredEye || null,
+      videoWidth: results?.capturedFrame?.sourceWidth,
+      videoHeight: results?.capturedFrame?.sourceHeight,
     });
     if (results?.capturedFrame) {
       const { image: _image, ...frameMetadata } = results.capturedFrame;

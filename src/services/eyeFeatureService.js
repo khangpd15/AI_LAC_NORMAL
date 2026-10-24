@@ -590,16 +590,20 @@ export function extractEyeFeatures(landmarks, timestamp = performance.now(), opt
   const r_v2_top = lm[159] || rightTop;
   const r_v2_bot = lm[145] || rightBottom;
 
+  // MediaPipe normalizes x and y independently. Measure EAR in source pixels,
+  // otherwise portrait video makes open eyes appear closed.
+  const eyeDistance = (a, b) => Math.hypot(
+    (a.x - b.x) * frameWidth, (a.y - b.y) * frameHeight,
+  );
+
   const leftEar = (leftInner && leftOuter && l_v1_top && l_v1_bot && l_v2_top && l_v2_bot)
-    ? (Math.hypot(l_v1_top.x - l_v1_bot.x, l_v1_top.y - l_v1_bot.y) +
-       Math.hypot(l_v2_top.x - l_v2_bot.x, l_v2_top.y - l_v2_bot.y)) /
-      (2 * Math.max(0.001, Math.hypot(leftOuter.x - leftInner.x, leftOuter.y - leftInner.y)))
+    ? (eyeDistance(l_v1_top, l_v1_bot) + eyeDistance(l_v2_top, l_v2_bot)) /
+      (2 * Math.max(0.001, eyeDistance(leftOuter, leftInner)))
     : 0.30;
 
   const rightEar = (rightInner && rightOuter && r_v1_top && r_v1_bot && r_v2_top && r_v2_bot)
-    ? (Math.hypot(r_v1_top.x - r_v1_bot.x, r_v1_top.y - r_v1_bot.y) +
-       Math.hypot(r_v2_top.x - r_v2_bot.x, r_v2_top.y - r_v2_bot.y)) /
-      (2 * Math.max(0.001, Math.hypot(rightOuter.x - rightInner.x, rightOuter.y - rightInner.y)))
+    ? (eyeDistance(r_v1_top, r_v1_bot) + eyeDistance(r_v2_top, r_v2_bot)) /
+      (2 * Math.max(0.001, eyeDistance(rightOuter, rightInner)))
     : 0.30;
 
   const isBlinkLeft = leftEar < BLINK_CONFIG.EAR_THRESHOLD;

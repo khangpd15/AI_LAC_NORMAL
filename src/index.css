@@ -59,6 +59,35 @@
   --transition-normal: 0.25s ease;
 }
 
+/* Keep capture instructions readable on phones, including when audio is off. */
+@media (max-width: 768px) {
+  .fullscreen-test-mode .fullscreen-top-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .fullscreen-test-mode .fullscreen-pills-row {
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
+  .fullscreen-test-mode .fullscreen-pill {
+    font-size: 12px;
+    line-height: 1.3;
+    min-height: 0;
+    padding: 5px 7px;
+  }
+  .fullscreen-test-mode .fullscreen-inst-sub {
+    display: block !important;
+    font-size: 13px;
+    line-height: 1.35;
+    margin: 4px 0 0;
+  }
+  .fullscreen-test-mode .fullscreen-exit-btn,
+  .fullscreen-test-mode .fullscreen-top-bar .btn-sound {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 /* Base resets & typography hierarchy */
 * {
   box-sizing: border-box;
