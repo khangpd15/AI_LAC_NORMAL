@@ -616,12 +616,30 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .drawer-footer-version {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
+  color: var(--text-muted, #64748B);
+  font-weight: 600;
+  text-decoration: none;
+  line-height: 1.35;
+  transition: color 0.2s ease;
+}
+
+.drawer-footer-version:hover {
+  color: #00545D;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+[data-theme='dark'] .drawer-footer-version {
   color: var(--text-dim, #94A3B8);
-  font-weight: 500;
+}
+
+[data-theme='dark'] .drawer-footer-version:hover {
+  color: #00AB9B;
 }
 
 .drawer-theme-btn {

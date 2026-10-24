@@ -336,7 +336,13 @@ export default function AppNavbar({
           </button>
 
           <div className="drawer-footer-meta">
-            <span className="drawer-footer-version">RemiCare AI v2.4 • ECOKA Style</span>
+            <a
+              href="tel:0916973161"
+              className="drawer-footer-version"
+              title="Gọi 0916973161 - Phùng Đình Khang"
+            >
+              0916973161 - Phùng Đình Khang
+            </a>
             <button
               type="button"
               className="drawer-theme-btn"
