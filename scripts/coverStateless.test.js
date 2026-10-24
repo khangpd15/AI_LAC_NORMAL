@@ -18,7 +18,7 @@ test('stateless backend success is accepted without claiming data was saved', as
   } finally { globalThis.fetch = original; }
 });
 
-test('cover, uncover and completion use distinct locally generated cues', () => {
+test('cover, uncover and completion use distinct locally generated cues', async () => {
   const original = globalThis.window;
   const starts = [];
   class Context {
@@ -33,9 +33,9 @@ test('cover, uncover and completion use distinct locally generated cues', () => 
   try {
     const cues = createCoverTestCues();
     cues.unlock();
-    cues.play('cover'); assert.equal(starts.length, 1);
-    cues.play('uncover'); assert.equal(starts.length, 3);
-    cues.play('complete'); assert.equal(starts.length, 6);
+    await cues.play('cover'); assert.equal(starts.length, 1);
+    await cues.play('uncover'); assert.equal(starts.length, 3);
+    await cues.play('complete'); assert.equal(starts.length, 6);
     cues.close();
   } finally { globalThis.window = original; }
 });

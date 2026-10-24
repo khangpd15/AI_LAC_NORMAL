@@ -62,6 +62,23 @@ export default function CoverTestStep({
 }) {
   const imageCaptureAttemptedRef = useRef(false);
   const cuesRef = useRef(null);
+  const voiceEnabledRef = useRef(isVoiceEnabled);
+  voiceEnabledRef.current = isVoiceEnabled;
+  const [cueError, setCueError] = useState(false);
+  const playCue = (kind) => {
+    if (!voiceEnabledRef.current) return;
+    cuesRef.current ||= createCoverTestCues();
+    cuesRef.current.play(kind).then(ok => setCueError(!ok)).catch(() => setCueError(true));
+  };
+  const testCue = () => {
+    cuesRef.current ||= createCoverTestCues();
+    if (!voiceEnabledRef.current) toggleSound?.();
+    cuesRef.current.play('uncover').then(ok => setCueError(!ok)).catch(() => setCueError(true));
+  };
+  const handleToggleSound = () => {
+    if (!voiceEnabledRef.current || cueError) testCue();
+    else { cuesRef.current?.cancel(); toggleSound?.(); }
+  };
   useEffect(() => () => { cuesRef.current?.close(); audioService.stop(); }, []);
   // Master State Machine:
   // 'IDLE' | 'PREPARING' | 'BASELINE' | 'COVER' | 'UNCOVER' | 'TRACKING' | 'CYCLE_COMPLETE' | 'NEXT_CYCLE' | 'FINISHED'
@@ -391,6 +408,7 @@ export default function CoverTestStep({
 
   const invalidateActiveRun = useCallback(() => {
     audioService.stop();
+    cuesRef.current?.cancel();
     isAbortedRef.current = true;
     protocolStartRef.current = null;
     phaseFrameHandlerRef.current = null;
@@ -494,8 +512,8 @@ export default function CoverTestStep({
 
         let speechFinished = !speechText || !speak || !isVoiceEnabled;
         if (!speechFinished) Promise.resolve(speak(speechText)).catch(() => false).finally(() => { speechFinished = true; });
-        if (isVoiceEnabled && (state === 'COVER' || state === 'TRACKING')) {
-          cuesRef.current?.play(state === 'TRACKING' ? 'uncover' : 'cover');
+        if (state === 'COVER' || state === 'TRACKING') {
+          playCue(state === 'TRACKING' ? 'uncover' : 'cover');
         }
 
         const buffer = [];
@@ -826,7 +844,7 @@ export default function CoverTestStep({
     setInstructionText('Đã hoàn tất 3 chu kỳ che và bỏ che.');
     setInstructionSubtext('Vui lòng chờ trong giây lát.');
     if (isVoiceEnabled) {
-      cuesRef.current?.play('complete');
+      playCue('complete');
       speak?.('Đã kết thúc kiểm tra. Bạn có thể hạ tay và nghỉ.');
     }
     await Promise.all([...pendingCropsRef.current]);
@@ -954,6 +972,7 @@ export default function CoverTestStep({
 
           <div className="fullscreen-instruction-banner">
             <h1 className="fullscreen-inst-title">{instructionTitle}</h1>
+            {cueError && <p className="fullscreen-inst-sub" role="alert">Chưa phát được tiếng bíp. Chạm nút loa để bật lại; làm theo hiệu lệnh trên màn hình.</p>}
             {['PREPARING', 'BASELINE', 'BASELINE_RETRY'].includes(coverState) && baselineProgress &&
               <p className="fullscreen-inst-sub" role="status">Mẫu mắt trái: {baselineProgress.left}/{SCREENING_CONFIG.MIN_VALID_SAMPLES_BASELINE} · Mắt phải: {baselineProgress.right}/{SCREENING_CONFIG.MIN_VALID_SAMPLES_BASELINE}</p>}
             <p className="fullscreen-inst-sub" aria-live="polite">{baselineError || instructionText}</p>
@@ -995,7 +1014,7 @@ export default function CoverTestStep({
             <button
               type="button"
               className={`btn-sound ${isVoiceEnabled ? 'sound-on' : 'sound-off'}`}
-              onClick={toggleSound}
+              onClick={handleToggleSound}
               title={isVoiceEnabled ? 'Tắt âm' : 'Bật âm'}
               style={{ pointerEvents: 'auto' }}
             >
@@ -1293,12 +1312,14 @@ export default function CoverTestStep({
           <button
             type="button"
             className={`btn-sound ${isVoiceEnabled ? 'sound-on' : 'sound-off'}`}
-            onClick={toggleSound}
+            onClick={handleToggleSound}
             title={isVoiceEnabled ? 'Tắt âm hướng dẫn' : 'Bật âm hướng dẫn'}
           >
             {isVoiceEnabled ? '🔊 Âm thanh BẬT' : '🔇 Âm thanh TẮT'}
           </button>
         </div>
+        <button type="button" className="btn btn-secondary" onClick={testCue}>🔊 Thử tiếng bíp bỏ che</button>
+        {cueError && <p role="alert">Chưa phát được tiếng bíp. Bấm “Thử tiếng bíp bỏ che” để bật âm thanh trình duyệt.</p>}
         <AudioButton text="Dạ, cô chú cứ bình tĩnh nghen. Mình ngồi thẳng người, nhìn vào chấm tròn ở giữa màn hình và làm theo hướng dẫn từng bước nha." onActivate={() => { if (!isVoiceEnabled) toggleSound?.(); }} />
       </div>
 
