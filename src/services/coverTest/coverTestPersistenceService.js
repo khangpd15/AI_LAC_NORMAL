@@ -82,10 +82,10 @@ export async function saveCoverTestSession({
           status: 'INCONCLUSIVE', prediction: 'INCONCLUSIVE',
           reason: data?.aiResult?.reason || (capturedEvents.length ? 'MULTIMODAL_ANALYSIS_UNCONFIRMED' : 'UNCOVER_IMAGES_UNAVAILABLE'),
           classProbabilities: null, confidence: null, isReliable: false,
-          notice: capturedEvents.length
+          notice: data?.aiResult?.notice || (capturedEvents.length
             ? 'Chưa có xác nhận backend đã phân tích đồng thời ảnh bỏ che và chuỗi chuyển động.'
-            : 'Chưa ghi được ảnh hai mắt lúc bỏ che. Cần thực hiện lại để phân tích kết hợp.',
-          model: { loaded: false },
+            : 'Chưa ghi được ảnh hai mắt lúc bỏ che. Cần thực hiện lại để phân tích kết hợp.'),
+          model: data?.aiResult?.model || { loaded: false },
         }
       : data?.aiResult || null;
     return {
@@ -98,6 +98,7 @@ export async function saveCoverTestSession({
       imagesSaved: data?.imagesSaved || 0,
       aiResult,
       multimodalConfirmed,
+      capturedPairs: capturedEvents.length,
       message: data?.saved ? 'Máy chủ đã lưu dữ liệu.' : 'Đã xử lý phiên kiểm tra, không lưu trữ dữ liệu.',
     };
   } catch (err) {

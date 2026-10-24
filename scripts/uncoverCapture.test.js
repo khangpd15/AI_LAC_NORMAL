@@ -43,6 +43,27 @@ test('hand or dark object evidence differs from a blink or missing calibration',
   assert.equal(classifyEyeVisibility(baseline, frame, baseline), 'VISIBLE');
   assert.equal(classifyEyeVisibility(baseline, { ...frame, palpebralHeight: 2 }, baseline), 'UNKNOWN');
   assert.equal(classifyEyeVisibility(baseline, frame, null), 'UNKNOWN');
+  assert.equal(classifyEyeVisibility({ pupilContrast: 2, dynamicRange: 10, stdDev: 3, mean: 170 },
+    { ...frame, palpebralHeight: 2 }, baseline), 'OCCLUDED');
+});
+
+test('slow phone confirms a real cover and keeps first clear frame through brief hand transition', () => {
+  for (const interval of [200, 400, 500]) {
+    const machine = new UncoverTransition();
+    machine.reset('left');
+    const update = (t, left) => machine.update({ timestampMs: t,
+      visibility: { left, right: 'VISIBLE' }, candidate: () => ({ frameId: t }) });
+    update(0, 'OCCLUDED'); update(interval, 'OCCLUDED');
+    assert.equal(update(interval * 2, 'VISIBLE'), null);
+    const event = update(interval * 3, 'VISIBLE');
+    assert.equal(event.timestampMs, interval * 2);
+    assert.equal(event.lastCoveredMs, interval);
+  }
+  const machine = new UncoverTransition();
+  arm(machine);
+  machine.update({ timestampMs: 260, visibility: { left: 'UNKNOWN', right: 'VISIBLE' }, candidate: () => null });
+  machine.update({ timestampMs: 300, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) });
+  assert.ok(machine.update({ timestampMs: 333, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) }));
 });
 test('encoding both crops does not replace capture timestamp with encoding completion', async () => {
   const canvas = { width: 32, height: 16, toBlob: cb => setTimeout(() => cb(new Blob(['jpeg'], { type: 'image/jpeg' })), 5) };

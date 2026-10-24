@@ -5,13 +5,15 @@ import { getEyeAnatomicalFrame } from '../cv/strabismusEngine.js';
 export function classifyEyeVisibility(patch, frame, baseline) {
   if (!patch || !frame || !baseline || frame.canthalWidth < 6) return 'UNKNOWN';
   const aperture = frame.palpebralHeight / frame.canthalWidth;
-  if (aperture < 0.12) return 'UNKNOWN'; // a blink alone must not arm a capture
   const contrast = Math.max(9, baseline.pupilContrast * 0.4);
-  if (patch.pupilContrast >= contrast && patch.dynamicRange >= 28 && patch.stdDev >= 10) return 'VISIBLE';
+  // Hidden-eye landmarks can collapse while a hand covers the eye. Evaluate
+  // pixel evidence first; lid aperture alone is never evidence of a cover.
   if (patch.pupilContrast < contrast * 0.7 &&
       (patch.dynamicRange < baseline.dynamicRange * 0.6 ||
        patch.stdDev < baseline.stdDev * 0.65 ||
        patch.mean > baseline.mean + 22 || patch.mean < baseline.mean - 25)) return 'OCCLUDED';
+  if (aperture < 0.12) return 'UNKNOWN';
+  if (patch.pupilContrast >= contrast && patch.dynamicRange >= 28 && patch.stdDev >= 10) return 'VISIBLE';
   return 'UNKNOWN';
 }
 
@@ -32,7 +34,7 @@ export class UncoverTransition {
   update({ timestampMs, visibility, candidate }) {
     if (this.done || !this.eye || !Number.isFinite(timestampMs) ||
         (this.lastTimestamp !== null && timestampMs <= this.lastTimestamp)) return null;
-    if (this.lastTimestamp !== null && timestampMs - this.lastTimestamp > 150) {
+    if (this.lastTimestamp !== null && timestampMs - this.lastTimestamp > 500) {
       this.coverStart = null;
       this.armed = false;
       this.candidate = null;
@@ -48,11 +50,18 @@ export class UncoverTransition {
     }
     if (visibility.left !== 'VISIBLE' || visibility.right !== 'VISIBLE') {
       this.coverStart = null;
-      this.armed = false;
+      // A hand passing away from an already-confirmed cover may briefly be
+      // ambiguous. Preserve evidence only while the other eye stays visible.
+      this.armed = this.armed && visibility[opposite] === 'VISIBLE' &&
+        timestampMs - this.lastCovered <= 500;
       this.candidate = null;
       return null;
     }
-    if (!this.armed) { this.coverStart = null; return null; }
+    if (!this.armed || (!this.candidate && timestampMs - this.lastCovered > 500)) {
+      this.armed = false;
+      this.coverStart = null;
+      return null;
+    }
     if (!this.candidate) {
       const image = candidate();
       if (image) this.candidate = { image, timestampMs, lastCoveredMs: this.lastCovered };

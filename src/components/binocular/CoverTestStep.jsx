@@ -114,6 +114,7 @@ export default function CoverTestStep({
   const pendingCropsRef = useRef(new Set());
   const cycleStartRef = useRef(0);
   const [capturedPairs, setCapturedPairs] = useState(0);
+  const captureFeedbackRef = useRef('');
 
   useEffect(() => {
     if (!frameConsumerRef) return;
@@ -536,6 +537,15 @@ export default function CoverTestStep({
           const observation = uncoverObserverRef.current?.observe(image, lm, captured.timestampMs, state === 'PREPARING' ? 'BASELINE' : state,
             () => !feats || !currentQuality?.faceDetected || !currentQuality?.irisValid ||
               currentQuality?.headPoseValid === false ? null : freezeEyePair(image, lm, metadata));
+          if (state === 'COVER') {
+            captureFeedbackRef.current = uncoverObserverRef.current?.transition.armed
+              ? 'Đã nhận diện che mắt. Giữ nguyên và chờ hiệu lệnh bỏ che.'
+              : 'Chưa xác nhận che mắt. Che kín mắt được yêu cầu, để mắt còn lại rõ trong camera.';
+          } else if (state === 'TRACKING') {
+            captureFeedbackRef.current = uncoverObserverRef.current?.transition.done
+              ? 'Đã nhận diện bỏ che. Giữ đầu yên để ghi phản ứng mắt.'
+              : 'Bỏ tay ra hoàn toàn để camera nhìn rõ cả hai mắt.';
+          }
           if (observation?.event) {
             const cycleStart = cycleStartRef.current;
             const pending = encodeEyePair(observation.event, cycleNum, cycleStart).then(({ images, metadata: event }) => {
@@ -612,6 +622,7 @@ export default function CoverTestStep({
             // Throttle React state telemetry updates to 4 Hz (every 250ms) to avoid 60 FPS re-render churn (Section 14)
             if (now - lastTelemetryUpdateRef.current >= 250) {
               lastTelemetryUpdateRef.current = now;
+              if (state === 'COVER' || state === 'TRACKING') setInstructionSubtext(captureFeedbackRef.current);
               if (baseline) {
                 setBaselineProgress({ left: baseline.leftBaseline.sampleCount, right: baseline.rightBaseline.sampleCount });
                 setInstructionSubtext(baselineFeedbackRef.current ||
@@ -1256,7 +1267,12 @@ export default function CoverTestStep({
             )}
 
             {sessionSaveState.status === 'processed' && <p role="status">
-              Đã xử lý {sessionSaveState.sampleCount} mẫu. Máy chủ không lưu ảnh hoặc dữ liệu phiên kiểm tra.
+                  Đã xử lý {sessionSaveState.sampleCount} mẫu. Máy chủ không lưu ảnh hoặc dữ liệu phiên kiểm tra.
+            </p>}
+            <p role="status">Đã chụp {capturedPairs}/6 cặp ảnh hai mắt lúc bỏ che.</p>
+            {capturedPairs < 6 && <p role="alert">
+              Còn thiếu {6 - capturedPairs} lần chụp. Phân tích lại chỉ gửi lại dữ liệu hiện có;
+              hãy đo lại để bổ sung ảnh, che kín đúng mắt rồi bỏ tay hoàn toàn khi có hiệu lệnh.
             </p>}
 
             {sessionSaveState.status === 'error' && (
@@ -1292,7 +1308,8 @@ export default function CoverTestStep({
               type="button"
               className="btn btn-primary btn-large"
               style={{ flex: 2 }}
-              onClick={() => onComplete?.(coverSummary)}
+              onClick={() => onComplete?.({ ...coverSummary, aiResult: aiTransferState.result,
+                analysisStatus: aiTransferState.status, capturedPairs })}
             >
               XEM KẾT QUẢ SÀNG LỌC ➜
             </button>
