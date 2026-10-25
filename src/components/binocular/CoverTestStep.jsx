@@ -604,8 +604,14 @@ export default function CoverTestStep({
               : rejection === 'HEAD_MOTION' ? 'Giữ đầu thẳng, tránh nghiêng hoặc quay đầu.'
               : rejection ? 'Chưa thấy rõ mống mắt. Điều chỉnh vị trí và ánh sáng.' : null;
           } else if (state === 'TRACKING' && trackEye) {
-            const tracked = createCoverFrame(feats, currentQuality, trackEye, captured.timestampMs, elapsed);
-            if (tracked.frame) buffer.push(tracked.frame);
+            const eyeVis = observation?.visibility?.[trackEye];
+            const isCurrentlyOccluded = eyeVis === 'OCCLUDED' || currentQuality?.eyeVisibility?.[trackEye] === 'OCCLUDED';
+            // Do not record while hand is covering the eye or before eye is confirmed visible
+            const isReadyForUncoverTrajectory = !isCurrentlyOccluded && (buffer.length > 0 || eyeVis === 'VISIBLE' || !observation);
+            if (isReadyForUncoverTrajectory) {
+              const tracked = createCoverFrame(observedFeatures, currentQuality, trackEye, captured.timestampMs, elapsed);
+              if (tracked.frame) buffer.push(tracked.frame);
+            }
           }
           phaseRecorder.processFrame(captured.timestampMs, state, observedFeatures,
             currentQuality, currentBaselineRef.current, trackEye, coverEye);

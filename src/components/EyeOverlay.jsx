@@ -28,6 +28,7 @@ export default function EyeOverlay({
   featuresRef = null,
   showRoi = true,
   showDebug: initialShowDebug = false,
+  coveredEye = null,
 }) {
   const canvasRef = useRef(null);
   const [showDebug, setShowDebug] = useState(initialShowDebug);
@@ -90,6 +91,17 @@ export default function EyeOverlay({
 
     const effectiveFeatures = featuresRef ? featuresRef.current : features;
 
+    // Detect if an eye is covered / occluded so we NEVER draw overlays on the hand!
+    const normCovered = (coveredEye || quality?.coveredEye)?.toLowerCase();
+    const leftOccluded = normCovered === 'left' ||
+      quality?.eyeVisibility?.left === 'OCCLUDED' ||
+      effectiveFeatures?.observedVisibility?.left === 'OCCLUDED' ||
+      (quality?.leftEyeDetected === false && quality?.faceDetected !== false);
+    const rightOccluded = normCovered === 'right' ||
+      quality?.eyeVisibility?.right === 'OCCLUDED' ||
+      effectiveFeatures?.observedVisibility?.right === 'OCCLUDED' ||
+      (quality?.rightEyeDetected === false && quality?.faceDetected !== false);
+
     // Canvas draw space = display pixels
     const cW = canvas.width;   // display width in physical px
     const cH = canvas.height;  // display height in physical px
@@ -110,10 +122,6 @@ export default function EyeOverlay({
     const lx = (nx) => nx * vW * coverScale + offsetX;
     const ly = (ny) => ny * vH * coverScale + offsetY;
 
-    // Keep w / h as aliases that helpers below use
-    const w = vW;
-    const h = vH;
-
     // Helper: draw single point
     const drawPoint = (pt, color, radius = 2.5) => {
       if (!pt || !Number.isFinite(pt.x) || !Number.isFinite(pt.y)) return;
@@ -121,26 +129,6 @@ export default function EyeOverlay({
       ctx.arc(lx(pt.x), ly(pt.y), radius * coverScale, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
-    };
-
-    // Helper: draw crosshair
-    const drawCrosshair = (pt, color, length = 7) => {
-      if (!pt || !Number.isFinite(pt.x) || !Number.isFinite(pt.y)) return;
-      const x = lx(pt.x);
-      const y = ly(pt.y);
-      const len = length * coverScale;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.2;
-
-      ctx.beginPath();
-      ctx.moveTo(x - len, y);
-      ctx.lineTo(x + len, y);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(x, y - len);
-      ctx.lineTo(x, y + len);
-      ctx.stroke();
     };
 
     // Helper: draw smooth closed contour using quadratic bezier curves
@@ -171,18 +159,23 @@ export default function EyeOverlay({
       ctx.stroke();
     };
 
-    // 1. Draw 16-point Anatomical Eye Contours — very subtle smooth curves
-    drawContour(LEFT_EYE_CONTOUR,  'rgba(255, 255, 255, 0.18)', 'rgba(255, 255, 255, 0.03)', 0.7);
-    drawContour(RIGHT_EYE_CONTOUR, 'rgba(255, 255, 255, 0.18)', 'rgba(255, 255, 255, 0.03)', 0.7);
+    // 1. Draw 16-point Anatomical Eye Contours — suppressed on occluded eye
+    if (!leftOccluded) {
+      drawContour(LEFT_EYE_CONTOUR,  'rgba(255, 255, 255, 0.18)', 'rgba(255, 255, 255, 0.03)', 0.7);
+    }
+    if (!rightOccluded) {
+      drawContour(RIGHT_EYE_CONTOUR, 'rgba(255, 255, 255, 0.18)', 'rgba(255, 255, 255, 0.03)', 0.7);
+    }
 
-    // 2. Canthal corners — tiny barely-visible dots only, no lines
+    // 2. Canthal corners — tiny barely-visible dots only, suppressed on occluded eye
     const lInner = landmarks[LANDMARKS.LEFT_INNER_CORNER];
     const lOuter = landmarks[LANDMARKS.LEFT_OUTER_CORNER];
     const rInner = landmarks[LANDMARKS.RIGHT_INNER_CORNER];
     const rOuter = landmarks[LANDMARKS.RIGHT_OUTER_CORNER];
-    [lInner, lOuter, rInner, rOuter].forEach((pt) => drawPoint(pt, 'rgba(255,255,255,0.25)', 1.0));
+    if (!leftOccluded) [lInner, lOuter].forEach((pt) => drawPoint(pt, 'rgba(255,255,255,0.25)', 1.0));
+    if (!rightOccluded) [rInner, rOuter].forEach((pt) => drawPoint(pt, 'rgba(255,255,255,0.25)', 1.0));
 
-    // 3. Iris — soft glint dot only (no crosshair, no bold ring)
+    // 3. Iris — soft glint dot only, suppressed on occluded eye
     const leftIris  = landmarks[LANDMARKS.LEFT_IRIS_CENTER];
     const rightIris = landmarks[LANDMARKS.RIGHT_IRIS_CENTER];
 
@@ -207,21 +200,23 @@ export default function EyeOverlay({
       ctx.fill();
     };
 
-    drawIrisGlint(leftIris);
-    drawIrisGlint(rightIris);
-
-    // Iris perimeter — very faint ring
-    if (LANDMARKS.LEFT_IRIS_PERIMETER) {
-      drawContour(LANDMARKS.LEFT_IRIS_PERIMETER,  'rgba(255, 255, 255, 0.12)', null, 0.6);
+    if (!leftOccluded) {
+      drawIrisGlint(leftIris);
+      if (LANDMARKS.LEFT_IRIS_PERIMETER) {
+        drawContour(LANDMARKS.LEFT_IRIS_PERIMETER,  'rgba(255, 255, 255, 0.12)', null, 0.6);
+      }
     }
-    if (LANDMARKS.RIGHT_IRIS_PERIMETER) {
-      drawContour(LANDMARKS.RIGHT_IRIS_PERIMETER, 'rgba(255, 255, 255, 0.12)', null, 0.6);
+    if (!rightOccluded) {
+      drawIrisGlint(rightIris);
+      if (LANDMARKS.RIGHT_IRIS_PERIMETER) {
+        drawContour(LANDMARKS.RIGHT_IRIS_PERIMETER, 'rgba(255, 255, 255, 0.12)', null, 0.6);
+      }
     }
 
-    // 4. ROI — only show tiny corner brackets, very faint (no dashed rect)
+    // 4. ROI — only show tiny corner brackets, suppressed on occluded eye
     if (showRoi) {
-      const leftRoi  = calculateEyeRoi(landmarks, 'LEFT');
-      const rightRoi = calculateEyeRoi(landmarks, 'RIGHT');
+      const leftRoi  = !leftOccluded ? calculateEyeRoi(landmarks, 'LEFT') : null;
+      const rightRoi = !rightOccluded ? calculateEyeRoi(landmarks, 'RIGHT') : null;
 
       const drawRoiCorners = (roi, strokeColor) => {
         if (!roi || !roi.isValid) return;
@@ -252,11 +247,11 @@ export default function EyeOverlay({
         ctx.restore();
       };
 
-      drawRoiCorners(leftRoi,  'rgba(255, 255, 255, 0.25)');
-      drawRoiCorners(rightRoi, 'rgba(255, 255, 255, 0.25)');
+      if (leftRoi) drawRoiCorners(leftRoi,  'rgba(255, 255, 255, 0.25)');
+      if (rightRoi) drawRoiCorners(rightRoi, 'rgba(255, 255, 255, 0.25)');
     }
 
-    // 5. Gaze Projection Vector — very subtle, near-invisible
+    // 5. Gaze Projection Vector — only for uncovered eye
     if (effectiveFeatures) {
       const drawGazeVector = (irisPt, gazeH, gazeV, color) => {
         if (!irisPt) return;
@@ -275,8 +270,8 @@ export default function EyeOverlay({
         ctx.globalAlpha = 1.0;
       };
 
-      if (leftIris)  drawGazeVector(leftIris,  effectiveFeatures.leftHorizontalRatio,  effectiveFeatures.leftVerticalRatio,  'rgba(255,255,255,0.6)');
-      if (rightIris) drawGazeVector(rightIris, effectiveFeatures.rightHorizontalRatio, effectiveFeatures.rightVerticalRatio, 'rgba(255,255,255,0.6)');
+      if (!leftOccluded && leftIris)  drawGazeVector(leftIris,  effectiveFeatures.leftHorizontalRatio,  effectiveFeatures.leftVerticalRatio,  'rgba(255,255,255,0.6)');
+      if (!rightOccluded && rightIris) drawGazeVector(rightIris, effectiveFeatures.rightHorizontalRatio, effectiveFeatures.rightVerticalRatio, 'rgba(255,255,255,0.6)');
     }
     };
     const tick = () => {
@@ -286,7 +281,7 @@ export default function EyeOverlay({
     if (landmarksRef) tick();
     else draw();
     return () => cancelAnimationFrame(animationId);
-  }, [stateLandmarks, landmarksRef, videoWidth, videoHeight, isTrackingValid, features, featuresRef, showRoi]);
+  }, [stateLandmarks, landmarksRef, videoWidth, videoHeight, isTrackingValid, features, featuresRef, showRoi, coveredEye, quality]);
 
   return (
     <>

@@ -6,7 +6,7 @@ export const COVER_QUALITY_REASONS = Object.freeze({
   NO_FACE: 'NO_FACE', INVALID_IRIS: 'INVALID_IRIS', INVALID_EYE_WIDTH: 'INVALID_EYE_WIDTH',
   BASELINE_UNSTABLE: 'BASELINE_UNSTABLE', HEAD_MOTION: 'HEAD_MOTION', INSUFFICIENT_SAMPLES: 'INSUFFICIENT_SAMPLES',
   TRACKING_LOST: 'TRACKING_LOST', POSITION_UNSTABLE: 'POSITION_UNSTABLE', TIMEOUT: 'TIMEOUT', SESSION_INVALIDATED: 'SESSION_INVALIDATED',
-  BLINK: 'BLINK',
+  BLINK: 'BLINK', OCCLUDED: 'OCCLUDED',
 });
 
 const finitePoint = (x, y) => Number.isFinite(x) && Number.isFinite(y) && x >= 0 && x <= 1 && y >= 0 && y <= 1;
@@ -16,6 +16,10 @@ export function createCoverFrame(features, quality, eye, timestamp, elapsed) {
   if (quality.headPoseValid === false) return { frame: null, reason: COVER_QUALITY_REASONS.HEAD_MOTION };
   const eyeDetected = eye === 'left' ? quality.leftEyeDetected : quality.rightEyeDetected;
   if (!quality.irisValid || !eyeDetected || !features?.raw) return { frame: null, reason: COVER_QUALITY_REASONS.INVALID_IRIS };
+  const isOccluded = (quality?.eyeVisibility?.[eye] === 'OCCLUDED') ||
+    (features?.observedVisibility?.[eye] === 'OCCLUDED') ||
+    (quality?.coveredEye === eye);
+  if (isOccluded) return { frame: null, reason: COVER_QUALITY_REASONS.OCCLUDED };
   const blinkMasked = eye === 'left'
     ? (features.isBlinkMaskedLeft || features.isBlinkLeft)
     : (features.isBlinkMaskedRight || features.isBlinkRight);

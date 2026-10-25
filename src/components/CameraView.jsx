@@ -227,6 +227,7 @@ export default function CameraView({
             features={features}
             featuresRef={featuresRef}
             quality={quality}
+            coveredEye={occluderEye || quality?.coveredEye}
             videoWidth={actualDimensions.width}
             videoHeight={actualDimensions.height}
             isTrackingValid={quality ? quality.isValid : Boolean(landmarks)}

@@ -147,9 +147,10 @@ export class EyeCoverDetector {
           if (lum < minLum) minLum = lum;
           if (lum > maxLum) maxLum = lum;
 
-          // Nhận diện sắc thái da tay người (phù hợp nhiều loại webcam và ánh sáng)
-          const isSkin = (r > g && (r - b) > 10 && lum > 40) ||
-                         (r > 60 && g > 40 && b > 20 && (r - b) > 12 && (r - g) > -12);
+          // Nhận diện sắc thái da tay người (phù hợp nhiều loại webcam, da sáng, da ngăm, ánh sáng đèn led)
+          const isSkin = (r > g && (r - b) > 8 && lum > 35) ||
+                         (r > 55 && g > 35 && b > 20 && (r - b) > 10) ||
+                         (r > g && g >= b && lum > 40);
           if (isSkin) {
             skinPixelCount++;
           }
@@ -219,17 +220,17 @@ export class EyeCoverDetector {
 
   /**
    * Phân tích realtime từng frame từ video và landmarks MediaPipe FaceMesh
-   * @param {HTMLVideoElement} video 
+   * @param {HTMLVideoElement|HTMLCanvasElement} video 
    * @param {Array<Array<{x:number, y:number, z?:number}>>} multiFaceLandmarks 
    * @returns {{ isCovered: boolean, side: 'left'|'right'|'both'|null }}
    */
   detect(video, multiFaceLandmarks) {
-    if (!video || video.readyState < 2) {
+    if (!video || (video.readyState !== undefined && video.readyState < 2) || (video.width === 0 && !video.videoWidth)) {
       return { isCovered: this.isCovered, side: this.coveredSide };
     }
 
-    const vW = video.videoWidth;
-    const vH = video.videoHeight;
+    const vW = video.videoWidth || video.width || 640;
+    const vH = video.videoHeight || video.height || 480;
     const now = performance.now();
 
     // =========================================================================
@@ -311,31 +312,31 @@ export class EyeCoverDetector {
         // Khi người dùng che Mắt Trái: Mắt Phải mở rõ, Mắt Trái mất tương phản con ngươi hoặc phủ da tay
         const leftOccludedByHand = (
           (leftPatch.pupilContrast < 9.5) ||
-          (rightIsOpen && leftPatch.pupilContrast < rightPatch.pupilContrast * 0.55) ||
-          (leftPatch.minLum > 90 && leftPatch.pupilContrast < 12) ||
-          (rightIsOpen && leftPatch.minLum > rightPatch.minLum + 16) ||
-          (leftPatch.skinRatio > 0.45 && leftPatch.pupilContrast < 12) ||
-          (leftEAR < 0.11 && (rightIsOpen || rightEAR >= 0.13)) ||
-          (leftPatch.stdDev < 11 && (rightIsOpen || rightPatch.stdDev >= 13)) ||
+          (rightIsOpen && leftPatch.pupilContrast < rightPatch.pupilContrast * 0.60) ||
+          (leftPatch.minLum > 85 && leftPatch.pupilContrast < 12) ||
+          (rightIsOpen && leftPatch.minLum > rightPatch.minLum + 14) ||
+          (leftPatch.skinRatio > 0.35 && leftPatch.pupilContrast < 12) ||
+          (leftEAR < 0.11 && (rightIsOpen || rightEAR >= 0.12)) ||
+          (leftPatch.stdDev < 11 && (rightIsOpen || rightPatch.stdDev >= 12)) ||
           (!leftPatch.isEyeLike && rightIsOpen)
         );
 
         // Khi người dùng che Mắt Phải: Mắt Trái mở rõ, Mắt Phải mất tương phản con ngươi hoặc phủ da tay
         const rightOccludedByHand = (
           (rightPatch.pupilContrast < 9.5) ||
-          (leftIsOpen && rightPatch.pupilContrast < leftPatch.pupilContrast * 0.55) ||
-          (rightPatch.minLum > 90 && rightPatch.pupilContrast < 12) ||
-          (leftIsOpen && rightPatch.minLum > leftPatch.minLum + 16) ||
-          (rightPatch.skinRatio > 0.45 && rightPatch.pupilContrast < 12) ||
-          (rightEAR < 0.11 && (leftIsOpen || leftEAR >= 0.13)) ||
-          (rightPatch.stdDev < 11 && (leftIsOpen || leftPatch.stdDev >= 13)) ||
+          (leftIsOpen && rightPatch.pupilContrast < leftPatch.pupilContrast * 0.60) ||
+          (rightPatch.minLum > 85 && rightPatch.pupilContrast < 12) ||
+          (leftIsOpen && rightPatch.minLum > leftPatch.minLum + 14) ||
+          (rightPatch.skinRatio > 0.35 && rightPatch.pupilContrast < 12) ||
+          (rightEAR < 0.11 && (leftIsOpen || leftEAR >= 0.12)) ||
+          (rightPatch.stdDev < 11 && (leftIsOpen || leftPatch.stdDev >= 12)) ||
           (!rightPatch.isEyeLike && leftIsOpen)
         );
 
         // 6. Kiểm tra che CẢ HAI MẮT (Bilateral Occlusion khi FaceMesh vẫn nhận diện mặt)
         const bothLackPupil = (leftPatch.pupilContrast < 9.5 && rightPatch.pupilContrast < 9.5) &&
                               (leftPatch.minLum > 75 || rightPatch.minLum > 75);
-        const bothSkinCovered = (leftPatch.skinRatio > 0.45 && rightPatch.skinRatio > 0.45 &&
+        const bothSkinCovered = (leftPatch.skinRatio > 0.40 && rightPatch.skinRatio > 0.40 &&
                                  leftPatch.pupilContrast < 12 && rightPatch.pupilContrast < 12);
         const bothFlatTexture = (leftPatch.dynamicRange < 24 && rightPatch.dynamicRange < 24 &&
                                  leftPatch.stdDev < 12 && rightPatch.stdDev < 12);
@@ -355,6 +356,20 @@ export class EyeCoverDetector {
         } else if (rightOccludedByHand && !leftOccludedByHand) {
           frameCovered = true;
           detectedSide = 'right';
+        } else if (leftOccludedByHand && rightOccludedByHand) {
+          // If both met preliminary occlusion, check relative asymmetry to identify primary covered eye
+          if (leftPatch.pupilContrast < rightPatch.pupilContrast * 0.75 || leftPatch.minLum > rightPatch.minLum + 12) {
+            frameCovered = true;
+            detectedSide = 'left';
+          } else if (rightPatch.pupilContrast < leftPatch.pupilContrast * 0.75 || rightPatch.minLum > leftPatch.minLum + 12) {
+            frameCovered = true;
+            detectedSide = 'right';
+          } else if (bothEyesClosed) {
+            frameCovered = false;
+          } else {
+            frameCovered = true;
+            detectedSide = 'both';
+          }
         } else if (bothEyesClosed) {
           // Nhắm cả 2 mắt (hoặc chớp mắt): Không kích hoạt che 1 bên mắt
           frameCovered = false;

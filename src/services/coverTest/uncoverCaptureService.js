@@ -4,7 +4,7 @@ import { getEyeAnatomicalFrame } from '../cv/strabismusEngine.js';
 // Evidence is heuristic, never a claim that a hidden iris was measured.
 export function classifyEyeVisibility(patch, frame, baseline, oppositePatch = null, oppositeFrame = null) {
   if (!patch || !frame || !baseline || frame.canthalWidth < 6) {
-    if (patch && frame && baseline && frame.canthalWidth < 6 && (patch.pupilContrast < 9 || (frame.palpebralHeight / Math.max(1, frame.canthalWidth)) < 0.11)) {
+    if (patch && frame && baseline && (frame.canthalWidth < 6 || (frame.palpebralHeight / Math.max(1, frame.canthalWidth)) < 0.11)) {
       return 'OCCLUDED';
     }
     return 'UNKNOWN';
@@ -19,15 +19,16 @@ export function classifyEyeVisibility(patch, frame, baseline, oppositePatch = nu
   const isContrastLoss = patch.pupilContrast < contrast * 0.75 || patch.pupilContrast < 9.5;
   const isTextureLoss = patch.dynamicRange < baseline.dynamicRange * 0.65 || patch.stdDev < baseline.stdDev * 0.65;
   const isLuminanceShift = patch.mean > baseline.mean + 20 || patch.mean < baseline.mean - 25;
-  const isSkinOccluded = (patch.skinRatio >= 0.45 && patch.pupilContrast < 12);
-  const isNoPupil = (patch.minLum > 90 && patch.pupilContrast < 11);
+  const isSkinOccluded = (patch.skinRatio >= 0.35 && patch.pupilContrast < 12);
+  const isNoPupil = (patch.minLum > 85 && patch.pupilContrast < 12);
   const isApertureClosed = (aperture < 0.11 && patch.pupilContrast < 12);
-  const isAsymmetricOccluded = oppositePatch && oppositePatch.pupilContrast >= 10 && patch.pupilContrast < oppositePatch.pupilContrast * 0.55;
+  const isAsymmetricOccluded = oppositePatch && (oppositePatch.pupilContrast >= 10 || (oppositePatch.minLum !== undefined && oppositePatch.minLum < 85)) &&
+    (patch.pupilContrast < oppositePatch.pupilContrast * 0.60 || (patch.minLum !== undefined && oppositePatch.minLum !== undefined && patch.minLum > oppositePatch.minLum + 14) || (patch.skinRatio >= 0.35 && patch.pupilContrast < 12));
 
   if (isContrastLoss && (isTextureLoss || isLuminanceShift || isSkinOccluded || isNoPupil || isApertureClosed || isAsymmetricOccluded)) {
     return 'OCCLUDED';
   }
-  if (isSkinOccluded || (isApertureClosed && patch.pupilContrast < 9)) {
+  if (isSkinOccluded || isAsymmetricOccluded || isNoPupil || (isApertureClosed && patch.pupilContrast < 9)) {
     return 'OCCLUDED';
   }
 
@@ -35,10 +36,11 @@ export function classifyEyeVisibility(patch, frame, baseline, oppositePatch = nu
   if (aperture < 0.12) return 'UNKNOWN';
 
   // 3. Clear open eye:
+  const hasDarkPupil = patch.minLum === undefined || patch.minLum < 90;
   if (
-    (patch.pupilContrast >= contrast && patch.dynamicRange >= 24 && patch.stdDev >= 9 && aperture >= 0.12) ||
-    (patch.isEyeLike && aperture >= 0.12) ||
-    (patch.pupilContrast >= 9.5 && patch.minLum < 95 && aperture >= 0.12)
+    (patch.pupilContrast >= contrast && patch.dynamicRange >= 24 && patch.stdDev >= 9 && aperture >= 0.12 && hasDarkPupil) ||
+    (patch.isEyeLike && aperture >= 0.12 && hasDarkPupil) ||
+    (patch.pupilContrast >= 9.5 && patch.minLum !== undefined && patch.minLum < 95 && aperture >= 0.12)
   ) {
     return 'VISIBLE';
   }
@@ -85,9 +87,15 @@ export class UncoverTransition {
     // 2. Both eyes not yet clearly open:
     if (visibility.left !== 'VISIBLE' || visibility.right !== 'VISIBLE') {
       this.coverStart = null;
-      // Preserve armed state through brief transient blink of opposite eye or within transition window
-      this.armed = this.armed && (visibility[opposite] === 'VISIBLE' || (timestampMs - this.lastCovered <= 350)) &&
-        timestampMs - this.lastCovered <= UNCOVER_WINDOW_MS;
+      // Preserve armed state while covered eye remains not-visible (hand covering eye) or through brief blink
+      if (this.armed) {
+        if (visibility[this.eye] !== 'VISIBLE') {
+          this.lastCovered = timestampMs;
+        } else {
+          this.armed = (visibility[opposite] === 'VISIBLE' || (timestampMs - this.lastCovered <= 350)) &&
+            timestampMs - this.lastCovered <= UNCOVER_WINDOW_MS;
+        }
+      }
       this.candidate = null;
       return null;
     }

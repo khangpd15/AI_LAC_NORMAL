@@ -90,3 +90,61 @@ test('full rate recorder retains 30 unique frames and their exact source timesta
   assert.equal(samples[1].frameId, 2);
   assert.equal(samples[1].timestampEpochMs, 1700000000000 + 1000 / 30);
 });
+
+test('createCoverFrame rejects occluded/covered eye and avoids recording hand coordinates', async () => {
+  const { createCoverFrame, COVER_QUALITY_REASONS } = await import('../src/services/coverTestProtocolService.js');
+  const validFeatures = {
+    timestamp: 100,
+    raw: { leftIrisX: 0.35, leftIrisY: 0.45, rightIrisX: 0.65, rightIrisY: 0.45 },
+    leftEyeWidth: 0.08,
+    rightEyeWidth: 0.08,
+    leftHorizontalRatio: 0.5,
+    rightHorizontalRatio: 0.5,
+    observedVisibility: { left: 'OCCLUDED', right: 'VISIBLE' },
+  };
+  const quality = {
+    faceDetected: true,
+    headPoseValid: true,
+    irisValid: true,
+    leftEyeDetected: true,
+    rightEyeDetected: true,
+    eyeVisibility: { left: 'OCCLUDED', right: 'VISIBLE' },
+  };
+
+  const leftResult = createCoverFrame(validFeatures, quality, 'left', 100, 50);
+  assert.equal(leftResult.frame, null);
+  assert.equal(leftResult.reason, COVER_QUALITY_REASONS.OCCLUDED);
+
+  const rightResult = createCoverFrame(validFeatures, quality, 'right', 100, 50);
+  assert.ok(rightResult.frame);
+  assert.equal(rightResult.reason, null);
+});
+
+test('UncoverTransition remains armed across 7-second cover phase while eye is covered', () => {
+  const machine = new UncoverTransition();
+  machine.reset('left');
+  // Initial arming
+  for (let t = 0; t <= 150; t += 33) {
+    machine.update({ timestampMs: t, visibility: { left: 'OCCLUDED', right: 'VISIBLE' }, candidate: () => null });
+  }
+  assert.equal(machine.armed, true);
+
+  // User holds hand over eye for full 7 seconds (7000ms), with occasional lighting/hand jitter (UNKNOWN)
+  for (let t = 200; t <= 7000; t += 100) {
+    const isGlitch = t % 1200 === 0;
+    machine.update({
+      timestampMs: t,
+      visibility: { left: isGlitch ? 'UNKNOWN' : 'OCCLUDED', right: 'VISIBLE' },
+      candidate: () => null,
+    });
+  }
+  assert.equal(machine.armed, true, 'Machine must remain armed throughout the entire 7s cover duration');
+
+  // Now user uncovers at 7033ms
+  machine.update({ timestampMs: 7033, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({ frameId: 'uncover_frame' }) });
+  const event = machine.update({ timestampMs: 7066, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) });
+  assert.ok(event, 'Must trigger uncover capture immediately after hand is removed');
+  assert.equal(event.image.frameId, 'uncover_frame');
+  assert.equal(event.uncoveredEye, 'left');
+});
+
