@@ -74,9 +74,12 @@ export async function saveCoverTestSession({
     const capturedEvents = cycles.flatMap(cycle => cycle.uncoverEvents || []).filter(event => event.status === 'CAPTURED');
     const modalities = data?.aiResult?.inputModalities || [];
     const acknowledged = new Set(data?.aiResult?.analyzedEventIds || []);
-    const multimodalConfirmed = modalities.includes('time_series') && modalities.includes('uncover_eye_images') &&
-      capturedEvents.length > 0 && capturedEvents.every(event => acknowledged.has(event.eventId));
+    const isUnifiedModel = data?.aiResult?.model?.name === 'cover-test-unified' || data?.aiResult?.model?.version?.startsWith('unified-');
     const isFallbackTrajectory = Boolean(data?.aiResult?.fallbackMode === 'TRAJECTORY_CONSENSUS' || data?.aiResult?.modelSource === 'fps_10_15_model');
+    const multimodalConfirmed = isUnifiedModel
+      ? (data?.aiResult?.status === 'COMPLETED' && data?.aiResult?.prediction !== 'INCONCLUSIVE')
+      : (modalities.includes('time_series') && modalities.includes('uncover_eye_images') &&
+         capturedEvents.length > 0 && capturedEvents.every(event => acknowledged.has(event.eventId)));
     const aiResult = (clientMetadata.protocolVersion === 'cover-test-multimodal-v2' && !multimodalConfirmed && !isFallbackTrajectory)
       ? {
           ...data?.aiResult,
