@@ -543,8 +543,7 @@ export default function CoverTestStep({
           const { image, ...metadata } = captured;
           const lm = results.multiFaceLandmarks?.[0];
           const observation = uncoverObserverRef.current?.observe(image, lm, captured.timestampMs, state === 'PREPARING' ? 'BASELINE' : state,
-            () => !feats || !currentQuality?.faceDetected || !currentQuality?.irisValid ||
-              currentQuality?.headPoseValid === false ? null : freezeEyePair(image, lm, metadata));
+            () => !feats || !currentQuality?.faceDetected || currentQuality?.headPoseValid === false ? null : freezeEyePair(image, lm, metadata));
           if (state === 'COVER') {
             captureFeedbackRef.current = uncoverObserverRef.current?.transition.armed
               ? 'Đã nhận diện che mắt. Giữ nguyên và chờ hiệu lệnh bỏ che.'

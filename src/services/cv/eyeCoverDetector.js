@@ -147,8 +147,10 @@ export class EyeCoverDetector {
           if (lum < minLum) minLum = lum;
           if (lum > maxLum) maxLum = lum;
 
-          // Nhận diện sắc thái da tay (R > G > B, chênh lệch đỏ - xanh > 18)
-          if (r > g && g > b && (r - b) > 18 && lum > 45) {
+          // Nhận diện sắc thái da tay người (phù hợp nhiều loại webcam và ánh sáng)
+          const isSkin = (r > g && (r - b) > 10 && lum > 40) ||
+                         (r > 60 && g > 40 && b > 20 && (r - b) > 12 && (r - g) > -12);
+          if (isSkin) {
             skinPixelCount++;
           }
 
@@ -185,7 +187,7 @@ export class EyeCoverDetector {
       const skinRatio = skinPixelCount / totalPixels;
 
       // Đặc trưng mắt thật mở rõ
-      const isEyeLike = pupilContrast >= 12 && minLum < 85 && dynamicRange >= 28;
+      const isEyeLike = pupilContrast >= 11 && minLum < 90 && dynamicRange >= 24;
 
       return {
         mean,
@@ -255,6 +257,20 @@ export class EyeCoverDetector {
       const hasLeftLandmarks = Boolean(pLeftInner && pLeftOuter && pLeftTop && pLeftBot);
       const hasRightLandmarks = Boolean(pRightInner && pRightOuter && pRightTop && pRightBot);
 
+      // Nếu bàn tay che hoàn toàn 1 bên mắt làm MediaPipe mất điểm mốc mắt đó:
+      if (!hasLeftLandmarks && hasRightLandmarks) {
+        this.updateHysteresis(true, 'left');
+        return { isCovered: this.isCovered, side: this.coveredSide };
+      }
+      if (hasLeftLandmarks && !hasRightLandmarks) {
+        this.updateHysteresis(true, 'right');
+        return { isCovered: this.isCovered, side: this.coveredSide };
+      }
+      if (!hasLeftLandmarks && !hasRightLandmarks) {
+        this.updateHysteresis(true, 'both');
+        return { isCovered: this.isCovered, side: this.coveredSide };
+      }
+
       if (hasLeftLandmarks && hasRightLandmarks) {
         // 1. Tính Eye Aspect Ratio (EAR)
         const leftCanthal = Math.max(0.001, Math.hypot(pLeftOuter.x - pLeftInner.x, pLeftOuter.y - pLeftInner.y));
@@ -281,39 +297,45 @@ export class EyeCoverDetector {
         const rightPatch = this.sampleEyePatch(video, rightCenterX, rightCenterY, rightCropW, rightCropH, 32, 0, 32, 24);
 
         // 4. Nhận diện mắt mở sáng rõ (Open Eye Signature)
-        const leftIsOpen = (leftPatch.pupilContrast >= 12 && leftPatch.minLum < 85) ||
-                           (leftPatch.pupilContrast >= 9 && leftEAR >= 0.15) ||
-                           (leftPatch.minLum < 75 && leftEAR >= 0.14);
+        const leftIsOpen = (leftPatch.pupilContrast >= 9.5 && leftPatch.minLum < 95) ||
+                           (leftPatch.pupilContrast >= 7.5 && leftEAR >= 0.12) ||
+                           (leftPatch.minLum < 80 && leftEAR >= 0.11) ||
+                           (leftEAR >= 0.13 && leftPatch.isEyeLike);
 
-        const rightIsOpen = (rightPatch.pupilContrast >= 12 && rightPatch.minLum < 85) ||
-                            (rightPatch.pupilContrast >= 9 && rightEAR >= 0.15) ||
-                            (rightPatch.minLum < 75 && rightEAR >= 0.14);
+        const rightIsOpen = (rightPatch.pupilContrast >= 9.5 && rightPatch.minLum < 95) ||
+                            (rightPatch.pupilContrast >= 7.5 && rightEAR >= 0.12) ||
+                            (rightPatch.minLum < 80 && rightEAR >= 0.11) ||
+                            (rightEAR >= 0.13 && rightPatch.isEyeLike);
 
         // 5. Kiểm tra che MỘT BÊN MẮT (Asymmetric Occlusion)
         // Khi người dùng che Mắt Trái: Mắt Phải mở rõ, Mắt Trái mất tương phản con ngươi hoặc phủ da tay
-        const leftOccludedByHand = rightIsOpen && (
-          (leftPatch.pupilContrast < 9) ||
-          (leftPatch.pupilContrast < rightPatch.pupilContrast * 0.42) ||
-          (leftPatch.minLum > rightPatch.minLum + 22) ||
-          (leftPatch.skinRatio > 0.70 && leftPatch.pupilContrast < 11) ||
-          (leftEAR < 0.12 && rightEAR >= 0.16) ||
-          (leftPatch.stdDev < 11 && rightPatch.stdDev >= 14)
+        const leftOccludedByHand = (
+          (leftPatch.pupilContrast < 9.5) ||
+          (rightIsOpen && leftPatch.pupilContrast < rightPatch.pupilContrast * 0.55) ||
+          (leftPatch.minLum > 90 && leftPatch.pupilContrast < 12) ||
+          (rightIsOpen && leftPatch.minLum > rightPatch.minLum + 16) ||
+          (leftPatch.skinRatio > 0.45 && leftPatch.pupilContrast < 12) ||
+          (leftEAR < 0.11 && (rightIsOpen || rightEAR >= 0.13)) ||
+          (leftPatch.stdDev < 11 && (rightIsOpen || rightPatch.stdDev >= 13)) ||
+          (!leftPatch.isEyeLike && rightIsOpen)
         );
 
         // Khi người dùng che Mắt Phải: Mắt Trái mở rõ, Mắt Phải mất tương phản con ngươi hoặc phủ da tay
-        const rightOccludedByHand = leftIsOpen && (
-          (rightPatch.pupilContrast < 9) ||
-          (rightPatch.pupilContrast < leftPatch.pupilContrast * 0.42) ||
-          (rightPatch.minLum > leftPatch.minLum + 22) ||
-          (rightPatch.skinRatio > 0.70 && rightPatch.pupilContrast < 11) ||
-          (rightEAR < 0.12 && leftEAR >= 0.16) ||
-          (rightPatch.stdDev < 11 && leftPatch.stdDev >= 14)
+        const rightOccludedByHand = (
+          (rightPatch.pupilContrast < 9.5) ||
+          (leftIsOpen && rightPatch.pupilContrast < leftPatch.pupilContrast * 0.55) ||
+          (rightPatch.minLum > 90 && rightPatch.pupilContrast < 12) ||
+          (leftIsOpen && rightPatch.minLum > leftPatch.minLum + 16) ||
+          (rightPatch.skinRatio > 0.45 && rightPatch.pupilContrast < 12) ||
+          (rightEAR < 0.11 && (leftIsOpen || leftEAR >= 0.13)) ||
+          (rightPatch.stdDev < 11 && (leftIsOpen || leftPatch.stdDev >= 13)) ||
+          (!rightPatch.isEyeLike && leftIsOpen)
         );
 
         // 6. Kiểm tra che CẢ HAI MẮT (Bilateral Occlusion khi FaceMesh vẫn nhận diện mặt)
-        const bothLackPupil = (leftPatch.pupilContrast < 9 && rightPatch.pupilContrast < 9) &&
+        const bothLackPupil = (leftPatch.pupilContrast < 9.5 && rightPatch.pupilContrast < 9.5) &&
                               (leftPatch.minLum > 75 || rightPatch.minLum > 75);
-        const bothSkinCovered = (leftPatch.skinRatio > 0.68 && rightPatch.skinRatio > 0.68 &&
+        const bothSkinCovered = (leftPatch.skinRatio > 0.45 && rightPatch.skinRatio > 0.45 &&
                                  leftPatch.pupilContrast < 12 && rightPatch.pupilContrast < 12);
         const bothFlatTexture = (leftPatch.dynamicRange < 24 && rightPatch.dynamicRange < 24 &&
                                  leftPatch.stdDev < 12 && rightPatch.stdDev < 12);

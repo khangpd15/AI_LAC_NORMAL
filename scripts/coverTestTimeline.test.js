@@ -2,12 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { getCoverCycleTiming, isCoverPhaseComplete } from '../src/services/coverTestTimeline.js';
 
-test('each side has five seconds covered and three seconds after uncover', () => {
+test('each side has seven seconds covered and three seconds after uncover', () => {
   const cycles = [1, 2, 3].map(getCoverCycleTiming);
   assert.deepEqual(cycles.flatMap(c => [c.uncoverLeftMs, c.uncoverRightMs])
-    .map(ms => ms / 1000), [5, 13, 21, 29, 37, 45]);
-  assert.deepEqual(cycles.map(c => c.coverLeftMs / 1000), [0, 16, 32]);
-  assert.deepEqual(cycles.map(c => c.coverRightMs / 1000), [8, 24, 40]);
+    .map(ms => ms / 1000), [7, 17, 27, 37, 47, 57]);
+  assert.deepEqual(cycles.map(c => c.coverLeftMs / 1000), [0, 20, 40]);
+  assert.deepEqual(cycles.map(c => c.coverRightMs / 1000), [10, 30, 50]);
   for (const c of cycles) {
     assert.equal(c.coverRightMs - c.uncoverLeftMs, 3000);
     assert.equal(c.endMs - c.uncoverRightMs, 3000);

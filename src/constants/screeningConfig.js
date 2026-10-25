@@ -17,7 +17,7 @@ export const COVER_TEST_CONFIG = Object.freeze({
 export const SCREENING_CONFIG = {
   // Timing parameters (in milliseconds)
   BASELINE_MS: 4500,               // Multi-frame fixation baseline duration per cycle (~4.5s)
-  COVER_MS: 5000,                  // Eye occlusion duration (~5.0s)
+  COVER_MS: 7000,                  // Eye occlusion duration (~7.0s)
   UNCOVER_WINDOW_MS: 500,          // Primary refixation analysis window (300 - 500ms)
   EARLY_ANALYSIS_WINDOW_MS: 500,   // Alias for early refixation analysis window (0 - 500ms)
   RECORD_MS: 4500,                 // Total tracking duration after uncover (~4.5s)
