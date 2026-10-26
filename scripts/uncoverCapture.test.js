@@ -148,3 +148,43 @@ test('UncoverTransition remains armed across 7-second cover phase while eye is c
   assert.equal(event.uncoveredEye, 'left');
 });
 
+test('Chống chụp nhầm mí mắt: mí mắt he hé/nhắm tuyệt đối không được VISIBLE; chỉ mắt mở thật mới chụp', () => {
+  const baseline = { pupilContrast: 25, dynamicRange: 90, stdDev: 25, mean: 110, minLum: 65 };
+  const frameWide = { canthalWidth: 50, palpebralHeight: 12 }; // aperture = 0.24 (mắt mở thật)
+  const frameSquint = { canthalWidth: 50, palpebralHeight: 6 }; // aperture = 0.12 (mí mắt he hé)
+  const frameClosed = { canthalWidth: 50, palpebralHeight: 2 }; // aperture = 0.04 (mí mắt nhắm)
+
+  const openPatch = { pupilContrast: 20, dynamicRange: 80, stdDev: 22, mean: 110, minLum: 72, skinRatio: 0.18 };
+  const eyelidPatch = { pupilContrast: 6, dynamicRange: 20, stdDev: 8, mean: 115, minLum: 95, skinRatio: 0.32 };
+  const handPatch = { pupilContrast: 3, dynamicRange: 15, stdDev: 5, mean: 135, minLum: 120, skinRatio: 0.48 };
+
+  // 1. Tay che -> BẮT BUỘC OCCLUDED
+  assert.equal(classifyEyeVisibility(handPatch, frameClosed, baseline), 'OCCLUDED');
+
+  // 2. Mí mắt nhắm / he hé -> TUYỆT ĐỐI KHÔNG ĐƯỢC VISIBLE
+  assert.notEqual(classifyEyeVisibility(eyelidPatch, frameSquint, baseline), 'VISIBLE');
+  assert.equal(classifyEyeVisibility(openPatch, frameSquint, baseline), 'UNKNOWN');
+  assert.equal(classifyEyeVisibility(openPatch, frameClosed, baseline), 'UNKNOWN');
+
+  // 3. Mắt mở thật sự -> VISIBLE
+  assert.equal(classifyEyeVisibility(openPatch, frameWide, baseline), 'VISIBLE');
+
+  // 4. Kịch bản Uncover: khi hạ tay qua giai đoạn mí mắt rồi mở thật
+  const machine = new UncoverTransition();
+  machine.reset('left');
+  // Che mắt 150ms
+  machine.update({ timestampMs: 0, visibility: { left: 'OCCLUDED', right: 'VISIBLE' }, candidate: () => null });
+  machine.update({ timestampMs: 150, visibility: { left: 'OCCLUDED', right: 'VISIBLE' }, candidate: () => null });
+  assert.equal(machine.armed, true);
+
+  // Hạ tay nhưng mắt còn nheo/mí mắt (UNKNOWN) -> KHÔNG ĐƯỢC CHỤP
+  assert.equal(machine.update({ timestampMs: 250, visibility: { left: 'UNKNOWN', right: 'VISIBLE' }, candidate: () => ({ frameId: 'eyelid' }) }), null);
+  assert.equal(machine.candidate, null, 'Không được lưu candidate khi mắt mới chỉ là mí mắt nheo');
+
+  // Mắt mở to thật sự (VISIBLE) -> Chụp ngay lập tức!
+  machine.update({ timestampMs: 300, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({ frameId: 'real_open_eye' }) });
+  const capturedEvent = machine.update({ timestampMs: 333, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) });
+  assert.ok(capturedEvent, 'Phải chụp ngay khi mắt mở to');
+  assert.equal(capturedEvent.image.frameId, 'real_open_eye', 'Ảnh chụp phải là lúc mắt đã mở thật');
+});
+

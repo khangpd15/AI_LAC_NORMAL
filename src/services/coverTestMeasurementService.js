@@ -311,21 +311,27 @@ export function analyzeUncoverTrajectory(
     };
   }
 
+  // Lọc các frame mắt mở rõ (loại bỏ mí mắt nhắm hoặc chớp)
+  const validEyeFrames = (uncoverFrames || []).filter(
+    (f) => f && f.quality?.isValid !== false && f.qualityFlag !== 'UNKNOWN_SAMPLE' && f.isEyeValid !== false
+  );
+  const usableFrames = validEyeFrames.length >= 8 ? validEyeFrames : uncoverFrames;
+
   // 4. Filter early window frames (0 - 500 ms) and full trajectory
-  const earlyFrames = uncoverFrames.filter((f) => f.t <= earlyWindowMs);
-  const firstFrame = uncoverFrames[0];
+  const earlyFrames = usableFrames.filter((f) => f.t <= earlyWindowMs);
+  const firstFrame = usableFrames[0];
   const lastEarlyFrame = earlyFrames.length > 0 ? earlyFrames[earlyFrames.length - 1] : firstFrame;
-  const lastFullFrame = uncoverFrames[uncoverFrames.length - 1];
+  const lastFullFrame = usableFrames[usableFrames.length - 1];
 
   // 5. Initial Position (t ~ 0ms) - robust mean of first 3 frames
-  const initSlice = uncoverFrames.slice(0, Math.min(3, uncoverFrames.length));
+  const initSlice = usableFrames.slice(0, Math.min(3, usableFrames.length));
   const initialX = initSlice.reduce((sum, f) => sum + f.normalizedX, 0) / initSlice.length;
   const initialY = initSlice.reduce((sum, f) => sum + f.normalizedY, 0) / initSlice.length;
   const initialRawX = initSlice.reduce((sum, f) => sum + f.x, 0) / initSlice.length;
   const initialRawY = initSlice.reduce((sum, f) => sum + f.y, 0) / initSlice.length;
 
   // 6. Final Position (at end of recording) - robust mean of last 3 frames
-  const finalSlice = uncoverFrames.slice(-Math.min(3, uncoverFrames.length));
+  const finalSlice = usableFrames.slice(-Math.min(3, usableFrames.length));
   const finalX = finalSlice.reduce((sum, f) => sum + f.normalizedX, 0) / finalSlice.length;
   const finalY = finalSlice.reduce((sum, f) => sum + f.normalizedY, 0) / finalSlice.length;
   const finalRawX = finalSlice.reduce((sum, f) => sum + f.x, 0) / finalSlice.length;
@@ -605,9 +611,10 @@ export function analyzeUncoverTrajectory(
       note: 'Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định.',
     },
     dataQuality: {
-      isValid: true,
-      reason: null,
+      isValid: validEyeFrames.length >= 8 || uncoverFrames.length >= 15,
+      reason: (validEyeFrames.length < 8 && uncoverFrames.length < 15) ? 'Số mẫu mắt mở không đủ' : null,
       sampleCount: uncoverFrames.length,
+      validEyeSampleCount: validEyeFrames.length,
       stabilityScore: Number(trajectoryStability.toFixed(4)),
       jitter: Number(jitter.toFixed(4)),
       validSampleRatio: Number(validSampleRatio.toFixed(4)),

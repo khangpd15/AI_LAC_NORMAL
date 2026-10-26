@@ -660,8 +660,10 @@ export default function CoverTestStep({
                 }
               }
 
-              // Lưu 1 ảnh crop debug lúc hạ tay để người dùng trực tiếp quan sát (Yêu cầu 5)
-              if (!diag.debugCropUrl && elapsedUncover >= 100 && lm && image) {
+              // Lưu 1 ảnh crop debug lúc mắt vừa mở sau khi hạ tay (chỉ khi mắt đã mở thật sự, không chụp mí mắt)
+              const targetMetrics = observation.debugMetrics?.[activeSide];
+              const isEyeOpenNow = targetMetrics && targetMetrics.aperture >= 0.14 && targetMetrics.visibility !== 'OCCLUDED';
+              if (!diag.debugCropUrl && isEyeOpenNow && lm && image) {
                 try {
                   const pair = freezeEyePair(image, lm, metadata);
                   const targetSide = activeSide;
@@ -766,11 +768,18 @@ export default function CoverTestStep({
           } else if (state === 'TRACKING' && trackEye) {
             const eyeVis = observation?.visibility?.[trackEye];
             const isCurrentlyOccluded = eyeVis === 'OCCLUDED' || currentQuality?.eyeVisibility?.[trackEye] === 'OCCLUDED';
-            // Do not record while hand is covering the eye or before eye is confirmed visible
-            const isReadyForUncoverTrajectory = !isCurrentlyOccluded && (buffer.length > 0 || eyeVis === 'VISIBLE' || !observation);
-            if (isReadyForUncoverTrajectory) {
+            // Không nạp vào buffer khi tay còn che mắt (frame OCCLUDED bị loại).
+            // Khi tay đã buông, nạp vào buffer kèm cờ chất lượng mắt mở VALID_SAMPLE hoặc UNKNOWN_SAMPLE.
+            if (!isCurrentlyOccluded) {
+              const aperture = feats?.raw ? feats.raw[`${trackEye}EyeAperture`] : null;
+              const isEyeOpen = eyeVis === 'VISIBLE' || (typeof aperture === 'number' && aperture >= 0.14);
+              const qualityFlag = isEyeOpen ? 'VALID_SAMPLE' : 'UNKNOWN_SAMPLE';
               const tracked = createCoverFrame(observedFeatures, currentQuality, trackEye, captured.timestampMs, elapsed);
-              if (tracked.frame) buffer.push(tracked.frame);
+              if (tracked.frame) {
+                tracked.frame.qualityFlag = qualityFlag;
+                tracked.frame.isEyeValid = isEyeOpen;
+                buffer.push(tracked.frame);
+              }
             }
           }
           phaseRecorder.processFrame(captured.timestampMs, state, observedFeatures,

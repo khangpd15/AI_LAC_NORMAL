@@ -19,7 +19,7 @@ export function classifyEyeVisibility(patch, frame, baseline, oppositePatch = nu
   const isTextureLoss = patch.dynamicRange < baseline.dynamicRange * 0.65 || patch.stdDev < baseline.stdDev * 0.65;
   const isLuminanceShift = patch.mean > baseline.mean + 20 || patch.mean < baseline.mean - 25;
   const isSkinOccluded = (patch.skinRatio >= 0.28 && patch.pupilContrast < 13);
-  const isNoPupil = (patch.minLum > 82 && patch.pupilContrast < 13);
+  const isNoPupil = (patch.minLum !== undefined && patch.minLum > 82 && patch.pupilContrast < 13);
   const isApertureClosed = (aperture < 0.12 && patch.pupilContrast < 13);
   const isAsymmetricOccluded = oppositePatch && (oppositePatch.pupilContrast >= 9.5 || (oppositePatch.minLum !== undefined && oppositePatch.minLum < 85)) &&
     (patch.pupilContrast < oppositePatch.pupilContrast * 0.65 || 
@@ -33,17 +33,19 @@ export function classifyEyeVisibility(patch, frame, baseline, oppositePatch = nu
     return 'OCCLUDED';
   }
 
-  // 2. Closed lids or blink without hand occlusion evidence
-  if (aperture < 0.12) return 'UNKNOWN';
+  // 2. Closed lids or blink without hand occlusion evidence: mí mắt he hé hoặc nhắm
+  if (aperture < 0.14) return 'UNKNOWN';
 
   // 3. Clear open eye: Must be genuine eye (not skin, has dark pupil and contrast)
-  const hasDarkPupil = patch.minLum !== undefined && patch.minLum < 85;
-  const notSkin = patch.skinRatio < 0.35;
+  // Adaptive pupil threshold relative to baseline
+  const maxAllowedLum = baseline.minLum != null ? Math.min(115, baseline.minLum + 25) : 95;
+  const hasDarkPupil = patch.minLum === undefined || patch.minLum <= maxAllowedLum;
+  const notSkin = patch.skinRatio === undefined || patch.skinRatio < 0.35;
   if (
     notSkin &&
-    ((patch.pupilContrast >= contrast && patch.dynamicRange >= 24 && patch.stdDev >= 9 && aperture >= 0.12 && hasDarkPupil) ||
-     (patch.isEyeLike && aperture >= 0.12 && hasDarkPupil) ||
-     (patch.pupilContrast >= 11 && patch.minLum < 85 && aperture >= 0.12))
+    ((patch.pupilContrast >= contrast && patch.dynamicRange >= 24 && patch.stdDev >= 9 && aperture >= 0.14 && hasDarkPupil) ||
+     (patch.isEyeLike && aperture >= 0.14 && hasDarkPupil) ||
+     (patch.pupilContrast >= 10 && hasDarkPupil && aperture >= 0.14))
   ) {
     return 'VISIBLE';
   }
@@ -54,11 +56,11 @@ export function classifyEyeVisibility(patch, frame, baseline, oppositePatch = nu
 /** Keeps the FIRST clear frame while waiting for a second clear observation.
  * The event time is bounded by the last occluded and first clear frames.
  */
-// Extended window: allows slow hand removal (typical 1-2s in clinical use)
-const UNCOVER_WINDOW_MS = 1800;
-
 export class UncoverTransition {
-  constructor() { this.reset(); }
+  constructor(windowMs = 500) {
+    this.windowMs = windowMs;
+    this.reset();
+  }
   reset(expectedEye = null) {
     this.eye = expectedEye;
     this.coverStart = null;
@@ -71,8 +73,8 @@ export class UncoverTransition {
   update({ timestampMs, visibility, candidate }) {
     if (this.done || !this.eye || !Number.isFinite(timestampMs) ||
         (this.lastTimestamp !== null && timestampMs <= this.lastTimestamp)) return null;
-    // Increased gap tolerance: 800ms instead of 500ms to handle FPS drops
-    if (this.lastTimestamp !== null && timestampMs - this.lastTimestamp > 800) {
+    // Stale gap: if frame interval exceeds 500ms, reset arming state
+    if (this.lastTimestamp !== null && timestampMs - this.lastTimestamp > 500) {
       this.coverStart = null;
       this.armed = false;
       this.candidate = null;
@@ -99,7 +101,7 @@ export class UncoverTransition {
           this.lastCovered = timestampMs;
         } else {
           this.armed = (visibility[opposite] === 'VISIBLE' || (timestampMs - this.lastCovered <= 350)) &&
-            timestampMs - this.lastCovered <= UNCOVER_WINDOW_MS;
+            timestampMs - this.lastCovered <= this.windowMs;
         }
       }
       this.candidate = null;
@@ -107,26 +109,22 @@ export class UncoverTransition {
     }
 
     // 3. Both eyes are VISIBLE: Check if armed and within uncover window
-    if (!this.armed || (!this.candidate && timestampMs - this.lastCovered > UNCOVER_WINDOW_MS)) {
+    if (!this.armed || (!this.candidate && timestampMs - this.lastCovered > this.windowMs)) {
       this.armed = false;
       this.coverStart = null;
       return null;
     }
 
-    // 4. First clear frame after uncover: capture candidate image pair and confirm immediately.
-    // Single-frame confirmation: avoids losing events due to blink on second frame.
+    // 4. First clear frame after uncover: capture candidate image pair
     if (!this.candidate) {
       const image = candidate();
       if (image) {
         this.candidate = { image, timestampMs, lastCoveredMs: this.lastCovered };
-        // Confirm immediately on same frame — don't require a second clear frame.
-        this.done = true;
-        return { ...this.candidate, confirmedAtMs: timestampMs, uncoveredEye: this.eye };
       }
       return null;
     }
 
-    // 5. Fallback: second clear frame (should not normally reach here with single-frame confirm above)
+    // 5. Second clear frame: confirm uncover event with the candidate image from the first clear frame
     this.done = true;
     return { ...this.candidate, confirmedAtMs: timestampMs, uncoveredEye: this.eye };
   }
@@ -135,7 +133,7 @@ export class UncoverTransition {
 export class UncoverCaptureObserver {
   constructor() {
     this.sampler = new EyeCoverDetector();
-    this.transition = new UncoverTransition();
+    this.transition = new UncoverTransition(1800);
     this.baselines = {};
     this.baselineCounts = {};
   }
@@ -251,11 +249,13 @@ export function freezeEyePair(source, landmarks, frameMetadata) {
     const frame = getEyeAnatomicalFrame(landmarks, side.toUpperCase(), source.width, source.height);
     if (frame && frame.canthalWidth >= 6) {
       const xs = frame.contourPts.map(p => p.x), ys = frame.contourPts.map(p => p.y);
-      const pad = frame.canthalWidth * 0.3;
-      const x = Math.max(0, Math.floor(Math.min(...xs) - pad));
-      const y = Math.max(0, Math.floor(Math.min(...ys) - pad));
-      const width = Math.min(source.width - x, Math.ceil(Math.max(...xs) + pad) - x);
-      const height = Math.min(source.height - y, Math.ceil(Math.max(...ys) + pad) - y);
+      const padX = frame.canthalWidth * 0.25;
+      const eyeHeight = Math.max(1, Math.max(...ys) - Math.min(...ys));
+      const padY = Math.max(frame.canthalWidth * 0.35, eyeHeight * 0.85);
+      const x = Math.max(0, Math.floor(Math.min(...xs) - padX));
+      const y = Math.max(0, Math.floor(Math.min(...ys) - padY));
+      const width = Math.min(source.width - x, Math.ceil(Math.max(...xs) + padX) - x);
+      const height = Math.min(source.height - y, Math.ceil(Math.max(...ys) + padY) - y);
       if (width >= 8 && height >= 8) {
         cropRegion = { x, y, width, height };
       }
