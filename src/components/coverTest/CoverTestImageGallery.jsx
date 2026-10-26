@@ -305,35 +305,95 @@ export default function CoverTestImageGallery({
                 <div
                   style={{
                     marginTop: '8px',
-                    padding: '6px 8px',
+                    padding: '8px',
                     background: 'rgba(0, 0, 0, 0.04)',
                     borderTop: '1px dashed var(--border-subtle)',
-                    borderRadius: '4px',
+                    borderRadius: '6px',
                     fontSize: '0.68rem',
                     color: 'var(--text-muted)',
-                    lineHeight: 1.4,
+                    lineHeight: 1.45,
                   }}
                 >
-                  <div>
+                  <div style={{ marginBottom: '4px' }}>
                     • <strong>Armed:</strong>{' '}
-                    <span style={{ color: slot.debugInfo?.armed ? 'green' : '#c62828' }}>
-                      {slot.debugInfo?.armed ? '✅ Đạt (che ≥120ms)' : '❌ Chưa (chưa che kín)'}
+                    <span style={{ color: slot.debugInfo?.diag?.armedEverTrue || slot.debugInfo?.armed ? '#1b5e20' : '#c62828', fontWeight: 600 }}>
+                      {slot.debugInfo?.diag?.armedEverTrue || slot.debugInfo?.armed ? '✅ Đạt (che ≥120ms)' : '❌ Chưa (chưa che kín)'}
                     </span>
                   </div>
-                  <div>
+                  <div style={{ marginBottom: '4px' }}>
                     • <strong>Góc đầu:</strong>{' '}
-                    <span style={{ color: slot.debugInfo?.headPoseValid !== false ? 'green' : '#c62828' }}>
-                      {slot.debugInfo?.headPoseValid !== false ? '✅ Thẳng' : '⚠️ Nghiêng/Quay đầu'}
+                    <span style={{ color: slot.debugInfo?.diag?.headPoseInvalidEver ? '#c62828' : '#1b5e20', fontWeight: 600 }}>
+                      {slot.debugInfo?.diag?.headPoseInvalidEver ? '⚠️ Nghiêng/Quay đầu' : '✅ Thẳng'}
                     </span>
                   </div>
-                  <div>
-                    • <strong>Mắt đối diện:</strong>{' '}
-                    <span>{slot.debugInfo?.oppositeEyeState || 'Chưa ghi nhận'}</span>
-                  </div>
-                  {slot.debugInfo?.timingOffsetMs !== undefined && (
-                    <div>
-                      • <strong>Thời điểm mở:</strong> +{slot.debugInfo.timingOffsetMs}ms{' '}
-                      {slot.debugInfo.timingOffsetMs > 1800 ? '(❌ Quá 1800ms)' : '(✅ Trong cửa sổ)'}
+
+                  {/* Yêu cầu 5: Hiển thị ảnh crop kèm nhãn visibility để tự nhìn xem có đúng là mắt không */}
+                  {slot.debugCropUrl && (
+                    <div
+                      style={{
+                        margin: '8px 0',
+                        padding: '6px',
+                        background: '#ffffff',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(0, 0, 0, 0.1)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginBottom: '4px',
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, color: 'var(--color-deep-teal)', fontSize: '0.7rem' }}>
+                          📸 Crop mắt ghi nhận (+{slot.debugCropT || slot.timingOffsetMs || 0}ms):
+                        </span>
+                        <span
+                          style={{
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            fontSize: '0.64rem',
+                            fontWeight: 700,
+                            background: slot.debugCropMetrics?.visibility === 'VISIBLE' ? 'rgba(46, 125, 50, 0.15)' : 'rgba(230, 81, 0, 0.15)',
+                            color: slot.debugCropMetrics?.visibility === 'VISIBLE' ? '#1b5e20' : '#e65100',
+                          }}
+                        >
+                          {slot.debugCropMetrics?.visibility || 'UNKNOWN'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <img
+                          src={slot.debugCropUrl}
+                          alt="Ảnh crop mắt kiểm tra"
+                          style={{
+                            width: '74px',
+                            height: '44px',
+                            objectFit: 'cover',
+                            borderRadius: '4px',
+                            border: '1px solid #bbb',
+                            background: '#000000',
+                          }}
+                        />
+                        <div style={{ fontSize: '0.62rem', lineHeight: 1.35, color: '#334155' }}>
+                          <div>minLum: <strong>{slot.debugCropMetrics?.minLum ?? '--'}</strong> (ngưỡng &lt;85)</div>
+                          <div>contrast: <strong>{slot.debugCropMetrics?.pupilContrast ?? '--'}</strong> | dynRange: <strong>{slot.debugCropMetrics?.dynamicRange ?? '--'}</strong></div>
+                          <div>aperture: <strong>{slot.debugCropMetrics?.aperture ?? '--'}</strong> | skinRatio: <strong>{slot.debugCropMetrics?.skinRatio ?? '--'}</strong></div>
+                          <div>lumiShift: <strong>{slot.debugCropMetrics?.isLuminanceShift ? 'LỆCH SÁNG' : 'Chuẩn'}</strong></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Phân phối thống kê Min / Med / Max của slot này */}
+                  {slot.debugInfo?.metricsStats?.uncoveredEye?.minLum && (
+                    <div style={{ marginTop: '6px', fontSize: '0.62rem', color: '#475569' }}>
+                      <div style={{ fontWeight: 600, color: 'var(--color-deep-teal)' }}>
+                        📊 Thống kê {slot.debugInfo.metricsStats.rawFrames.length} frames (Uncover 1.8s):
+                      </div>
+                      <div>• minLum: {slot.debugInfo.metricsStats.uncoveredEye.minLum.min} / {slot.debugInfo.metricsStats.uncoveredEye.minLum.median} / {slot.debugInfo.metricsStats.uncoveredEye.minLum.max} (Min/Med/Max)</div>
+                      <div>• contrast: {slot.debugInfo.metricsStats.uncoveredEye.pupilContrast?.min} / {slot.debugInfo.metricsStats.uncoveredEye.pupilContrast?.median} / {slot.debugInfo.metricsStats.uncoveredEye.pupilContrast?.max}</div>
+                      <div>• aperture: {slot.debugInfo.metricsStats.uncoveredEye.aperture?.min} / {slot.debugInfo.metricsStats.uncoveredEye.aperture?.median} / {slot.debugInfo.metricsStats.uncoveredEye.aperture?.max}</div>
                     </div>
                   )}
                 </div>
@@ -342,6 +402,11 @@ export default function CoverTestImageGallery({
           );
         })}
       </div>
+
+      {/* Yêu cầu 1: Bảng tổng hợp phân phối Min / Median / Max toàn bộ 6 lần đo kèm nút sao chép */}
+      {showDebug && (
+        <DistributionSummarySection slots={slots} />
+      )}
 
       {/* Mandatory Privacy Notice */}
       <div
@@ -356,6 +421,117 @@ export default function CoverTestImageGallery({
         }}
       >
         🔒 <em>Ảnh hiển thị trên thiết bị của bạn và bị xóa khỏi bộ nhớ trình duyệt khi đóng trang hoặc đo lại.</em>
+      </div>
+    </div>
+  );
+}
+
+function DistributionSummarySection({ slots = [] }) {
+  const [copied, setCopied] = useState(false);
+
+  const generateMarkdownTable = () => {
+    let md = `### BẢNG PHÂN PHỐI CHỈ SỐ MẮT LÚC BỎ CHE (UNCOVER WINDOW 1.8s)\n`;
+    md += `| Lần đo | Mắt | Số frames | minLum (Min/Med/Max) | Contrast (Min/Med/Max) | dynRange (Min/Med/Max) | Aperture (Min/Med/Max) | skinRatio (Min/Med/Max) | Nhãn crop |\n`;
+    md += `|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|\n`;
+
+    slots.forEach((s, idx) => {
+      const stats = s.debugInfo?.metricsStats?.uncoveredEye;
+      const count = s.debugInfo?.metricsStats?.rawFrames?.length || 0;
+      const eyeText = s.uncoveredEye === 'LEFT' ? 'Trái' : 'Phải';
+      const cropLabel = s.debugCropMetrics?.visibility || s.status;
+      if (stats?.minLum) {
+        md += `| Lần ${idx + 1} (CK${s.cycle}) | ${eyeText} | ${count} | ${stats.minLum.min} / ${stats.minLum.median} / ${stats.minLum.max} | ${stats.pupilContrast?.min} / ${stats.pupilContrast?.median} / ${stats.pupilContrast?.max} | ${stats.dynamicRange?.min} / ${stats.dynamicRange?.median} / ${stats.dynamicRange?.max} | ${stats.aperture?.min} / ${stats.aperture?.median} / ${stats.aperture?.max} | ${stats.skinRatio?.min} / ${stats.skinRatio?.median} / ${stats.skinRatio?.max} | ${cropLabel} |\n`;
+      } else {
+        md += `| Lần ${idx + 1} (CK${s.cycle}) | ${eyeText} | 0 | -- | -- | -- | -- | -- | CHƯA CÓ |\n`;
+      }
+    });
+
+    return md;
+  };
+
+  const handleCopy = () => {
+    const text = generateMarkdownTable();
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }).catch(() => {});
+  };
+
+  return (
+    <div
+      style={{
+        marginTop: '16px',
+        padding: '12px',
+        background: '#f8fafc',
+        borderRadius: '10px',
+        border: '1px solid #cbd5e1',
+        fontSize: '0.74rem',
+        color: '#1e293b',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+        <strong style={{ color: 'var(--color-deep-teal)', fontSize: '0.82rem' }}>
+          📊 Phân phối giá trị đo đạc 6 lượt (Uncover Window)
+        </strong>
+        <button
+          type="button"
+          onClick={handleCopy}
+          style={{
+            background: copied ? '#1b5e20' : 'var(--color-deep-teal)',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '4px 10px',
+            fontSize: '0.72rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          {copied ? '✅ Đã sao chép Markdown!' : '📋 Sao chép bảng Markdown'}
+        </button>
+      </div>
+
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.68rem', textAlign: 'left' }}>
+          <thead>
+            <tr style={{ background: '#e2e8f0', color: '#334155' }}>
+              <th style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Lần đo</th>
+              <th style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Mắt</th>
+              <th style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>minLum (Min/Med/Max)</th>
+              <th style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Contrast</th>
+              <th style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Aperture</th>
+              <th style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>Nhãn crop</th>
+            </tr>
+          </thead>
+          <tbody>
+            {slots.map((s, idx) => {
+              const stats = s.debugInfo?.metricsStats?.uncoveredEye;
+              const eyeText = s.uncoveredEye === 'LEFT' ? 'Trái' : 'Phải';
+              const cropLabel = s.debugCropMetrics?.visibility || s.status;
+              return (
+                <tr key={idx} style={{ background: idx % 2 === 0 ? '#ffffff' : '#f1f5f9' }}>
+                  <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1', fontWeight: 600 }}>Lần {idx + 1}</td>
+                  <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>{eyeText}</td>
+                  <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>
+                    {stats?.minLum ? `${stats.minLum.min} / ${stats.minLum.median} / ${stats.minLum.max}` : '--'}
+                  </td>
+                  <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>
+                    {stats?.pupilContrast ? `${stats.pupilContrast.min} / ${stats.pupilContrast.median} / ${stats.pupilContrast.max}` : '--'}
+                  </td>
+                  <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1' }}>
+                    {stats?.aperture ? `${stats.aperture.min} / ${stats.aperture.median} / ${stats.aperture.max}` : '--'}
+                  </td>
+                  <td style={{ padding: '4px 6px', border: '1px solid #cbd5e1', fontWeight: 600, color: cropLabel === 'VISIBLE' ? '#1b5e20' : '#b45309' }}>
+                    {cropLabel}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ marginTop: '6px', fontSize: '0.64rem', color: '#64748b' }}>
+        * Dữ liệu được đo đạc và tính toán trực tiếp từ camera client, không qua mạng hay máy chủ.
       </div>
     </div>
   );

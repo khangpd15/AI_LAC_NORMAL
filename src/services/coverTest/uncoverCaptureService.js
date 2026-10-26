@@ -210,8 +210,34 @@ export class UncoverCaptureObserver {
       }
     }
 
+    const debugMetrics = {
+      timestampMs,
+      left: patches.left ? {
+        minLum: patches.left.minLum,
+        pupilContrast: Number(patches.left.pupilContrast?.toFixed(2)),
+        dynamicRange: Number(patches.left.dynamicRange?.toFixed(2)),
+        stdDev: Number(patches.left.stdDev?.toFixed(2)),
+        mean: Number(patches.left.mean?.toFixed(2)),
+        aperture: frames.left && frames.left.canthalWidth > 0 ? Number((frames.left.palpebralHeight / frames.left.canthalWidth).toFixed(3)) : null,
+        skinRatio: Number(patches.left.skinRatio?.toFixed(3)),
+        isLuminanceShift: this.baselines?.left ? Boolean(patches.left.mean > this.baselines.left.mean + 20 || patches.left.mean < this.baselines.left.mean - 25) : false,
+        visibility: visibility.left,
+      } : { visibility: visibility.left },
+      right: patches.right ? {
+        minLum: patches.right.minLum,
+        pupilContrast: Number(patches.right.pupilContrast?.toFixed(2)),
+        dynamicRange: Number(patches.right.dynamicRange?.toFixed(2)),
+        stdDev: Number(patches.right.stdDev?.toFixed(2)),
+        mean: Number(patches.right.mean?.toFixed(2)),
+        aperture: frames.right && frames.right.canthalWidth > 0 ? Number((frames.right.palpebralHeight / frames.right.canthalWidth).toFixed(3)) : null,
+        skinRatio: Number(patches.right.skinRatio?.toFixed(3)),
+        isLuminanceShift: this.baselines?.right ? Boolean(patches.right.mean > this.baselines.right.mean + 20 || patches.right.mean < this.baselines.right.mean - 25) : false,
+        visibility: visibility.right,
+      } : { visibility: visibility.right },
+    };
+
     const event = this.transition.update({ timestampMs, visibility, candidate: makeCandidate });
-    return { visibility, event };
+    return { visibility, event, debugMetrics };
   }
 }
 

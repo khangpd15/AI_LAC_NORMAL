@@ -28,6 +28,15 @@ import CoverTestLightbox from '../coverTest/CoverTestLightbox';
 import CoverTestLiveThumbnailStrip from '../coverTest/CoverTestLiveThumbnailStrip';
 import CoverTestImageGallery from '../coverTest/CoverTestImageGallery';
 
+const isDebugModeEnabled = () => {
+  if (typeof window === 'undefined') return false;
+  return Boolean(
+    window.__COVER_TEST_DEBUG__ ||
+    window.location?.search?.includes('debug=1') ||
+    localStorage?.getItem('cover_test_debug') === '1'
+  );
+};
+
 
 /**
  * CoverTestStep Component
@@ -614,6 +623,10 @@ export default function CoverTestStep({
                 armedEverTrue: false,
                 headPoseInvalidEver: false,
                 lastObservedVisibility: null,
+                uncoverWindowFrames: [],
+                debugCropUrl: null,
+                debugCropMetrics: null,
+                debugCropT: null,
               };
             }
             const diag = slotDebugTelemetryRef.current[currentSlotIdx];
@@ -625,6 +638,46 @@ export default function CoverTestStep({
             }
             if (observation?.visibility) {
               diag.lastObservedVisibility = observation.visibility;
+            }
+
+            // Ghi nhận log frame chi tiết trong cửa sổ Uncover (1.8s) - Bước 1
+            if (state === 'TRACKING' && observation?.debugMetrics) {
+              const elapsedUncover = captured.timestampMs - startT;
+              if (elapsedUncover <= 1800 && diag.uncoverWindowFrames.length < 60) {
+                const frameEntry = {
+                  t: Math.round(elapsedUncover),
+                  ...observation.debugMetrics,
+                };
+                diag.uncoverWindowFrames.push(frameEntry);
+
+                // Chỉ ghi log khi bật cờ debug (URL ?debug=1 hoặc localStorage cover_test_debug=1) - không gửi đi đâu
+                if (isDebugModeEnabled()) {
+                  console.debug(`[UncoverDebug] Lần ${currentSlotIdx + 1} (${activeSide}) +${Math.round(elapsedUncover)}ms:`, frameEntry);
+                  if (typeof window !== 'undefined') {
+                    window.__COVER_TEST_DEBUG_LOGS__ = window.__COVER_TEST_DEBUG_LOGS__ || [];
+                    window.__COVER_TEST_DEBUG_LOGS__.push({ slot: currentSlotIdx + 1, side: activeSide, ...frameEntry });
+                  }
+                }
+              }
+
+              // Lưu 1 ảnh crop debug lúc hạ tay để người dùng trực tiếp quan sát (Yêu cầu 5)
+              if (!diag.debugCropUrl && elapsedUncover >= 100 && lm && image) {
+                try {
+                  const pair = freezeEyePair(image, lm, metadata);
+                  const targetSide = activeSide;
+                  if (pair?.eyes?.[targetSide]?.canvas) {
+                    pair.eyes[targetSide].canvas.toBlob((blob) => {
+                      if (blob && !diag.debugCropUrl) {
+                        const url = URL.createObjectURL(blob);
+                        createdUrlsRef.current.add(url);
+                        diag.debugCropUrl = url;
+                        diag.debugCropMetrics = observation.debugMetrics[targetSide];
+                        diag.debugCropT = Math.round(elapsedUncover);
+                      }
+                    }, 'image/jpeg', 0.85);
+                  }
+                } catch {}
+              }
             }
           }
 
@@ -1018,8 +1071,52 @@ export default function CoverTestStep({
 
     setCapturedSlots(prev => {
       return prev.map((slot, idx) => {
-        if (slot.status === 'CAPTURED') return slot;
         const diag = slotDebugTelemetryRef.current[idx];
+        const frames = diag?.uncoverWindowFrames || [];
+        const targetSide = slot.uncoveredEye === 'LEFT' ? 'left' : 'right';
+        const oppositeSide = targetSide === 'left' ? 'right' : 'left';
+
+        const computeStats = (key, side) => {
+          const vals = frames.map(f => f[side]?.[key]).filter(v => typeof v === 'number' && Number.isFinite(v));
+          if (vals.length === 0) return null;
+          vals.sort((a, b) => a - b);
+          const min = Number(vals[0].toFixed(2));
+          const max = Number(vals[vals.length - 1].toFixed(2));
+          const median = Number(vals[Math.floor(vals.length / 2)].toFixed(2));
+          return { min, median, max, count: vals.length };
+        };
+
+        const metricsStats = {
+          targetSide,
+          oppositeSide,
+          uncoveredEye: {
+            minLum: computeStats('minLum', targetSide),
+            pupilContrast: computeStats('pupilContrast', targetSide),
+            dynamicRange: computeStats('dynamicRange', targetSide),
+            stdDev: computeStats('stdDev', targetSide),
+            aperture: computeStats('aperture', targetSide),
+            skinRatio: computeStats('skinRatio', targetSide),
+          },
+          oppositeEye: {
+            minLum: computeStats('minLum', oppositeSide),
+            pupilContrast: computeStats('pupilContrast', oppositeSide),
+            dynamicRange: computeStats('dynamicRange', oppositeSide),
+            stdDev: computeStats('stdDev', oppositeSide),
+            aperture: computeStats('aperture', oppositeSide),
+            skinRatio: computeStats('skinRatio', oppositeSide),
+          },
+          rawFrames: frames,
+        };
+
+        if (slot.status === 'CAPTURED') {
+          return {
+            ...slot,
+            debugCropUrl: slot.uncoveredEye === 'LEFT' ? slot.leftUrl : slot.rightUrl,
+            debugCropMetrics: frames[frames.length - 1]?.[targetSide] || null,
+            debugInfo: { ...slot.debugInfo, diag, metricsStats },
+          };
+        }
+
         let reason = 'CHUA_XAC_NHAN_BO_CHE';
         let details = 'Hạ tay chưa dứt khoát hoặc mất dấu mắt';
         if (diag) {
@@ -1038,7 +1135,10 @@ export default function CoverTestStep({
           ...slot,
           status: 'NOT_CAPTURED',
           rejectionReason: reason,
-          debugInfo: { details, diag },
+          debugCropUrl: diag?.debugCropUrl || null,
+          debugCropMetrics: diag?.debugCropMetrics || null,
+          debugCropT: diag?.debugCropT || null,
+          debugInfo: { details, diag, metricsStats },
         };
       });
     });
