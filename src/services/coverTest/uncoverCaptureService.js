@@ -11,36 +11,39 @@ export function classifyEyeVisibility(patch, frame, baseline, oppositePatch = nu
   }
 
   const aperture = frame.palpebralHeight / frame.canthalWidth;
-  const contrast = Math.max(8, baseline.pupilContrast * 0.4);
+  const contrast = Math.max(9, baseline.pupilContrast * 0.45);
 
   // 1. Evidence of an occluded / covered eye:
-  // - Hand covering the eye eliminates pupil-to-sclera radial contrast.
-  // - Low pupil contrast + reduced variation / skin chrominance / collapsed aperture.
-  const isContrastLoss = patch.pupilContrast < contrast * 0.75 || patch.pupilContrast < 9.5;
+  // - Hand covering the eye: skin chrominance, loss of contrast, lack of dark pupil.
+  const isContrastLoss = patch.pupilContrast < contrast * 0.75 || patch.pupilContrast < 10.5;
   const isTextureLoss = patch.dynamicRange < baseline.dynamicRange * 0.65 || patch.stdDev < baseline.stdDev * 0.65;
   const isLuminanceShift = patch.mean > baseline.mean + 20 || patch.mean < baseline.mean - 25;
-  const isSkinOccluded = (patch.skinRatio >= 0.35 && patch.pupilContrast < 12);
-  const isNoPupil = (patch.minLum > 85 && patch.pupilContrast < 12);
-  const isApertureClosed = (aperture < 0.11 && patch.pupilContrast < 12);
-  const isAsymmetricOccluded = oppositePatch && (oppositePatch.pupilContrast >= 10 || (oppositePatch.minLum !== undefined && oppositePatch.minLum < 85)) &&
-    (patch.pupilContrast < oppositePatch.pupilContrast * 0.60 || (patch.minLum !== undefined && oppositePatch.minLum !== undefined && patch.minLum > oppositePatch.minLum + 14) || (patch.skinRatio >= 0.35 && patch.pupilContrast < 12));
+  const isSkinOccluded = (patch.skinRatio >= 0.28 && patch.pupilContrast < 13);
+  const isNoPupil = (patch.minLum > 82 && patch.pupilContrast < 13);
+  const isApertureClosed = (aperture < 0.12 && patch.pupilContrast < 13);
+  const isAsymmetricOccluded = oppositePatch && (oppositePatch.pupilContrast >= 9.5 || (oppositePatch.minLum !== undefined && oppositePatch.minLum < 85)) &&
+    (patch.pupilContrast < oppositePatch.pupilContrast * 0.65 || 
+     (patch.minLum !== undefined && oppositePatch.minLum !== undefined && patch.minLum > oppositePatch.minLum + 12) || 
+     (patch.skinRatio >= 0.28 && patch.pupilContrast < 13));
 
   if (isContrastLoss && (isTextureLoss || isLuminanceShift || isSkinOccluded || isNoPupil || isApertureClosed || isAsymmetricOccluded)) {
     return 'OCCLUDED';
   }
-  if (isSkinOccluded || isAsymmetricOccluded || isNoPupil || (isApertureClosed && patch.pupilContrast < 9)) {
+  if (isSkinOccluded || isAsymmetricOccluded || isNoPupil || (isApertureClosed && patch.pupilContrast < 10)) {
     return 'OCCLUDED';
   }
 
   // 2. Closed lids or blink without hand occlusion evidence
   if (aperture < 0.12) return 'UNKNOWN';
 
-  // 3. Clear open eye:
-  const hasDarkPupil = patch.minLum === undefined || patch.minLum < 90;
+  // 3. Clear open eye: Must be genuine eye (not skin, has dark pupil and contrast)
+  const hasDarkPupil = patch.minLum !== undefined && patch.minLum < 85;
+  const notSkin = patch.skinRatio < 0.35;
   if (
-    (patch.pupilContrast >= contrast && patch.dynamicRange >= 24 && patch.stdDev >= 9 && aperture >= 0.12 && hasDarkPupil) ||
-    (patch.isEyeLike && aperture >= 0.12 && hasDarkPupil) ||
-    (patch.pupilContrast >= 9.5 && patch.minLum !== undefined && patch.minLum < 95 && aperture >= 0.12)
+    notSkin &&
+    ((patch.pupilContrast >= contrast && patch.dynamicRange >= 24 && patch.stdDev >= 9 && aperture >= 0.12 && hasDarkPupil) ||
+     (patch.isEyeLike && aperture >= 0.12 && hasDarkPupil) ||
+     (patch.pupilContrast >= 11 && patch.minLum < 85 && aperture >= 0.12))
   ) {
     return 'VISIBLE';
   }
@@ -51,7 +54,8 @@ export function classifyEyeVisibility(patch, frame, baseline, oppositePatch = nu
 /** Keeps the FIRST clear frame while waiting for a second clear observation.
  * The event time is bounded by the last occluded and first clear frames.
  */
-const UNCOVER_WINDOW_MS = 700;
+// Extended window: allows slow hand removal (typical 1-2s in clinical use)
+const UNCOVER_WINDOW_MS = 1800;
 
 export class UncoverTransition {
   constructor() { this.reset(); }
@@ -67,7 +71,8 @@ export class UncoverTransition {
   update({ timestampMs, visibility, candidate }) {
     if (this.done || !this.eye || !Number.isFinite(timestampMs) ||
         (this.lastTimestamp !== null && timestampMs <= this.lastTimestamp)) return null;
-    if (this.lastTimestamp !== null && timestampMs - this.lastTimestamp > 500) {
+    // Increased gap tolerance: 800ms instead of 500ms to handle FPS drops
+    if (this.lastTimestamp !== null && timestampMs - this.lastTimestamp > 800) {
       this.coverStart = null;
       this.armed = false;
       this.candidate = null;
@@ -75,8 +80,9 @@ export class UncoverTransition {
     this.lastTimestamp = timestampMs;
     const opposite = this.eye === 'left' ? 'right' : 'left';
 
-    // 1. Arming during cover: Expected eye is OCCLUDED and opposite eye is visible or non-occluded
-    if (visibility[this.eye] === 'OCCLUDED' && (visibility[opposite] === 'VISIBLE' || (this.armed && visibility[opposite] !== 'OCCLUDED'))) {
+    // 1. Arming during cover: Expected eye is OCCLUDED.
+    // Opposite eye may be VISIBLE or UNKNOWN (e.g. glare, partial occlusion) — only reject if opposite is also OCCLUDED.
+    if (visibility[this.eye] === 'OCCLUDED' && (visibility[opposite] !== 'OCCLUDED')) {
       this.coverStart ??= timestampMs;
       this.lastCovered = timestampMs;
       if (timestampMs - this.coverStart >= 120) this.armed = true;
@@ -107,14 +113,20 @@ export class UncoverTransition {
       return null;
     }
 
-    // 4. First clear frame after uncover: capture candidate image pair
+    // 4. First clear frame after uncover: capture candidate image pair and confirm immediately.
+    // Single-frame confirmation: avoids losing events due to blink on second frame.
     if (!this.candidate) {
       const image = candidate();
-      if (image) this.candidate = { image, timestampMs, lastCoveredMs: this.lastCovered };
+      if (image) {
+        this.candidate = { image, timestampMs, lastCoveredMs: this.lastCovered };
+        // Confirm immediately on same frame — don't require a second clear frame.
+        this.done = true;
+        return { ...this.candidate, confirmedAtMs: timestampMs, uncoveredEye: this.eye };
+      }
       return null;
     }
 
-    // 5. Second clear frame: confirm uncover event and return
+    // 5. Fallback: second clear frame (should not normally reach here with single-frame confirm above)
     this.done = true;
     return { ...this.candidate, confirmedAtMs: timestampMs, uncoveredEye: this.eye };
   }

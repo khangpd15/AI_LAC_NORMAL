@@ -298,37 +298,40 @@ export class EyeCoverDetector {
         const rightPatch = this.sampleEyePatch(video, rightCenterX, rightCenterY, rightCropW, rightCropH, 32, 0, 32, 24);
 
         // 4. Nhận diện mắt mở sáng rõ (Open Eye Signature)
-        const leftIsOpen = (leftPatch.pupilContrast >= 9.5 && leftPatch.minLum < 95) ||
-                           (leftPatch.pupilContrast >= 7.5 && leftEAR >= 0.12) ||
-                           (leftPatch.minLum < 80 && leftEAR >= 0.11) ||
-                           (leftEAR >= 0.13 && leftPatch.isEyeLike);
+        // Mắt thật mở phải có độ tương phản con ngươi tốt, con ngươi tối rõ, và không bị da tay bao phủ
+        const leftIsOpen = leftPatch.skinRatio < 0.35 && (
+          (leftPatch.pupilContrast >= 10.5 && leftPatch.minLum < 88) ||
+          (leftPatch.pupilContrast >= 9.0 && leftEAR >= 0.13 && leftPatch.minLum < 85) ||
+          (leftEAR >= 0.13 && leftPatch.isEyeLike)
+        );
 
-        const rightIsOpen = (rightPatch.pupilContrast >= 9.5 && rightPatch.minLum < 95) ||
-                            (rightPatch.pupilContrast >= 7.5 && rightEAR >= 0.12) ||
-                            (rightPatch.minLum < 80 && rightEAR >= 0.11) ||
-                            (rightEAR >= 0.13 && rightPatch.isEyeLike);
+        const rightIsOpen = rightPatch.skinRatio < 0.35 && (
+          (rightPatch.pupilContrast >= 10.5 && rightPatch.minLum < 88) ||
+          (rightPatch.pupilContrast >= 9.0 && rightEAR >= 0.13 && rightPatch.minLum < 85) ||
+          (rightEAR >= 0.13 && rightPatch.isEyeLike)
+        );
 
         // 5. Kiểm tra che MỘT BÊN MẮT (Asymmetric Occlusion)
-        // Khi người dùng che Mắt Trái: Mắt Phải mở rõ, Mắt Trái mất tương phản con ngươi hoặc phủ da tay
+        // Khi che Mắt Trái: Mắt Phải mở rõ, Mắt Trái mất tương phản con ngươi, tăng sắc tố da hoặc con ngươi biến mất
         const leftOccludedByHand = (
-          (leftPatch.pupilContrast < 9.5) ||
-          (rightIsOpen && leftPatch.pupilContrast < rightPatch.pupilContrast * 0.60) ||
-          (leftPatch.minLum > 85 && leftPatch.pupilContrast < 12) ||
-          (rightIsOpen && leftPatch.minLum > rightPatch.minLum + 14) ||
-          (leftPatch.skinRatio > 0.35 && leftPatch.pupilContrast < 12) ||
-          (leftEAR < 0.11 && (rightIsOpen || rightEAR >= 0.12)) ||
+          (leftPatch.skinRatio >= 0.28 && leftPatch.pupilContrast < 13) ||
+          (leftPatch.pupilContrast < 10.0) ||
+          (rightIsOpen && leftPatch.pupilContrast < rightPatch.pupilContrast * 0.65) ||
+          (leftPatch.minLum > 80 && leftPatch.pupilContrast < 13) ||
+          (rightIsOpen && leftPatch.minLum > rightPatch.minLum + 12) ||
+          (leftEAR < 0.12 && (rightIsOpen || rightEAR >= 0.12)) ||
           (leftPatch.stdDev < 11 && (rightIsOpen || rightPatch.stdDev >= 12)) ||
           (!leftPatch.isEyeLike && rightIsOpen)
         );
 
-        // Khi người dùng che Mắt Phải: Mắt Trái mở rõ, Mắt Phải mất tương phản con ngươi hoặc phủ da tay
+        // Khi che Mắt Phải: Mắt Trái mở rõ, Mắt Phải mất tương phản con ngươi, tăng sắc tố da hoặc con ngươi biến mất
         const rightOccludedByHand = (
-          (rightPatch.pupilContrast < 9.5) ||
-          (leftIsOpen && rightPatch.pupilContrast < leftPatch.pupilContrast * 0.60) ||
-          (rightPatch.minLum > 85 && rightPatch.pupilContrast < 12) ||
-          (leftIsOpen && rightPatch.minLum > leftPatch.minLum + 14) ||
-          (rightPatch.skinRatio > 0.35 && rightPatch.pupilContrast < 12) ||
-          (rightEAR < 0.11 && (leftIsOpen || leftEAR >= 0.12)) ||
+          (rightPatch.skinRatio >= 0.28 && rightPatch.pupilContrast < 13) ||
+          (rightPatch.pupilContrast < 10.0) ||
+          (leftIsOpen && rightPatch.pupilContrast < leftPatch.pupilContrast * 0.65) ||
+          (rightPatch.minLum > 80 && rightPatch.pupilContrast < 13) ||
+          (leftIsOpen && rightPatch.minLum > leftPatch.minLum + 12) ||
+          (rightEAR < 0.12 && (leftIsOpen || leftEAR >= 0.12)) ||
           (rightPatch.stdDev < 11 && (leftIsOpen || leftPatch.stdDev >= 12)) ||
           (!rightPatch.isEyeLike && leftIsOpen)
         );
