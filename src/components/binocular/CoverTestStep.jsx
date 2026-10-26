@@ -24,6 +24,9 @@ import { captureScreeningFrame } from '../../services/screeningImageCaptureServi
 import { UncoverCaptureObserver, freezeEyePair, encodeEyePair } from '../../services/coverTest/uncoverCaptureService.js';
 import { saveCoverTestSession as saveCoverTestCloudSession } from '../../services/coverTest/coverTestPersistenceService.js';
 import { toCanonicalEye } from '../../utils/eyeCoordinateMapping.js';
+import CoverTestLightbox from '../coverTest/CoverTestLightbox';
+import CoverTestLiveThumbnailStrip from '../coverTest/CoverTestLiveThumbnailStrip';
+import CoverTestImageGallery from '../coverTest/CoverTestImageGallery';
 
 
 /**
@@ -119,6 +122,50 @@ export default function CoverTestStep({
   const lastFeedbackUpdateRef = useRef(0);
   const [recentCaptureNotice, setRecentCaptureNotice] = useState(null);
   const captureNoticeTimeoutRef = useRef(null);
+
+  // Object URL memory management & Gallery Slots
+  const createdUrlsRef = useRef(new Set());
+  const revokeAllCreatedUrls = useCallback(() => {
+    createdUrlsRef.current.forEach((url) => {
+      try {
+        URL.revokeObjectURL(url);
+      } catch {}
+    });
+    createdUrlsRef.current.clear();
+  }, []);
+
+  const createInitialSlots = useCallback(() => [
+    { slotIndex: 0, cycle: 1, uncoveredEye: 'LEFT', status: 'PENDING', leftUrl: null, rightUrl: null, previewUrl: null, timingOffsetMs: null, rejectionReason: null, debugInfo: null },
+    { slotIndex: 1, cycle: 1, uncoveredEye: 'RIGHT', status: 'PENDING', leftUrl: null, rightUrl: null, previewUrl: null, timingOffsetMs: null, rejectionReason: null, debugInfo: null },
+    { slotIndex: 2, cycle: 2, uncoveredEye: 'LEFT', status: 'PENDING', leftUrl: null, rightUrl: null, previewUrl: null, timingOffsetMs: null, rejectionReason: null, debugInfo: null },
+    { slotIndex: 3, cycle: 2, uncoveredEye: 'RIGHT', status: 'PENDING', leftUrl: null, rightUrl: null, previewUrl: null, timingOffsetMs: null, rejectionReason: null, debugInfo: null },
+    { slotIndex: 4, cycle: 3, uncoveredEye: 'LEFT', status: 'PENDING', leftUrl: null, rightUrl: null, previewUrl: null, timingOffsetMs: null, rejectionReason: null, debugInfo: null },
+    { slotIndex: 5, cycle: 3, uncoveredEye: 'RIGHT', status: 'PENDING', leftUrl: null, rightUrl: null, previewUrl: null, timingOffsetMs: null, rejectionReason: null, debugInfo: null },
+  ], []);
+
+  const [capturedSlots, setCapturedSlots] = useState(createInitialSlots);
+  const slotDebugTelemetryRef = useRef({});
+  const [lightboxState, setLightboxState] = useState({ isOpen: false, currentIndex: 0, items: [] });
+
+  const handleOpenLightbox = useCallback((index, items) => {
+    setLightboxState({
+      isOpen: true,
+      currentIndex: index,
+      items: items || [],
+    });
+  }, []);
+
+  const currentActiveSlotIndex = useMemo(() => {
+    const base = (cycleIndex - 1) * 2;
+    const isRight = coveredEye === 'right' || trackedEye === 'right';
+    return Math.min(5, Math.max(0, base + (isRight ? 1 : 0)));
+  }, [cycleIndex, coveredEye, trackedEye]);
+
+  useEffect(() => {
+    return () => {
+      revokeAllCreatedUrls();
+    };
+  }, [revokeAllCreatedUrls]);
 
   useEffect(() => {
     if (!frameConsumerRef) return;
@@ -558,6 +605,29 @@ export default function CoverTestStep({
             lastFeedbackUpdateRef.current = nowMs;
             setCaptureFeedback(captureFeedbackRef.current);
           }
+
+          const activeSide = state === 'COVER' ? coverEye : (state === 'TRACKING' ? trackEye : null);
+          if (activeSide && (state === 'COVER' || state === 'TRACKING')) {
+            const currentSlotIdx = (cycleNum - 1) * 2 + (activeSide === 'left' ? 0 : 1);
+            if (!slotDebugTelemetryRef.current[currentSlotIdx]) {
+              slotDebugTelemetryRef.current[currentSlotIdx] = {
+                armedEverTrue: false,
+                headPoseInvalidEver: false,
+                lastObservedVisibility: null,
+              };
+            }
+            const diag = slotDebugTelemetryRef.current[currentSlotIdx];
+            if (uncoverObserverRef.current?.transition?.armed) {
+              diag.armedEverTrue = true;
+            }
+            if (currentQuality && currentQuality.headPoseValid === false) {
+              diag.headPoseInvalidEver = true;
+            }
+            if (observation?.visibility) {
+              diag.lastObservedVisibility = observation.visibility;
+            }
+          }
+
           if (observation?.event) {
             const cycleStart = cycleStartRef.current;
             const pending = encodeEyePair(observation.event, cycleNum, cycleStart).then(({ images, metadata: event }) => {
@@ -571,6 +641,43 @@ export default function CoverTestStep({
               setRecentCaptureNotice(`📸 Đã chụp ảnh hai mắt lúc bỏ che (Lần ${cycleNum})!`);
               if (captureNoticeTimeoutRef.current) clearTimeout(captureNoticeTimeoutRef.current);
               captureNoticeTimeoutRef.current = setTimeout(() => setRecentCaptureNotice(null), 2400);
+
+              const leftField = event.crops?.left?.field;
+              const rightField = event.crops?.right?.field;
+              const leftBlob = leftField ? images[leftField] : null;
+              const rightBlob = rightField ? images[rightField] : null;
+              let leftUrl = null;
+              let rightUrl = null;
+              if (leftBlob) {
+                leftUrl = URL.createObjectURL(leftBlob);
+                createdUrlsRef.current.add(leftUrl);
+              }
+              if (rightBlob) {
+                rightUrl = URL.createObjectURL(rightBlob);
+                createdUrlsRef.current.add(rightUrl);
+              }
+              const previewUrl = event.uncoveredEye === 'LEFT' ? leftUrl : rightUrl;
+              const slotIdx = (cycleNum - 1) * 2 + (event.uncoveredEye === 'LEFT' ? 0 : 1);
+              setCapturedSlots(prev => {
+                const next = [...prev];
+                next[slotIdx] = {
+                  slotIndex: slotIdx,
+                  cycle: cycleNum,
+                  uncoveredEye: event.uncoveredEye,
+                  status: 'CAPTURED',
+                  leftUrl,
+                  rightUrl,
+                  previewUrl: previewUrl || leftUrl || rightUrl,
+                  timingOffsetMs: event.timingOffsetMs || (event.confirmedAtMs && event.lastCoveredMs ? event.confirmedAtMs - event.lastCoveredMs : null),
+                  cropDims: {
+                    left: event.crops?.left ? { w: event.crops.left.width, h: event.crops.left.height } : null,
+                    right: event.crops?.right ? { w: event.crops.right.width, h: event.crops.right.height } : null,
+                  },
+                  rejectionReason: null,
+                  debugInfo: null,
+                };
+                return next;
+              });
             }).catch(error => {
               if (isAbortedRef.current || phaseRunToken !== activeRunTokenRef.current) return;
               uncoverEventsRef.current.push({
@@ -726,6 +833,10 @@ export default function CoverTestStep({
     pendingCropsRef.current = new Set();
     uncoverObserverRef.current = new UncoverCaptureObserver();
     setCapturedPairs(0);
+    revokeAllCreatedUrls();
+    setCapturedSlots(createInitialSlots());
+    slotDebugTelemetryRef.current = {};
+    setLightboxState({ isOpen: false, currentIndex: 0, items: [] });
     hasSavedSessionRef.current = false;
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
@@ -883,15 +994,54 @@ export default function CoverTestStep({
     await Promise.all([...pendingCropsRef.current]);
     if (!runIsCurrent()) return;
     for (const cycleRecord of pendingCycleRecords) {
-      cycleRecord.uncoverEvents = ['LEFT', 'RIGHT'].map(side =>
-        uncoverEventsRef.current.find(event => event.cycle === cycleRecord.cycle && event.uncoveredEye === side) || {
-          cycle: cycleRecord.cycle, uncoveredEye: side, status: 'NOT_CAPTURED',
-          reason: 'NO_CONFIRMED_VISIBLE_TRANSITION',
-        });
+      cycleRecord.uncoverEvents = ['LEFT', 'RIGHT'].map(side => {
+        const found = uncoverEventsRef.current.find(event => event.cycle === cycleRecord.cycle && event.uncoveredEye === side);
+        if (found) return found;
+        const sIdx = (cycleRecord.cycle - 1) * 2 + (side === 'LEFT' ? 0 : 1);
+        const diag = slotDebugTelemetryRef.current[sIdx];
+        let reason = 'NO_CONFIRMED_VISIBLE_TRANSITION';
+        if (diag) {
+          if (!diag.armedEverTrue) reason = 'ARMED_FALSE';
+          else if (diag.headPoseInvalidEver) reason = 'HEAD_POSE_INVALID';
+          else reason = 'WINDOW_EXPIRED';
+        }
+        return {
+          cycle: cycleRecord.cycle,
+          uncoveredEye: side,
+          status: 'NOT_CAPTURED',
+          reason,
+        };
+      });
       cycleRecord.occlusionMethod = 'pixel-contrast-v1';
       cycleRecord.occlusionVerified = cycleRecord.uncoverEvents.every(event => event.status === 'CAPTURED');
-
     }
+
+    setCapturedSlots(prev => {
+      return prev.map((slot, idx) => {
+        if (slot.status === 'CAPTURED') return slot;
+        const diag = slotDebugTelemetryRef.current[idx];
+        let reason = 'CHUA_XAC_NHAN_BO_CHE';
+        let details = 'Hạ tay chưa dứt khoát hoặc mất dấu mắt';
+        if (diag) {
+          if (!diag.armedEverTrue) {
+            reason = 'CHUA_CHE_DU_KIN';
+            details = 'Chưa che đủ kín mống mắt (cần che tối ≥ 120ms)';
+          } else if (diag.headPoseInvalidEver) {
+            reason = 'NGHIENG_DAU_KHI_BO_CHE';
+            details = 'Đầu nghiêng quá góc cho phép khi bỏ che';
+          } else {
+            reason = 'QUA_CUA_SO_THOI_GIAN';
+            details = 'Hạ tay chậm quá cửa sổ xác nhận (1.8s)';
+          }
+        }
+        return {
+          ...slot,
+          status: 'NOT_CAPTURED',
+          rejectionReason: reason,
+          debugInfo: { details, diag },
+        };
+      });
+    });
 
     if (runIsCurrent() && accumulatedCycles.length > 0) {
       const summaryPayload = aggregateCoverCycles(accumulatedCycles);
@@ -986,6 +1136,13 @@ export default function CoverTestStep({
           isPulsing={true}
           targetPosition={fixationTargetPos}
           ariaLabel="Điểm nhìn trung tâm Cover Test"
+        />
+
+        {/* Live Thumbnail Strip lúc đang đo */}
+        <CoverTestLiveThumbnailStrip
+          slots={capturedSlots}
+          activeSlotIndex={currentActiveSlotIndex}
+          coverState={coverState}
         />
 
         {/* Minimal child-friendly Top Bar (Section 35.4 & 35.5) */}
@@ -1326,33 +1483,14 @@ export default function CoverTestStep({
               </div>
             )}
 
-            {sessionSaveState.status === 'processed' && <p role="status">
-                  Đã xử lý {sessionSaveState.sampleCount} mẫu. Máy chủ không lưu ảnh hoặc dữ liệu phiên kiểm tra.
-            </p>}
-            <p role="status">Đã chụp {capturedPairs}/6 cặp ảnh hai mắt lúc bỏ che.</p>
-            {capturedPairs < 6 && (
-              <div
-                role="alert"
-                style={{
-                  background: 'rgba(239, 108, 0, 0.1)',
-                  border: '1px solid #ffb74d',
-                  borderRadius: '8px',
-                  padding: '10px 14px',
-                  marginTop: '8px',
-                  fontSize: '0.82rem',
-                  color: '#8c5a00',
-                  lineHeight: '1.5',
-                }}
-              >
-                <div><strong>⚠️ Còn thiếu {6 - capturedPairs} lần chụp:</strong> Có lượt thao tác tay hạ chưa dứt khoát hoặc chưa che đủ kín.</div>
-                <div style={{ marginTop: '4px', color: 'var(--text-muted)' }}>
-                  Nút <em>Phân tích lại</em> chỉ gửi lại dữ liệu hiện có; bạn nên chọn <strong>Đo lại Cover Test</strong> để bổ sung đầy đủ 6 lần chụp.
-                </div>
-              </div>
+            {sessionSaveState.status === 'processed' && (
+              <p role="status" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '8px 0' }}>
+                Đã xử lý {sessionSaveState.sampleCount} mẫu dữ liệu. Ảnh và chuỗi thời gian được gửi để phân tích AI tạm thời và không được lưu trữ trên máy chủ.
+              </p>
             )}
 
             {sessionSaveState.status === 'error' && (
-              <div style={{ background: 'rgba(242, 140, 123, 0.15)', border: '1px solid var(--color-warm-coral)', borderRadius: '8px', padding: '10px 14px' }}>
+              <div style={{ background: 'rgba(242, 140, 123, 0.15)', border: '1px solid var(--color-warm-coral)', borderRadius: '8px', padding: '10px 14px', marginTop: '8px' }}>
                 <div style={{ color: '#8a1f12', fontWeight: 600, fontSize: '0.88rem', marginBottom: '4px' }}>
                   ⚠️ Chưa phân tích được phiên kiểm tra. Vui lòng thử lại.
                 </div>
@@ -1370,6 +1508,22 @@ export default function CoverTestStep({
               </div>
             )}
           </div>
+
+          {/* Thư viện ảnh crop mắt lúc bỏ che (6 cặp) */}
+          <CoverTestImageGallery
+            slots={capturedSlots}
+            capturedPairs={capturedPairs}
+            onOpenLightbox={handleOpenLightbox}
+          />
+
+          {/* Modal Lightbox xem chi tiết ảnh */}
+          <CoverTestLightbox
+            isOpen={lightboxState.isOpen}
+            items={lightboxState.items}
+            currentIndex={lightboxState.currentIndex}
+            onClose={() => setLightboxState((prev) => ({ ...prev, isOpen: false }))}
+            onNavigate={(newIdx) => setLightboxState((prev) => ({ ...prev, currentIndex: newIdx }))}
+          />
 
           <div style={{ display: 'flex', gap: '14px', maxWidth: '640px', margin: '0 auto', flexWrap: 'wrap' }}>
             <button
