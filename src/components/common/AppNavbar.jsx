@@ -1,4 +1,5 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState, useCallback } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { AudioIcon } from '../audio/ListeningExperience';
 import {
   IconNavHome,
@@ -11,23 +12,45 @@ import {
 import './appNavbar.css';
 
 /**
- * REMICARE AI — ECOKA STYLE UNIFIED NAVIGATION SYSTEM
+ * REMICARE AI — UNIFIED NAVIGATION SYSTEM
  *
- * Bao gồm 3 thành phần điều hướng đồng bộ:
- * 1. Top Header: Logo, Brand title, Desktop Nav Items, CTA button, Theme toggle, Hamburger menu.
- * 2. Left Sidebar / Navigation Drawer: Trượt từ cạnh trái khi bấm Hamburger, overlay làm mờ, đóng khi bấm ✕, overlay, Esc hoặc chọn tab.
- * 3. Mobile Bottom Navigation Bar: Ghim cạnh dưới màn hình trên mobile, icon ở trên, nhãn ở dưới, màu cam ECOKA chủ đạo, hỗ trợ safe area.
+ * Bao gồm:
+ * 1. Top Header: Logo, Desktop Nav Items với Dropdown "Sàng lọc" 2 cấp (Lác/Lé vs Sụp Mí), CTA "Sàng lọc ngay", Theme toggle, Hamburger menu.
+ * 2. Left Sidebar / Navigation Drawer: Trượt từ cạnh trái, Accordion "Sàng lọc", đóng khi bấm Esc/overlay.
+ * 3. Mobile Bottom Navigation Bar: Ghim cạnh dưới màn hình mobile.
  */
 export default function AppNavbar({
-  activeTab = 'home',
+  activeTab: propActiveTab,
   onSelectTab,
   onNavigateHome,
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [drawerScreeningOpen, setDrawerScreeningOpen] = useState(true);
+
   const menuId = useId();
   const drawerId = useId();
+  const dropdownMenuId = useId();
   const hamburgerRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const dropdownTriggerRef = useRef(null);
+  const dropdownItemsRef = useRef([]);
+  const hoverTimeoutRef = useRef(null);
 
+  // Router hooks (fallback an toàn nếu không nằm trong Router)
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Xác định active tab từ pathname
+  const currentPath = location?.pathname || '';
+  let activeTab = propActiveTab || 'home';
+  if (currentPath === '/') activeTab = 'home';
+  else if (currentPath === '/trai-nghiem') activeTab = 'experience';
+  else if (currentPath === '/mo-phong') activeTab = 'simulation';
+  else if (currentPath.startsWith('/sang-loc')) activeTab = 'screening';
+  else if (currentPath === '/gioi-thieu') activeTab = 'about';
+
+  // Theme State
   const [dark, setDark] = useState(() => {
     try {
       return (
@@ -49,53 +72,143 @@ export default function AppNavbar({
     }
   }, [dark]);
 
+  // Đóng dropdown và drawer khi đổi route
+  useEffect(() => {
+    setDropdownOpen(false);
+    setDrawerOpen(false);
+  }, [currentPath]);
+
+  // Click outside listener cho dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
+  }, []);
+
   // Lock background scroll when drawer is open and handle Escape key
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && drawerOpen) {
-        setDrawerOpen(false);
-        hamburgerRef.current?.focus();
+      if (e.key === 'Escape') {
+        if (dropdownOpen) {
+          setDropdownOpen(false);
+          dropdownTriggerRef.current?.focus();
+        } else if (drawerOpen) {
+          setDrawerOpen(false);
+          hamburgerRef.current?.focus();
+        }
       }
     };
 
     if (drawerOpen) {
       document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
     } else {
       document.body.style.overflow = '';
     }
 
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [drawerOpen]);
+  }, [drawerOpen, dropdownOpen]);
+
+  // Hover delay chống giật cho Dropdown trên Desktop
+  const handleDropdownMouseEnter = () => {
+    clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      setDropdownOpen(true);
+    }, 120);
+  };
+
+  const handleDropdownMouseLeave = () => {
+    clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      setDropdownOpen(false);
+    }, 180);
+  };
 
   const handleBrandClick = () => {
     setDrawerOpen(false);
-    if (activeTab === 'home') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    setDropdownOpen(false);
+    if (navigate) {
+      navigate('/');
     } else if (onNavigateHome) {
       onNavigateHome();
     } else if (onSelectTab) {
       onSelectTab('home');
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleTabClick = (tabKey) => {
+  const handleTabClick = (tabKey, path) => {
     setDrawerOpen(false);
-    if (activeTab === tabKey) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-    if (onSelectTab) {
+    setDropdownOpen(false);
+    if (path && navigate) {
+      navigate(path);
+    } else if (onSelectTab) {
       onSelectTab(tabKey);
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Keyboard navigation for dropdown menu items
+  const handleTriggerKeyDown = (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setDropdownOpen(true);
+      setTimeout(() => {
+        dropdownItemsRef.current[0]?.focus();
+      }, 50);
+    }
+  };
+
+  const handleItemKeyDown = (e, index) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextIndex = (index + 1) % screeningSubItems.length;
+      dropdownItemsRef.current[nextIndex]?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevIndex = (index - 1 + screeningSubItems.length) % screeningSubItems.length;
+      dropdownItemsRef.current[prevIndex]?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      dropdownItemsRef.current[0]?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      dropdownItemsRef.current[screeningSubItems.length - 1]?.focus();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setDropdownOpen(false);
+      dropdownTriggerRef.current?.focus();
+    }
+  };
+
+  const screeningSubItems = [
+    {
+      key: 'strabismus',
+      path: '/sang-loc/lac-le',
+      label: 'Sàng lọc lác / lé',
+      desc: 'Hirschberg & Digital Cover Test',
+      icon: <IconNavCamera size={18} />,
+    },
+    {
+      key: 'ptosis',
+      path: '/sang-loc/sup-mi',
+      label: 'Sàng lọc sụp mí',
+      desc: 'Hình thái học khe mi & MRD-1',
+      icon: <IconNavEye size={18} />,
+    },
+  ];
 
   const navItems = [
     {
       key: 'home',
+      path: '/',
       label: 'Trang chủ',
       shortLabel: 'Trang chủ',
       desc: 'Tổng quan & hướng dẫn sức khỏe mắt',
@@ -104,6 +217,7 @@ export default function AppNavbar({
     },
     {
       key: 'experience',
+      path: '/trai-nghiem',
       label: 'Trải nghiệm',
       shortLabel: 'Trải nghiệm',
       desc: 'Góc nhìn thị giác trẻ nhược thị',
@@ -112,6 +226,7 @@ export default function AppNavbar({
     },
     {
       key: 'simulation',
+      path: '/mo-phong',
       label: 'Mô phỏng lác lé',
       shortLabel: 'Mô phỏng',
       desc: 'AI Webcam mô phỏng mắt trực tiếp',
@@ -121,14 +236,17 @@ export default function AppNavbar({
     },
     {
       key: 'screening',
+      path: '/sang-loc',
       label: 'Sàng lọc',
       shortLabel: 'Sàng lọc',
-      desc: 'Kiểm tra độ lệch Hirschberg',
+      desc: 'Kiểm tra thị lực hai mắt & sụp mí',
       icon: <IconNavCamera size={22} />,
-      title: 'Bài kiểm tra sàng lọc thị lực hai mắt',
+      title: 'Bài kiểm tra sàng lọc thị lực bằng AI',
+      isDropdown: true,
     },
     {
       key: 'about',
+      path: '/gioi-thieu',
       label: 'Giới thiệu',
       shortLabel: 'Giới thiệu',
       desc: 'Sứ mệnh & công nghệ cộng đồng',
@@ -182,13 +300,110 @@ export default function AppNavbar({
             <ul className="unified-navbar-items">
               {navItems.map((item) => {
                 const isActive = activeTab === item.key;
+
+                // Xử lý nút Dropdown Sàng lọc
+                if (item.isDropdown) {
+                  return (
+                    <li
+                      key={item.key}
+                      className="unified-nav-dropdown-wrapper"
+                      ref={dropdownRef}
+                      onMouseEnter={handleDropdownMouseEnter}
+                      onMouseLeave={handleDropdownMouseLeave}
+                    >
+                      <button
+                        ref={dropdownTriggerRef}
+                        type="button"
+                        aria-current={isActive ? 'page' : undefined}
+                        aria-haspopup="menu"
+                        aria-expanded={dropdownOpen}
+                        aria-controls={dropdownMenuId}
+                        className={`unified-nav-btn has-dropdown ${isActive ? 'active' : ''}`}
+                        onClick={() => {
+                          setDropdownOpen((prev) => !prev);
+                        }}
+                        onKeyDown={handleTriggerKeyDown}
+                        title={item.title}
+                      >
+                        <span className="unified-nav-icon" aria-hidden="true">
+                          {item.icon}
+                        </span>
+                        <span>{item.label}</span>
+                        {/* Icon chevron xoay khi mở */}
+                        <svg
+                          className={`dropdown-chevron-icon ${dropdownOpen ? 'is-open' : ''}`}
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
+
+                      {/* Dropdown Menu Panel */}
+                      {dropdownOpen && (
+                        <div
+                          id={dropdownMenuId}
+                          role="menu"
+                          aria-label="Danh mục sàng lọc mắt"
+                          className="unified-dropdown-menu"
+                        >
+                          <div className="dropdown-menu-header">
+                            <Link
+                              to="/sang-loc"
+                              className="dropdown-menu-hub-link"
+                              onClick={() => setDropdownOpen(false)}
+                            >
+                              <span>✨ Trung tâm sàng lọc</span>
+                              <span className="hub-link-arrow">→</span>
+                            </Link>
+                          </div>
+
+                          <div className="dropdown-menu-items">
+                            {screeningSubItems.map((subItem, idx) => {
+                              const isSubActive = currentPath === subItem.path;
+                              return (
+                                <Link
+                                  key={subItem.key}
+                                  ref={(el) => (dropdownItemsRef.current[idx] = el)}
+                                  to={subItem.path}
+                                  role="menuitem"
+                                  className={`dropdown-menu-item ${isSubActive ? 'is-active' : ''}`}
+                                  onClick={() => setDropdownOpen(false)}
+                                  onKeyDown={(e) => handleItemKeyDown(e, idx)}
+                                >
+                                  <div className="dropdown-item-icon-box" aria-hidden="true">
+                                    {subItem.icon}
+                                  </div>
+                                  <div className="dropdown-item-text">
+                                    <span className="dropdown-item-label">{subItem.label}</span>
+                                    <span className="dropdown-item-desc">{subItem.desc}</span>
+                                  </div>
+                                  {isSubActive && <span className="dropdown-item-dot" />}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  );
+                }
+
+                // Các link thông thường khác
                 return (
                   <li key={item.key}>
                     <button
                       type="button"
                       aria-current={isActive ? 'page' : undefined}
                       className={`unified-nav-btn ${isActive ? 'active' : ''}`}
-                      onClick={() => handleTabClick(item.key)}
+                      onClick={() => handleTabClick(item.key, item.path)}
                       title={item.title}
                     >
                       <span className="unified-nav-icon" aria-hidden="true">
@@ -205,15 +420,15 @@ export default function AppNavbar({
 
           {/* Right Header Actions */}
           <div className="unified-navbar-actions">
-            <button
-              type="button"
+            {/* CTA Button: Mặc định dẫn tới Hub /sang-loc theo Lựa chọn 4.3 */}
+            <Link
+              to="/sang-loc"
               className="navbar-quick-cta"
-              onClick={() => handleTabClick('screening')}
               title="Bắt đầu sàng lọc mắt ngay"
             >
               <span>Sàng lọc ngay</span>
               <span className="cta-arrow" aria-hidden="true">→</span>
-            </button>
+            </Link>
 
             <button
               type="button"
@@ -294,12 +509,72 @@ export default function AppNavbar({
           <ul className="drawer-nav-list">
             {navItems.map((item) => {
               const isActive = activeTab === item.key;
+
+              // Accordion trong Drawer cho Sàng lọc
+              if (item.isDropdown) {
+                return (
+                  <li key={item.key} className="drawer-nav-accordion-item">
+                    <button
+                      type="button"
+                      className={`drawer-nav-item has-accordion ${isActive ? 'is-active' : ''}`}
+                      onClick={() => setDrawerScreeningOpen((prev) => !prev)}
+                      aria-expanded={drawerScreeningOpen}
+                    >
+                      <div className="drawer-item-icon-box">
+                        {item.icon}
+                      </div>
+                      <div className="drawer-item-info">
+                        <div className="drawer-item-title-row">
+                          <strong className="drawer-item-title">{item.label}</strong>
+                          <span className="drawer-item-badge">2 phương pháp</span>
+                        </div>
+                        <small className="drawer-item-desc">{item.desc}</small>
+                      </div>
+                      <span className={`drawer-item-accordion-icon ${drawerScreeningOpen ? 'open' : ''}`}>
+                        ›
+                      </span>
+                    </button>
+
+                    {/* Accordion Sub-list */}
+                    {drawerScreeningOpen && (
+                      <div className="drawer-sub-list">
+                        <Link
+                          to="/sang-loc"
+                          className="drawer-sub-item hub-link"
+                          onClick={() => setDrawerOpen(false)}
+                        >
+                          <span className="sub-item-bullet">•</span>
+                          <span>Trung tâm sàng lọc (Hub tổng quan)</span>
+                        </Link>
+                        {screeningSubItems.map((sub) => {
+                          const isSubActive = currentPath === sub.path;
+                          return (
+                            <Link
+                              key={sub.key}
+                              to={sub.path}
+                              className={`drawer-sub-item ${isSubActive ? 'active' : ''}`}
+                              onClick={() => setDrawerOpen(false)}
+                            >
+                              <span className="sub-item-icon">{sub.icon}</span>
+                              <div className="sub-item-text">
+                                <span className="sub-item-title">{sub.label}</span>
+                                <span className="sub-item-desc">{sub.desc}</span>
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </li>
+                );
+              }
+
               return (
                 <li key={item.key}>
                   <button
                     type="button"
                     className={`drawer-nav-item ${isActive ? 'is-active' : ''}`}
-                    onClick={() => handleTabClick(item.key)}
+                    onClick={() => handleTabClick(item.key, item.path)}
                     aria-current={isActive ? 'page' : undefined}
                   >
                     <div className="drawer-item-icon-box">
@@ -327,13 +602,13 @@ export default function AppNavbar({
         </div>
 
         <div className="drawer-footer">
-          <button
-            type="button"
+          <Link
+            to="/sang-loc"
             className="drawer-cta-btn"
-            onClick={() => handleTabClick('screening')}
+            onClick={() => setDrawerOpen(false)}
           >
             🔍 Bắt đầu sàng lọc ngay
-          </button>
+          </Link>
 
           <div className="drawer-footer-meta">
             <a
@@ -367,7 +642,7 @@ export default function AppNavbar({
                 key={item.key}
                 type="button"
                 className={`bottom-nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => handleTabClick(item.key)}
+                onClick={() => handleTabClick(item.key, item.path)}
                 aria-current={isActive ? 'page' : undefined}
                 title={item.title}
               >
