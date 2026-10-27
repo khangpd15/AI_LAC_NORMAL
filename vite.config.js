@@ -44,4 +44,18 @@ function localTtsPlugin() {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), localTtsPlugin()],
+  server: {
+    proxy: {
+      '/api/v1/screening': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/v1/config': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })
