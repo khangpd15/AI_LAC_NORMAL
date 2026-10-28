@@ -1,0 +1,25 @@
+{
+  "rows": 17,
+  "eligibleRows": 0,
+  "exclusionReasons": {
+    "MISSING_VERIFIED_SUBJECT_ID": 17,
+    "MISSING_SOURCE_OR_DEVICE_PROVENANCE": 17,
+    "MISSING_VERIFIED_CLINICAL_LABEL": 17,
+    "MISSING_FROZEN_SUBJECT_SPLIT": 17
+  },
+  "subjectsBySplitAndClass": {
+    "train:NORMAL": 0,
+    "train:STRABISMUS": 0,
+    "validation:NORMAL": 0,
+    "validation:STRABISMUS": 0,
+    "test:NORMAL": 0,
+    "test:STRABISMUS": 0
+  },
+  "readyForTraining": false,
+  "contract": "cover-paired-crops-ms-v3",
+  "featureVersion": "hog64x32-canthal-seconds-v1",
+  "manifestSha256": "874ae56858deddc5782b5b76993fd62fac934acf12569a7520378406a59585a8",
+  "targetAccuracy": 0.9,
+  "accuracy": null,
+  "status": "NEEDS_VERIFIED_PAIRED_SUBJECTS"
+}

@@ -10,17 +10,18 @@ function arm(machine) {
     candidate: () => { throw Error('must not crop covered eyes'); },
   });
 }
-test('confirm with second visible frame but retain first frame and timestamp at 30 FPS', () => {
+test('confirm sustained visibility but retain first frame and timestamp at 30 FPS', () => {
   const machine = new UncoverTransition();
   arm(machine);
   const image = { frameId: 8 };
   const update = timestampMs => machine.update({ timestampMs, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => image });
   assert.equal(update(8000 / 30), null);
   assert.equal(update(8000 / 30), null);
-  const event = update(9000 / 30);
+  for (const t of [300, 1000 / 3, 1100 / 3]) assert.equal(update(t), null);
+  const event = update(400);
   assert.equal(event.image, image);
   assert.equal(event.timestampMs, 8000 / 30);
-  assert.equal(event.confirmedAtMs, 300);
+  assert.equal(event.confirmedAtMs, 400);
   assert.equal(event.lastCoveredMs, 7000 / 30);
   assert.equal(update(10000 / 30), null);
 });
@@ -35,27 +36,28 @@ test('blink, unknown face, stale gap and unarmed open eyes cannot trigger', () =
   }
 });
 test('hand or dark object evidence differs from a blink or missing calibration', () => {
-  const baseline = { pupilContrast: 30, dynamicRange: 100, stdDev: 30, mean: 110 };
+  const baseline = { pupilContrast: 30, dynamicRange: 100, stdDev: 30, mean: 110, minLum: 30, appearance: Array.from({length:48}, (_,i)=>i%3===0?30:140) };
   const frame = { canthalWidth: 50, palpebralHeight: 16 };
   for (const mean of [170, 20]) assert.equal(classifyEyeVisibility({
-    pupilContrast: 2, dynamicRange: 10, stdDev: 3, mean,
+    pupilContrast: 2, dynamicRange: 10, stdDev: 3, mean, minLum: 15,
   }, frame, baseline), 'OCCLUDED');
   assert.equal(classifyEyeVisibility(baseline, frame, baseline), 'VISIBLE');
   assert.equal(classifyEyeVisibility(baseline, { ...frame, palpebralHeight: 2 }, baseline), 'UNKNOWN');
   assert.equal(classifyEyeVisibility(baseline, frame, null), 'UNKNOWN');
-  assert.equal(classifyEyeVisibility({ pupilContrast: 2, dynamicRange: 10, stdDev: 3, mean: 170 },
-    { ...frame, palpebralHeight: 2 }, baseline), 'OCCLUDED');
+  assert.equal(classifyEyeVisibility({ pupilContrast: 2, dynamicRange: 10, stdDev: 3, mean: 170, minLum: 15 },
+    { ...frame, palpebralHeight: 2 }, baseline), 'UNKNOWN');
 });
 
 test('slow phone confirms a real cover and keeps first clear frame through brief hand transition', () => {
-  for (const interval of [200, 400, 500]) {
+  for (const interval of [150, 200]) {
     const machine = new UncoverTransition();
     machine.reset('left');
     const update = (t, left) => machine.update({ timestampMs: t,
       visibility: { left, right: 'VISIBLE' }, candidate: () => ({ frameId: t }) });
     update(0, 'OCCLUDED'); update(interval, 'OCCLUDED');
     assert.equal(update(interval * 2, 'VISIBLE'), null);
-    const event = update(interval * 3, 'VISIBLE');
+    assert.equal(update(interval * 3, 'VISIBLE'), null);
+    const event = update(interval * 4, 'VISIBLE');
     assert.equal(event.timestampMs, interval * 2);
     assert.equal(event.lastCoveredMs, interval);
   }
@@ -63,12 +65,13 @@ test('slow phone confirms a real cover and keeps first clear frame through brief
   arm(machine);
   machine.update({ timestampMs: 260, visibility: { left: 'UNKNOWN', right: 'VISIBLE' }, candidate: () => null });
   machine.update({ timestampMs: 300, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) });
-  assert.ok(machine.update({ timestampMs: 333, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) }));
+  for (const t of [333, 366, 400]) assert.equal(machine.update({ timestampMs: t, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) }), null);
+  assert.ok(machine.update({ timestampMs: 433, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) }));
 });
 test('encoding both crops does not replace capture timestamp with encoding completion', async () => {
   const canvas = { width: 32, height: 16, toBlob: cb => setTimeout(() => cb(new Blob(['jpeg'], { type: 'image/jpeg' })), 5) };
-  const result = await encodeEyePair({ image: { frame: { frameId: 9, timestampEpochMs: 1234 }, eyes: {
-    left: { canvas, cropRegion: { x: 1 } }, right: { canvas, cropRegion: { x: 40 } },
+  const result = await encodeEyePair({ image: { frame: { frameId: 9, timestampEpochMs: 1234, timestampMs: 300, sourceWidth: 100, sourceHeight: 80 }, eyes: {
+    left: { canvas, cropRegion: { x: 1, y: 1, width: 32, height: 16 } }, right: { canvas, cropRegion: { x: 40, y: 1, width: 32, height: 16 } },
   } }, timestampMs: 300, lastCoveredMs: 266, confirmedAtMs: 333, uncoveredEye: 'left' }, 1, 100);
   assert.equal(result.metadata.timestampMs, 300);
   assert.equal(result.metadata.t, 200);
@@ -142,24 +145,26 @@ test('UncoverTransition remains armed across 7-second cover phase while eye is c
 
   // Now user uncovers at 7033ms
   machine.update({ timestampMs: 7033, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({ frameId: 'uncover_frame' }) });
-  const event = machine.update({ timestampMs: 7066, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) });
-  assert.ok(event, 'Must trigger uncover capture immediately after hand is removed');
+  for (const t of [7066, 7099, 7132]) assert.equal(machine.update({ timestampMs: t, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) }), null);
+  const event = machine.update({ timestampMs: 7166, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) });
+  assert.ok(event, 'Must confirm sustained opening while retaining the first source frame');
   assert.equal(event.image.frameId, 'uncover_frame');
   assert.equal(event.uncoveredEye, 'left');
 });
 
 test('Chống chụp nhầm mí mắt: mí mắt he hé/nhắm tuyệt đối không được VISIBLE; chỉ mắt mở thật mới chụp', () => {
-  const baseline = { pupilContrast: 25, dynamicRange: 90, stdDev: 25, mean: 110, minLum: 65 };
+  const appearance = Array.from({length:48},(_,i)=>i%3===0?30:140);
+  const baseline = { pupilContrast: 25, dynamicRange: 90, stdDev: 25, mean: 110, minLum: 65, appearance };
   const frameWide = { canthalWidth: 50, palpebralHeight: 12 }; // aperture = 0.24 (mắt mở thật)
   const frameSquint = { canthalWidth: 50, palpebralHeight: 6 }; // aperture = 0.12 (mí mắt he hé)
   const frameClosed = { canthalWidth: 50, palpebralHeight: 2 }; // aperture = 0.04 (mí mắt nhắm)
 
-  const openPatch = { pupilContrast: 20, dynamicRange: 80, stdDev: 22, mean: 110, minLum: 72, skinRatio: 0.18 };
+  const openPatch = { pupilContrast: 20, dynamicRange: 80, stdDev: 22, mean: 110, minLum: 72, skinRatio: 0.18, appearance };
   const eyelidPatch = { pupilContrast: 6, dynamicRange: 20, stdDev: 8, mean: 115, minLum: 95, skinRatio: 0.32 };
   const handPatch = { pupilContrast: 3, dynamicRange: 15, stdDev: 5, mean: 135, minLum: 120, skinRatio: 0.48 };
 
-  // 1. Tay che -> BẮT BUỘC OCCLUDED
-  assert.equal(classifyEyeVisibility(handPatch, frameClosed, baseline), 'OCCLUDED');
+  // 1. Hình học mí quá hẹp: giữ UNKNOWN, không coi là mắt mở.
+  assert.equal(classifyEyeVisibility(handPatch, frameClosed, baseline), 'UNKNOWN');
 
   // 2. Mí mắt nhắm / he hé -> TUYỆT ĐỐI KHÔNG ĐƯỢC VISIBLE
   assert.notEqual(classifyEyeVisibility(eyelidPatch, frameSquint, baseline), 'VISIBLE');
@@ -181,9 +186,10 @@ test('Chống chụp nhầm mí mắt: mí mắt he hé/nhắm tuyệt đối kh
   assert.equal(machine.update({ timestampMs: 250, visibility: { left: 'UNKNOWN', right: 'VISIBLE' }, candidate: () => ({ frameId: 'eyelid' }) }), null);
   assert.equal(machine.candidate, null, 'Không được lưu candidate khi mắt mới chỉ là mí mắt nheo');
 
-  // Mắt mở to thật sự (VISIBLE) -> Chụp ngay lập tức!
+  // Mắt mở thật: xác nhận đủ thời gian nhưng giữ ảnh rõ đầu tiên.
   machine.update({ timestampMs: 300, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({ frameId: 'real_open_eye' }) });
-  const capturedEvent = machine.update({ timestampMs: 333, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) });
+  for (const t of [333, 366, 400]) assert.equal(machine.update({ timestampMs: t, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) }), null);
+  const capturedEvent = machine.update({ timestampMs: 433, visibility: { left: 'VISIBLE', right: 'VISIBLE' }, candidate: () => ({}) });
   assert.ok(capturedEvent, 'Phải chụp ngay khi mắt mở to');
   assert.equal(capturedEvent.image.frameId, 'real_open_eye', 'Ảnh chụp phải là lúc mắt đã mở thật');
 });

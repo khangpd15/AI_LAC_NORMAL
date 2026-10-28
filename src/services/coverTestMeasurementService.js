@@ -68,7 +68,8 @@ export function calculateRobustBaseline(baselineFrames) {
       f.quality?.isValid !== false &&
       Number.isFinite(f.x) &&
       Number.isFinite(f.y) &&
-      Number.isFinite(f.normalizedX)
+      Number.isFinite(f.normalizedX) &&
+      Number.isFinite(f.normalizedY)
   );
 
   if (validFrames.length < SCREENING_CONFIG.MIN_VALID_SAMPLES_BASELINE) {
@@ -313,9 +314,17 @@ export function analyzeUncoverTrajectory(
 
   // Lọc các frame mắt mở rõ (loại bỏ mí mắt nhắm hoặc chớp)
   const validEyeFrames = (uncoverFrames || []).filter(
-    (f) => f && f.quality?.isValid !== false && f.qualityFlag !== 'UNKNOWN_SAMPLE' && f.isEyeValid !== false
+    (f) => f && f.quality?.isValid !== false && f.qualityFlag !== 'UNKNOWN_SAMPLE' && f.isEyeValid !== false &&
+      ['t', 'x', 'y', 'normalizedX', 'normalizedY'].every(key => Number.isFinite(f[key]))
   );
-  const usableFrames = validEyeFrames.length >= 8 ? validEyeFrames : uncoverFrames;
+  if (validEyeFrames.length < SCREENING_CONFIG.MIN_VALID_SAMPLES_UNCOVER) {
+    return {
+      ...analyzeUncoverTrajectory([], baseline, eye, cycle, referenceEyeWidth, options),
+      dataQuality: { isValid: false, reason: 'INSUFFICIENT_VALID_EYE_SAMPLES' },
+      sampleCount: validEyeFrames.length,
+    };
+  }
+  const usableFrames = validEyeFrames;
 
   // 4. Filter early window frames (0 - 500 ms) and full trajectory
   const earlyFrames = usableFrames.filter((f) => f.t <= earlyWindowMs);
@@ -325,10 +334,14 @@ export function analyzeUncoverTrajectory(
 
   // 5. Initial Position (t ~ 0ms) - robust mean of first 3 frames
   const initSlice = usableFrames.slice(0, Math.min(3, usableFrames.length));
-  const initialX = initSlice.reduce((sum, f) => sum + f.normalizedX, 0) / initSlice.length;
-  const initialY = initSlice.reduce((sum, f) => sum + f.normalizedY, 0) / initSlice.length;
-  const initialRawX = initSlice.reduce((sum, f) => sum + f.x, 0) / initSlice.length;
-  const initialRawY = initSlice.reduce((sum, f) => sum + f.y, 0) / initSlice.length;
+  const initialX = options.initialFromBaseline ? baseline.normalizedBaselineX
+    : initSlice.reduce((sum, f) => sum + f.normalizedX, 0) / initSlice.length;
+  const initialY = options.initialFromBaseline ? baseline.normalizedBaselineY
+    : initSlice.reduce((sum, f) => sum + f.normalizedY, 0) / initSlice.length;
+  const initialRawX = options.initialFromBaseline ? baseline.baselineX
+    : initSlice.reduce((sum, f) => sum + f.x, 0) / initSlice.length;
+  const initialRawY = options.initialFromBaseline ? baseline.baselineY
+    : initSlice.reduce((sum, f) => sum + f.y, 0) / initSlice.length;
 
   // 6. Final Position (at end of recording) - robust mean of last 3 frames
   const finalSlice = usableFrames.slice(-Math.min(3, usableFrames.length));
@@ -380,9 +393,9 @@ export function analyzeUncoverTrajectory(
   const stepDistances = [];
   let sumDistances = 0;
 
-  for (let i = 1; i < uncoverFrames.length; i++) {
-    const prev = uncoverFrames[i - 1];
-    const curr = uncoverFrames[i];
+  for (let i = 1; i < usableFrames.length; i++) {
+    const prev = usableFrames[i - 1];
+    const curr = usableFrames[i];
 
     // Excursion from initial position
     const curDx = Math.abs(curr.x - initialRawX);
@@ -392,12 +405,15 @@ export function analyzeUncoverTrajectory(
 
     const distFromInit = Math.hypot(curr.x - initialRawX, curr.y - initialRawY) / safeEyeWidth;
     sumDistances += distFromInit;
-    if (distFromInit > maxDisplacement) {
+    const inMovementWindow = options.eventTimestampMs == null || curr.t <= earlyWindowMs;
+    if (inMovementWindow && distFromInit > maxDisplacement) {
       maxDisplacement = distFromInit;
       peakFrame = curr;
     }
 
     // Step-by-step distance for tracking jitter evaluation
+    // Rejected intervals are not observed motion; never bridge them for velocity.
+    if (curr.t - prev.t > (options.maxKinematicGapMs ?? Infinity)) continue;
     const stepDist = Math.hypot(curr.x - prev.x, curr.y - prev.y) / safeEyeWidth;
     stepDistances.push(stepDist);
 
@@ -405,7 +421,7 @@ export function analyzeUncoverTrajectory(
     const dt = Math.max(1, curr.t - prev.t) / 1000;
     const vel = stepDist / dt;
 
-    if (vel > peakVel) {
+    if (inMovementWindow && vel > peakVel) {
       peakVel = vel;
       timeToPeakMs = curr.t;
     }
@@ -413,7 +429,7 @@ export function analyzeUncoverTrajectory(
 
   const horizontalPeak = horizontalPeakRaw / safeEyeWidth;
   const verticalPeak = verticalPeakRaw / safeEyeWidth;
-  const meanDisplacement = uncoverFrames.length > 1 ? sumDistances / (uncoverFrames.length - 1) : 0;
+  const meanDisplacement = usableFrames.length > 1 ? sumDistances / (usableFrames.length - 1) : 0;
   const jitter = stepDistances.length > 0 ? median(stepDistances) : 0;
 
   // 10. Direction analysis (Nasal, Temporal, Superior, Inferior)
@@ -445,10 +461,11 @@ export function analyzeUncoverTrajectory(
   // 12. Movement duration: time when velocity returns toward baseline (< 25% of peak velocity)
   let movementDurationMs = earlyWindowMs;
   const settlingThreshold = Math.max(0.05, peakVel * 0.25);
-  for (let i = 1; i < uncoverFrames.length; i++) {
-    if (uncoverFrames[i].t > timeToPeakMs) {
-      const prev = uncoverFrames[i - 1];
-      const curr = uncoverFrames[i];
+  for (let i = 1; i < usableFrames.length; i++) {
+    if (usableFrames[i].t > timeToPeakMs) {
+      const prev = usableFrames[i - 1];
+      const curr = usableFrames[i];
+      if (curr.t - prev.t > (options.maxKinematicGapMs ?? Infinity)) continue;
       const dt = Math.max(1, curr.t - prev.t) / 1000;
       const v = Math.hypot(curr.x - prev.x, curr.y - prev.y) / safeEyeWidth / dt;
       if (v < settlingThreshold) {
@@ -459,7 +476,8 @@ export function analyzeUncoverTrajectory(
   }
 
   // 13. Trajectory stability in final settling segment (last 1000ms)
-  const settlingFrames = uncoverFrames.filter((f) => f.t >= SCREENING_CONFIG.RECORD_MS - 1000);
+  const recordMs = options.recordMs ?? SCREENING_CONFIG.RECORD_MS;
+  const settlingFrames = usableFrames.filter((f) => f.t >= (options.settlingStartMs ?? recordMs - 1000));
   let trajectoryStability = 1.0;
   if (settlingFrames.length >= 5) {
     const settlingNormX = settlingFrames.map((f) => f.normalizedX);
@@ -468,8 +486,8 @@ export function analyzeUncoverTrajectory(
   }
 
   // 14. Sample coverage and ratio
-  const expectedFrames = Math.max(1, (SCREENING_CONFIG.RECORD_MS / 33.3));
-  const validSampleRatio = Math.min(1.0, uncoverFrames.length / expectedFrames);
+  const expectedFrames = Math.max(1, (recordMs / 33.3));
+  const validSampleRatio = Math.min(1.0, usableFrames.length / expectedFrames);
   const sampleCoverage = validSampleRatio;
   const baselineConfidence = baseline && baseline.isStable ? 1.0 : 0.6;
   const measurementConfidence = Number(
@@ -505,10 +523,10 @@ export function analyzeUncoverTrajectory(
   );
 
   // 16. Temporal Events Array (UNCOVER = 0 ms Anchor)
-  const baseTimestamp = firstFrame.timestamp || performance.now();
+  const baseTimestamp = options.eventTimestampMs ?? firstFrame.timestamp ?? performance.now();
   const temporalEvents = [
     {
-      eventType: 'UNCOVER',
+      eventType: options.eventType || 'UNCOVER',
       timestamp: baseTimestamp,
       t: 0,
       cycleId: cycle,
@@ -611,8 +629,8 @@ export function analyzeUncoverTrajectory(
       note: 'Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định.',
     },
     dataQuality: {
-      isValid: validEyeFrames.length >= 8 || uncoverFrames.length >= 15,
-      reason: (validEyeFrames.length < 8 && uncoverFrames.length < 15) ? 'Số mẫu mắt mở không đủ' : null,
+      isValid: true,
+      reason: null,
       sampleCount: uncoverFrames.length,
       validEyeSampleCount: validEyeFrames.length,
       stabilityScore: Number(trajectoryStability.toFixed(4)),
