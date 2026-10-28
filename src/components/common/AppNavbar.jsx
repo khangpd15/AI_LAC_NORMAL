@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { AudioIcon } from '../audio/ListeningExperience';
 import {
@@ -354,17 +354,6 @@ export default function AppNavbar({
                           aria-label="Danh mục sàng lọc mắt"
                           className="unified-dropdown-menu"
                         >
-                          <div className="dropdown-menu-header">
-                            <Link
-                              to="/sang-loc"
-                              className="dropdown-menu-hub-link"
-                              onClick={() => setDropdownOpen(false)}
-                            >
-                              <span>✨ Trung tâm sàng lọc</span>
-                              <span className="hub-link-arrow">→</span>
-                            </Link>
-                          </div>
-
                           <div className="dropdown-menu-items">
                             {screeningSubItems.map((subItem, idx) => {
                               const isSubActive = currentPath === subItem.path;
@@ -538,14 +527,6 @@ export default function AppNavbar({
                     {/* Accordion Sub-list */}
                     {drawerScreeningOpen && (
                       <div className="drawer-sub-list">
-                        <Link
-                          to="/sang-loc"
-                          className="drawer-sub-item hub-link"
-                          onClick={() => setDrawerOpen(false)}
-                        >
-                          <span className="sub-item-bullet">•</span>
-                          <span>Trung tâm sàng lọc (Hub tổng quan)</span>
-                        </Link>
                         {screeningSubItems.map((sub) => {
                           const isSubActive = currentPath === sub.path;
                           return (

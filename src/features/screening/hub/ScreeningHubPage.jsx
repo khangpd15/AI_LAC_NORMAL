@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Scan, Sparkles, ArrowRight, Activity, HelpCircle } from 'lucide-react';
+import { Eye, Scan, ArrowRight, Activity, HelpCircle } from 'lucide-react';
 import './screeningHub.css';
 
 export default function ScreeningHubPage() {
@@ -8,10 +8,6 @@ export default function ScreeningHubPage() {
     <div className="screening-hub-container">
       {/* Hero Header */}
       <div className="screening-hub-header">
-        <div className="hub-badge-pill">
-          <Sparkles className="w-4 h-4 text-[#00AB9B]" />
-          <span>TRUNG TÂM SÀNG LỌC THỊ LỰC REMICARE AI</span>
-        </div>
         <h1 className="hub-title">
           Chọn phương pháp <em>sàng lọc mắt</em> phù hợp
         </h1>
@@ -29,7 +25,6 @@ export default function ScreeningHubPage() {
               <Activity className="w-3.5 h-3.5" />
               Hirschberg & Cover Test
             </span>
-            <span className="card-voice-tag">🎙️ Giọng đọc Iris</span>
           </div>
 
           <div className="card-icon-box">
@@ -71,7 +66,6 @@ export default function ScreeningHubPage() {
               <Eye className="w-3.5 h-3.5" />
               Hình thái học Mi mắt
             </span>
-            <span className="card-ram-tag">🔒 RAM Safe</span>
           </div>
 
           <div className="card-icon-box">

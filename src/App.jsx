@@ -7,6 +7,8 @@ import StrabismusSimulationPage from './components/StrabismusSimulation/Strabism
 import AboutPage from './components/about/AboutPage';
 import ScreeningHubPage from './features/screening/hub/ScreeningHubPage';
 import PtosisScreeningPage from './features/screening/ptosis/PtosisScreeningPage';
+import OfflinePage from './components/common/OfflinePage';
+import PwaManager from './components/common/PwaManager';
 import AppNavbar from './components/common/AppNavbar';
 import AppFooter from './components/common/AppFooter';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -161,14 +163,25 @@ function AppRoutes() {
           }
         />
 
-        {/* 8. Redirects tương thích các đường dẫn alias / cũ */}
+        {/* 8. Trang Ngoại tuyến Offline Fallback */}
+        <Route
+          path="/offline"
+          element={
+            <ScreeningLayout activeTab="home">
+              <OfflinePage />
+            </ScreeningLayout>
+          }
+        />
+
+        {/* 9. Redirects tương thích các đường dẫn alias / cũ */}
         <Route path="/experience" element={<Navigate to="/trai-nghiem" replace />} />
         <Route path="/simulation" element={<Navigate to="/mo-phong" replace />} />
         <Route path="/about" element={<Navigate to="/gioi-thieu" replace />} />
 
-        {/* 9. Catch-all: Điều hướng về Trang chủ */}
+        {/* 10. Catch-all: Điều hướng về Trang chủ */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <PwaManager />
     </ListeningProvider>
   );
 }

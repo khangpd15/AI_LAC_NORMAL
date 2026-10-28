@@ -81,12 +81,17 @@
   .story-direct-cta { left: 12px; right: 12px; bottom: 16px; transform: none; width: auto; max-width: none; }
   .btn-try-experience-now { width: 100%; min-height: 48px; padding: 12px; font-size: 14px; }
   .home-parents-visual-section, .home-story-visual-section { padding-block: 28px; }
+  .doors-section-heading { letter-spacing: normal !important; word-spacing: 0.02em; }
+  .doors-section-sub { display: block !important; }
   .parent-three-cards-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-  .parent-touch-card { padding: 20px; }
-  .trust-pill-box { padding: 20px 16px; gap: 12px; }
-  .trust-info-block { min-width: 0; }
-  .trust-main-text { font-size: 17px; }
-  .trust-sub-text { font-size: 14px; line-height: 1.7; }
+  .parent-touch-card { min-height: auto !important; height: auto; padding: 22px 18px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; border-radius: 20px; }
+  .card-touch-desc { display: block !important; font-size: 14px; line-height: 1.55; }
+  .btn-touch-voice-pill { width: auto !important; min-height: 42px; padding: 8px 20px; border-radius: 999px !important; display: inline-flex !important; align-items: center; justify-content: center; gap: 8px; }
+  .btn-touch-voice-pill span { display: inline !important; }
+  .trust-pill-box { padding: 18px 16px; gap: 14px; border-radius: 18px; }
+  .trust-info-block { min-width: 0; flex: 1; }
+  .trust-main-text { font-size: 16px; }
+  .trust-sub-text { display: block !important; font-size: 13.5px; line-height: 1.55; }
 
   .about-main-container { width: 100%; }
   .app-main input:not([type='range']):not([type='checkbox']):not([type='radio']), .app-main select, .app-main textarea { font-size: 16px; max-width: 100%; }
@@ -164,3 +169,156 @@
 @media (max-width: 720px) {
   .home-main-scrollable > :is(.home-story-visual-section, .home-parents-visual-section) { padding: 0 0 24px; }
 }
+
+/* ==========================================================================
+   MOBILE-FIRST ENHANCEMENTS FOR REMICARE AI (AUDIT & RESPONSIVE FIXES)
+   - Tested: 360px, 390px, 430px, 768px, >=1024px
+   - No horizontal overflow
+   - Safe-area-insets & 100dvh
+   - Touch targets >= 44px
+   - Fluid typography with clamp()
+   ========================================================================== */
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+  min-height: 100dvh;
+}
+
+#root, .app-layout {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+}
+
+/* Touch targets & interactive boundaries */
+button,
+a,
+input[type='button'],
+input[type='submit'],
+[role='button'] {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Responsive Table container */
+.table-responsive {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-block: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, #E2E8F0);
+}
+
+.metrics-table {
+  min-width: 540px;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Mobile Small (360px - 430px) rules */
+@media (max-width: 480px) {
+  /* Fluid headings */
+  .stage-title,
+  .hub-title {
+    font-size: clamp(22px, 6.2vw, 30px) !important;
+    letter-spacing: -0.5px;
+  }
+
+  .stage-subtitle,
+  .hub-subtitle {
+    font-size: 14px !important;
+    line-height: 1.55;
+  }
+
+  /* Full-width buttons on mobile */
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .card-start-btn {
+    width: 100% !important;
+    min-height: 48px;
+    padding: 12px 16px;
+    font-size: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Screenings cards padding */
+  .stage-card-main,
+  .screening-method-card,
+  .checklist-card {
+    padding: 18px 14px !important;
+    border-radius: 20px !important;
+  }
+
+  /* Prevent overflow in flex action containers */
+  .checklist-actions,
+  .summary-footer-actions,
+  .cover-test-finish-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .checklist-actions > button,
+  .summary-footer-actions > *,
+  .cover-test-finish-actions > button {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Camera preview portrait aspect ratio */
+  .position-camera-preview,
+  .cam-column {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .position-camera-preview video {
+    object-fit: cover;
+  }
+
+  /* Binocular screening step header spacing */
+  .screening-page-header {
+    padding: 16px 12px 12px !important;
+  }
+
+  .screening-page-title {
+    font-size: 20px !important;
+  }
+
+  .screening-page-subtitle {
+    font-size: 13px !important;
+  }
+}
+
+/* Sticky Action Controls on thumb-reach zone */
+@media (max-width: 768px) {
+  .position-checklist-column {
+    margin-top: 14px;
+  }
+}
+

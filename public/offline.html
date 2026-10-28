@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Mất kết nối mạng | RemiCare AI</title>
+  <link rel="icon" type="image/png" href="/icons/favicon-32x32.png">
+  <meta name="theme-color" content="#00545D">
+  <style>
+    :root {
+      --color-mint: #00AB9B;
+      --color-deep-teal: #00545D;
+      --color-pale-teal: #E1F4F0;
+      --color-soft-mint: #B8E8DF;
+      --bg-page: #F8F9FA;
+      --text-main: #132a2e;
+      --text-muted: #3a565c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      padding: 24px;
+      text-align: center;
+    }
+    .offline-card {
+      background: #ffffff;
+      border: 1.5px solid var(--color-soft-mint);
+      border-radius: 24px;
+      padding: 36px 28px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0, 84, 93, 0.08);
+    }
+    .icon-box {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      background: var(--color-pale-teal);
+      border: 1px solid var(--color-soft-mint);
+      color: var(--color-mint);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--color-deep-teal);
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    p {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+    .notice-box {
+      background: #FFF8E6;
+      border: 1px solid #F2C66D;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #704800;
+      text-align: left;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .btn-retry {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 24px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #00AB9B 0%, #087F78 100%);
+      color: #ffffff;
+      border: none;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 171, 155, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-retry:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 171, 155, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-card">
+    <div class="icon-box">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+        <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+    </div>
+    <h1>Không có kết nối mạng</h1>
+    <p>Thiết bị của bạn hiện đang ngoại tuyến hoặc kết nối mạng bị gián đoạn.</p>
+    
+    <div class="notice-box">
+      ℹ️ <strong>Lưu ý:</strong> Quy trình sàng lọc thị lực bằng AI (phân tích Hirschberg, Cover Test và MRD-1) cần gửi dữ liệu xử lý trong bộ nhớ RAM máy chủ. Vui lòng kết nối Wi-Fi hoặc 4G/5G để tiếp tục.
+    </div>
+
+    <button type="button" class="btn-retry" onclick="window.location.reload()">
+      🔄 Thử tải lại trang
+    </button>
+  </div>
+</body>
+</html>

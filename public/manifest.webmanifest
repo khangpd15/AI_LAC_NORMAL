@@ -1,0 +1,33 @@
+{
+  "name": "RemiCare AI — Sàng lọc thị lực & Sức khỏe mắt",
+  "short_name": "RemiCare AI",
+  "description": "Nền tảng sàng lọc thị lực bằng thị giác máy tính: Sàng lọc lác/lé Hirschberg, Cover Test và sàng lọc sụp mí PtosisCheck.",
+  "lang": "vi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#00545D",
+  "background_color": "#00545D",
+  "categories": ["health", "medical"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
