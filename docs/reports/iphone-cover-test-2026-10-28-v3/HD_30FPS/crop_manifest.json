@@ -1,0 +1,1693 @@
+{
+  "schema": "cover-eye-crops-v1",
+  "source": {
+    "file": "video\\VIDEO_COVER_TEST\\NORMAL\\HD_30FPS.mp4",
+    "sha256": "035021c2f00891a9ccb462100030ce8484f79d8b1146f51a689c5bd21d5db3e5",
+    "bytes": 18952275,
+    "fps": 29.957527135441246,
+    "expectedFrames": 2116,
+    "width": 720,
+    "height": 1280,
+    "processingWidth": 540,
+    "processingHeight": 960,
+    "engine": "Python MediaPipe 0.10.14",
+    "cv2Version": "5.0.0",
+    "maxEdge": 960,
+    "allDecodedFrames": true,
+    "orientationDegrees": 0,
+    "patchSampler": "OpenCV bilinear remap at Canvas-style pixel centers"
+  },
+  "geometrySource": "src/services/coverTest/eyeCropGeometry.js",
+  "geometrySha256": "62e5ffb4098c3cd79e7d374602d144a4529b7b460b97fe3fa90595ca8ac168dd",
+  "outputCoordinateSpace": "ORIGINAL_ENCODED_SOURCE_PIXELS",
+  "processingLandmarkSize": [
+    540,
+    960
+  ],
+  "sourceMirroring": "UNKNOWN",
+  "pixelTransform": "NONE",
+  "note": "Covered-eye crops may show an occluder; no hidden iris is measured. Half-second crops are diagnostic source frames, not substitutes for rejected samples.",
+  "snapshots": [
+    {
+      "snapshotId": "L1_baseline",
+      "leg": 1,
+      "cycle": 1,
+      "kind": "baseline",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 4300.000000000001,
+      "requestedFrameId": 129,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L1_baseline_f129_left.png",
+          "cropRegion": {
+            "x": 380,
+            "y": 519,
+            "width": 84,
+            "height": 58
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "REFERENCE_EYE",
+          "width": 84,
+          "height": 58,
+          "bytes": 6197,
+          "sha256": "39dbe3f4bd18a2a1f37c7cd034e4809f5bcab17f230428d69b5551da5e7cf92b"
+        },
+        "right": {
+          "file": "crops/L1_baseline_f129_right.png",
+          "cropRegion": {
+            "x": 236,
+            "y": 510,
+            "width": 92,
+            "height": 62
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "REFERENCE_EYE",
+          "width": 92,
+          "height": 62,
+          "bytes": 7036,
+          "sha256": "3b9ff4b0b92673ef246a0a83730cfbe5e2f697f58c2d6159d057bae5d8412f1d"
+        }
+      },
+      "sourceFrameId": 129,
+      "timestampMs": 4300.000000000001,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L1_cover_on",
+      "leg": 1,
+      "cycle": 1,
+      "kind": "cover_on",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 4366.666666666667,
+      "requestedFrameId": 131,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L1_cover_on_f131_left.png",
+          "cropRegion": {
+            "x": 378,
+            "y": 519,
+            "width": 83,
+            "height": 57
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "OBSERVED_FELLOW_EYE",
+          "width": 83,
+          "height": 57,
+          "bytes": 6165,
+          "sha256": "634f15cc3360387e0102524c99bbe1df40c8cf4ed3701ac974b321e5fc2070ab"
+        },
+        "right": {
+          "file": "crops/L1_cover_on_f131_right.png",
+          "cropRegion": {
+            "x": 238,
+            "y": 509,
+            "width": 86,
+            "height": 61
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "OCCLUDED",
+          "role": "EXPECTED_COVERED_NOT_MEASURED",
+          "width": 86,
+          "height": 61,
+          "bytes": 6358,
+          "sha256": "6147bbb631d6c78d98794946050a5a15ede05617776241177382ae72ad3d2e20"
+        }
+      },
+      "sourceFrameId": 131,
+      "timestampMs": 4366.666666666667,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "OCCLUDED"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": false
+      }
+    },
+    {
+      "snapshotId": "L1_cover_500ms",
+      "leg": 1,
+      "cycle": 1,
+      "kind": "cover_500ms",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 4866.666666666667,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L1_cover_500ms_f146_left.png",
+          "cropRegion": {
+            "x": 372,
+            "y": 516,
+            "width": 89,
+            "height": 59
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "OBSERVED_FELLOW_EYE",
+          "width": 89,
+          "height": 59,
+          "bytes": 6304,
+          "sha256": "5f674a559c156fc71c0425232fdb0d3cb5d9a0a42f0f2e14a6d2a00c22b268d9"
+        },
+        "right": {
+          "file": "crops/L1_cover_500ms_f146_right.png",
+          "cropRegion": {
+            "x": 222,
+            "y": 518,
+            "width": 97,
+            "height": 65
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "OCCLUDED",
+          "role": "EXPECTED_COVERED_NOT_MEASURED",
+          "width": 97,
+          "height": 65,
+          "bytes": 7423,
+          "sha256": "b1c7d54bcff428d6e5958cc8af49670228a69d571115e3291e33558c584a3d8f"
+        }
+      },
+      "sourceFrameId": 146,
+      "timestampMs": 4866.666666666667,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "OCCLUDED"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": false
+      }
+    },
+    {
+      "snapshotId": "L1_uncover",
+      "leg": 1,
+      "cycle": 1,
+      "kind": "uncover",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 12600.000000000002,
+      "requestedFrameId": 378,
+      "imageEvent": "c1_right_uncover",
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L1_uncover_f378_left.png",
+          "cropRegion": {
+            "x": 369,
+            "y": 514,
+            "width": 86,
+            "height": 59
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 86,
+          "height": 59,
+          "bytes": 6405,
+          "sha256": "a6defff53c7422799f58f40bd089bf6774579abb5e4af2b801a12d791fc62beb"
+        },
+        "right": {
+          "file": "crops/L1_uncover_f378_right.png",
+          "cropRegion": {
+            "x": 226,
+            "y": 508,
+            "width": 91,
+            "height": 63
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 91,
+          "height": 63,
+          "bytes": 6617,
+          "sha256": "96684d02ccc099ef525fcd2ffbc73e651f12e4d0336b9d42c4816f176c7834ab"
+        }
+      },
+      "sourceFrameId": 378,
+      "timestampMs": 12600.000000000002,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L1_uncover_500ms",
+      "leg": 1,
+      "cycle": 1,
+      "kind": "uncover_500ms",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 13100.000000000002,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L1_uncover_500ms_f393_left.png",
+          "cropRegion": {
+            "x": 369,
+            "y": 511,
+            "width": 86,
+            "height": 60
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 86,
+          "height": 60,
+          "bytes": 6413,
+          "sha256": "07a46ffc0715ad73041c631262d15127c03b3f7f59c4c512b2896efd76acd1f1"
+        },
+        "right": {
+          "file": "crops/L1_uncover_500ms_f393_right.png",
+          "cropRegion": {
+            "x": 226,
+            "y": 506,
+            "width": 92,
+            "height": 61
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 92,
+          "height": 61,
+          "bytes": 6437,
+          "sha256": "075bef3d7e23978eb7aa7216e312bb48e94cc5e6e2acb4c927f3e267f574394a"
+        }
+      },
+      "sourceFrameId": 393,
+      "timestampMs": 13100.000000000002,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L2_baseline",
+      "leg": 2,
+      "cycle": 1,
+      "kind": "baseline",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 16300,
+      "requestedFrameId": 486,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L2_baseline_f486_left.png",
+          "cropRegion": {
+            "x": 361,
+            "y": 511,
+            "width": 95,
+            "height": 62
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "REFERENCE_EYE",
+          "width": 95,
+          "height": 62,
+          "bytes": 7832,
+          "sha256": "a6d11ec50e57f6ce8a12481bf425d1b3459c990205c6a337b1b020b6d2d22ab8"
+        },
+        "right": {
+          "file": "crops/L2_baseline_f486_right.png",
+          "cropRegion": {
+            "x": 224,
+            "y": 509,
+            "width": 88,
+            "height": 59
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "REFERENCE_EYE",
+          "width": 88,
+          "height": 59,
+          "bytes": 6734,
+          "sha256": "61e1f9d077f6b0e2f55a96e764e839c4995b4ecaff1196a4ad5656e1f6085424"
+        }
+      },
+      "sourceFrameId": 486,
+      "timestampMs": 16300,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L2_cover_on",
+      "leg": 2,
+      "cycle": 1,
+      "kind": "cover_on",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 16333.333333333336,
+      "requestedFrameId": 487,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L2_cover_on_f487_left.png",
+          "cropRegion": {
+            "x": 362,
+            "y": 511,
+            "width": 91,
+            "height": 62
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "OCCLUDED",
+          "role": "EXPECTED_COVERED_NOT_MEASURED",
+          "width": 91,
+          "height": 62,
+          "bytes": 6840,
+          "sha256": "5768220c633ef4f2b39e1cb98b57f6ea83937eadb4434220302fab25687c33f3"
+        },
+        "right": {
+          "file": "crops/L2_cover_on_f487_right.png",
+          "cropRegion": {
+            "x": 226,
+            "y": 510,
+            "width": 87,
+            "height": 58
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "OBSERVED_FELLOW_EYE",
+          "width": 87,
+          "height": 58,
+          "bytes": 6197,
+          "sha256": "881bc871ed27ebb8f4a9d8fe492739dba6f9d04555b8a65251674fbcaf81438c"
+        }
+      },
+      "sourceFrameId": 487,
+      "timestampMs": 16333.333333333336,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "OCCLUDED",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": false,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L2_cover_500ms",
+      "leg": 2,
+      "cycle": 1,
+      "kind": "cover_500ms",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 16833.333333333336,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L2_cover_500ms_f502_left.png",
+          "cropRegion": {
+            "x": 366,
+            "y": 523,
+            "width": 94,
+            "height": 62
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "OCCLUDED",
+          "role": "EXPECTED_COVERED_NOT_MEASURED",
+          "width": 94,
+          "height": 62,
+          "bytes": 6980,
+          "sha256": "01e1de8912505d0b3a0ac402877927532cdf98345b9aa698c70fee5c61fb3255"
+        },
+        "right": {
+          "file": "crops/L2_cover_500ms_f502_right.png",
+          "cropRegion": {
+            "x": 221,
+            "y": 505,
+            "width": 88,
+            "height": 59
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "OBSERVED_FELLOW_EYE",
+          "width": 88,
+          "height": 59,
+          "bytes": 5998,
+          "sha256": "4ccf2ae925c608e0f0175763086cc47173c0dd6c65f5d0bb82209ac6a47ac2af"
+        }
+      },
+      "sourceFrameId": 502,
+      "timestampMs": 16833.333333333336,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "OCCLUDED",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": false,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L2_uncover",
+      "leg": 2,
+      "cycle": 1,
+      "kind": "uncover",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 24700.000000000004,
+      "requestedFrameId": 738,
+      "imageEvent": "c1_left_uncover",
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L2_uncover_f738_left.png",
+          "cropRegion": {
+            "x": 355,
+            "y": 508,
+            "width": 90,
+            "height": 60
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 90,
+          "height": 60,
+          "bytes": 6625,
+          "sha256": "f70a235a7559f5d36876dd5cf125dbe83f3bd8bc9430d19e165a4555aa6d258b"
+        },
+        "right": {
+          "file": "crops/L2_uncover_f738_right.png",
+          "cropRegion": {
+            "x": 218,
+            "y": 506,
+            "width": 88,
+            "height": 60
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 88,
+          "height": 60,
+          "bytes": 6622,
+          "sha256": "01111ecfa4b1a0b4e570497c9968b9846db138a1e5400677d677a85dc4235627"
+        }
+      },
+      "sourceFrameId": 738,
+      "timestampMs": 24700.000000000004,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L2_uncover_500ms",
+      "leg": 2,
+      "cycle": 1,
+      "kind": "uncover_500ms",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 25200.000000000004,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L2_uncover_500ms_f753_left.png",
+          "cropRegion": {
+            "x": 362,
+            "y": 509,
+            "width": 91,
+            "height": 62
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 91,
+          "height": 62,
+          "bytes": 7042,
+          "sha256": "a685bfc4cdf65b927801c471b8eeb8148bc21ed19b92444e694dd46f03d21ad5"
+        },
+        "right": {
+          "file": "crops/L2_uncover_500ms_f753_right.png",
+          "cropRegion": {
+            "x": 223,
+            "y": 508,
+            "width": 88,
+            "height": 60
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 88,
+          "height": 60,
+          "bytes": 6418,
+          "sha256": "3f6923d68e08a68206d1358c7bca9014bbbfd6160531b1dc0efd5fcdeb55a045"
+        }
+      },
+      "sourceFrameId": 753,
+      "timestampMs": 25200.000000000004,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L3_baseline",
+      "leg": 3,
+      "cycle": 2,
+      "kind": "baseline",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 27033.333333333336,
+      "requestedFrameId": 808,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L3_baseline_f808_left.png",
+          "cropRegion": {
+            "x": 369,
+            "y": 516,
+            "width": 87,
+            "height": 59
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "REFERENCE_EYE",
+          "width": 87,
+          "height": 59,
+          "bytes": 6376,
+          "sha256": "2c52674526095c60031218e2b7d6f93f0ae0d7ddf70dfd347809e6a1e9ec8069"
+        },
+        "right": {
+          "file": "crops/L3_baseline_f808_right.png",
+          "cropRegion": {
+            "x": 221,
+            "y": 512,
+            "width": 92,
+            "height": 61
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "REFERENCE_EYE",
+          "width": 92,
+          "height": 61,
+          "bytes": 6823,
+          "sha256": "45673984a665b6741676662560180ceffc901a1089f52c1563af61b2d5356e93"
+        }
+      },
+      "sourceFrameId": 808,
+      "timestampMs": 27033.333333333336,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L3_cover_on",
+      "leg": 3,
+      "cycle": 2,
+      "kind": "cover_on",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 27100,
+      "requestedFrameId": 810,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L3_cover_on_f810_left.png",
+          "cropRegion": {
+            "x": 368,
+            "y": 515,
+            "width": 88,
+            "height": 61
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "OBSERVED_FELLOW_EYE",
+          "width": 88,
+          "height": 61,
+          "bytes": 6571,
+          "sha256": "3f62694d6c0ac1a83365fb830657078bdb1486c32642ccda642529a49c788468"
+        },
+        "right": {
+          "file": "crops/L3_cover_on_f810_right.png",
+          "cropRegion": {
+            "x": 227,
+            "y": 512,
+            "width": 88,
+            "height": 62
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "OCCLUDED",
+          "role": "EXPECTED_COVERED_NOT_MEASURED",
+          "width": 88,
+          "height": 62,
+          "bytes": 6583,
+          "sha256": "8cc5feca1098f5410e4168b9d6807ac9858bfacfab57f68646bc643cadda3ba7"
+        }
+      },
+      "sourceFrameId": 810,
+      "timestampMs": 27100,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "OCCLUDED"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": false
+      }
+    },
+    {
+      "snapshotId": "L3_cover_500ms",
+      "leg": 3,
+      "cycle": 2,
+      "kind": "cover_500ms",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 27600,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L3_cover_500ms_f825_left.png",
+          "cropRegion": {
+            "x": 388,
+            "y": 518,
+            "width": 85,
+            "height": 58
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "OBSERVED_FELLOW_EYE",
+          "width": 85,
+          "height": 58,
+          "bytes": 6107,
+          "sha256": "ea099c332dfd72097ce9a065cb97542b03861161aefe8708c5cd5f352c19da12"
+        },
+        "right": {
+          "file": "crops/L3_cover_500ms_f825_right.png",
+          "cropRegion": {
+            "x": 243,
+            "y": 525,
+            "width": 97,
+            "height": 65
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "OCCLUDED",
+          "role": "EXPECTED_COVERED_NOT_MEASURED",
+          "width": 97,
+          "height": 65,
+          "bytes": 7062,
+          "sha256": "b547cf38615de66156d0557b2a22a76fe39b9ccf4c62f33d14944d3642c1eac1"
+        }
+      },
+      "sourceFrameId": 825,
+      "timestampMs": 27600,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "OCCLUDED"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": false
+      }
+    },
+    {
+      "snapshotId": "L3_uncover",
+      "leg": 3,
+      "cycle": 2,
+      "kind": "uncover",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 35333.333333333336,
+      "requestedFrameId": 1057,
+      "imageEvent": "c2_right_uncover",
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L3_uncover_f1057_left.png",
+          "cropRegion": {
+            "x": 373,
+            "y": 515,
+            "width": 87,
+            "height": 61
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 87,
+          "height": 61,
+          "bytes": 6604,
+          "sha256": "62f2e9f9c280020f4dc8edf761999286004080f02c11abab939130c2bd0e8715"
+        },
+        "right": {
+          "file": "crops/L3_uncover_f1057_right.png",
+          "cropRegion": {
+            "x": 226,
+            "y": 515,
+            "width": 94,
+            "height": 62
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 94,
+          "height": 62,
+          "bytes": 6946,
+          "sha256": "fb24d8f31ebad119154d2018858bba7726b2283f832fdad022a9273cb99a1e54"
+        }
+      },
+      "sourceFrameId": 1057,
+      "timestampMs": 35333.333333333336,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L3_uncover_500ms",
+      "leg": 3,
+      "cycle": 2,
+      "kind": "uncover_500ms",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 35833.333333333336,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L3_uncover_500ms_f1072_left.png",
+          "cropRegion": {
+            "x": 371,
+            "y": 513,
+            "width": 87,
+            "height": 61
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 87,
+          "height": 61,
+          "bytes": 6679,
+          "sha256": "84954bf2a31d5238ba2f39c8eb209ced6e0988c6ada421bf788eeda54fdcb75e"
+        },
+        "right": {
+          "file": "crops/L3_uncover_500ms_f1072_right.png",
+          "cropRegion": {
+            "x": 226,
+            "y": 510,
+            "width": 93,
+            "height": 63
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 93,
+          "height": 63,
+          "bytes": 7077,
+          "sha256": "de1963c02907f3b6e45ccb3561ecfa3dcc5e13dbd9096dad168c005b2f95ebf2"
+        }
+      },
+      "sourceFrameId": 1072,
+      "timestampMs": 35833.333333333336,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L4_baseline",
+      "leg": 4,
+      "cycle": 2,
+      "kind": "baseline",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 37700,
+      "requestedFrameId": 1128,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L4_baseline_f1128_left.png",
+          "cropRegion": {
+            "x": 365,
+            "y": 513,
+            "width": 90,
+            "height": 62
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "REFERENCE_EYE",
+          "width": 90,
+          "height": 62,
+          "bytes": 7261,
+          "sha256": "fbe4be37469052c46fe216f5b4915c7aca888b875e298dd7cbcfb153a5c9758f"
+        },
+        "right": {
+          "file": "crops/L4_baseline_f1128_right.png",
+          "cropRegion": {
+            "x": 221,
+            "y": 511,
+            "width": 98,
+            "height": 64
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "REFERENCE_EYE",
+          "width": 98,
+          "height": 64,
+          "bytes": 7584,
+          "sha256": "6223d0e424b4dff26db56eb5da0077f95e14986f78303df34a52fe54b0596364"
+        }
+      },
+      "sourceFrameId": 1128,
+      "timestampMs": 37700,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L4_cover_on",
+      "leg": 4,
+      "cycle": 2,
+      "kind": "cover_on",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 37766.666666666664,
+      "requestedFrameId": 1130,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L4_cover_on_f1130_left.png",
+          "cropRegion": {
+            "x": 367,
+            "y": 517,
+            "width": 87,
+            "height": 58
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "OCCLUDED",
+          "role": "EXPECTED_COVERED_NOT_MEASURED",
+          "width": 87,
+          "height": 58,
+          "bytes": 6003,
+          "sha256": "8e474574a9f0ee3ea3d1c375559d9d609fc465d8241795328554de89a01dfc12"
+        },
+        "right": {
+          "file": "crops/L4_cover_on_f1130_right.png",
+          "cropRegion": {
+            "x": 223,
+            "y": 512,
+            "width": 92,
+            "height": 63
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "OBSERVED_FELLOW_EYE",
+          "width": 92,
+          "height": 63,
+          "bytes": 6634,
+          "sha256": "83775b0b0a0e58ee3757a509b12e02097b549bf59aebe834c9c7883d0b1dec5a"
+        }
+      },
+      "sourceFrameId": 1130,
+      "timestampMs": 37766.666666666664,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "OCCLUDED",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": false,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L4_cover_500ms",
+      "leg": 4,
+      "cycle": 2,
+      "kind": "cover_500ms",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 38266.666666666664,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L4_cover_500ms_f1145_left.png",
+          "cropRegion": {
+            "x": 365,
+            "y": 523,
+            "width": 95,
+            "height": 66
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "OCCLUDED",
+          "role": "EXPECTED_COVERED_NOT_MEASURED",
+          "width": 95,
+          "height": 66,
+          "bytes": 7242,
+          "sha256": "44ad9c76cbd7e01ac09e56be82a628f80e6f9d23c5c27943ff1aecb74747312d"
+        },
+        "right": {
+          "file": "crops/L4_cover_500ms_f1145_right.png",
+          "cropRegion": {
+            "x": 216,
+            "y": 511,
+            "width": 94,
+            "height": 63
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "OBSERVED_FELLOW_EYE",
+          "width": 94,
+          "height": 63,
+          "bytes": 6837,
+          "sha256": "9fed8894985341cb9c9750c8b228effd0f2d309a592295b1ef01964c75e432d9"
+        }
+      },
+      "sourceFrameId": 1145,
+      "timestampMs": 38266.666666666664,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "OCCLUDED",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": false,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L4_uncover",
+      "leg": 4,
+      "cycle": 2,
+      "kind": "uncover",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": null,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "MISSING_SOURCE_EVENT",
+      "eyes": null
+    },
+    {
+      "snapshotId": "L4_uncover_500ms",
+      "leg": 4,
+      "cycle": 2,
+      "kind": "uncover_500ms",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": null,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "MISSING_SOURCE_EVENT",
+      "eyes": null
+    },
+    {
+      "snapshotId": "L5_baseline",
+      "leg": 5,
+      "cycle": 3,
+      "kind": "baseline",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 50200,
+      "requestedFrameId": 1503,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L5_baseline_f1503_left.png",
+          "cropRegion": {
+            "x": 376,
+            "y": 514,
+            "width": 86,
+            "height": 61
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "REFERENCE_EYE",
+          "width": 86,
+          "height": 61,
+          "bytes": 6444,
+          "sha256": "fe1f5a3c2f76a1e81c2e3075530ba247e718f564855a2dfab2242fb2763a110b"
+        },
+        "right": {
+          "file": "crops/L5_baseline_f1503_right.png",
+          "cropRegion": {
+            "x": 231,
+            "y": 512,
+            "width": 94,
+            "height": 63
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "REFERENCE_EYE",
+          "width": 94,
+          "height": 63,
+          "bytes": 7311,
+          "sha256": "e2599d7dbbc765b912430dde8ae4d754ca5a6d1c4e95474b683c9ee9beac1931"
+        }
+      },
+      "sourceFrameId": 1503,
+      "timestampMs": 50200,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L5_cover_on",
+      "leg": 5,
+      "cycle": 3,
+      "kind": "cover_on",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 50266.66666666667,
+      "requestedFrameId": 1505,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L5_cover_on_f1505_left.png",
+          "cropRegion": {
+            "x": 379,
+            "y": 515,
+            "width": 86,
+            "height": 60
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "OBSERVED_FELLOW_EYE",
+          "width": 86,
+          "height": 60,
+          "bytes": 6429,
+          "sha256": "0febd6026a41ff1d2c3178fa0e0f83dca782666905be30ec83af7a130ce7d0ab"
+        },
+        "right": {
+          "file": "crops/L5_cover_on_f1505_right.png",
+          "cropRegion": {
+            "x": 231,
+            "y": 511,
+            "width": 95,
+            "height": 65
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "OCCLUDED",
+          "role": "EXPECTED_COVERED_NOT_MEASURED",
+          "width": 95,
+          "height": 65,
+          "bytes": 7709,
+          "sha256": "39b1691fc85e1b266ede9050d11ecbfb3c4385a6af28900a9b653ae0394f9769"
+        }
+      },
+      "sourceFrameId": 1505,
+      "timestampMs": 50266.66666666667,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "OCCLUDED"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": false
+      }
+    },
+    {
+      "snapshotId": "L5_cover_500ms",
+      "leg": 5,
+      "cycle": 3,
+      "kind": "cover_500ms",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 50766.66666666667,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L5_cover_500ms_f1520_left.png",
+          "cropRegion": {
+            "x": 375,
+            "y": 518,
+            "width": 88,
+            "height": 60
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "OBSERVED_FELLOW_EYE",
+          "width": 88,
+          "height": 60,
+          "bytes": 6370,
+          "sha256": "023eddb1da6f3eb11e1031179f8341563a98d5d764f04651155464c0111e3089"
+        },
+        "right": {
+          "file": "crops/L5_cover_500ms_f1520_right.png",
+          "cropRegion": {
+            "x": 230,
+            "y": 527,
+            "width": 97,
+            "height": 65
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "OCCLUDED",
+          "role": "EXPECTED_COVERED_NOT_MEASURED",
+          "width": 97,
+          "height": 65,
+          "bytes": 7614,
+          "sha256": "047b00f4f6a06956405725a212ad6137e6eefe0b819f26b1c6a9776e92d3bbc2"
+        }
+      },
+      "sourceFrameId": 1520,
+      "timestampMs": 50766.66666666667,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "OCCLUDED"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": false
+      }
+    },
+    {
+      "snapshotId": "L5_uncover",
+      "leg": 5,
+      "cycle": 3,
+      "kind": "uncover",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 58566.66666666667,
+      "requestedFrameId": 1754,
+      "imageEvent": "c3_right_uncover",
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L5_uncover_f1754_left.png",
+          "cropRegion": {
+            "x": 379,
+            "y": 519,
+            "width": 87,
+            "height": 59
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 87,
+          "height": 59,
+          "bytes": 6088,
+          "sha256": "8638d6cac7aedb9490009b393cb81a963d55ad0915ab3ab601d258b64ce0f694"
+        },
+        "right": {
+          "file": "crops/L5_uncover_f1754_right.png",
+          "cropRegion": {
+            "x": 230,
+            "y": 518,
+            "width": 94,
+            "height": 61
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 94,
+          "height": 61,
+          "bytes": 6456,
+          "sha256": "19dc5e2fe74fa5f85b558fd5f83487fa57f3c7d9e78de30893474b40a78cd44f"
+        }
+      },
+      "sourceFrameId": 1754,
+      "timestampMs": 58566.66666666667,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L5_uncover_500ms",
+      "leg": 5,
+      "cycle": 3,
+      "kind": "uncover_500ms",
+      "coveredEye": "right",
+      "trackedEye": "left",
+      "requestedTimestampMs": 59066.66666666667,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L5_uncover_500ms_f1769_left.png",
+          "cropRegion": {
+            "x": 370,
+            "y": 516,
+            "width": 87,
+            "height": 61
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 87,
+          "height": 61,
+          "bytes": 6716,
+          "sha256": "858979bfa0e50050129d5107a26d2dcb442e933622bf1df4a7a01d8eb971e6b1"
+        },
+        "right": {
+          "file": "crops/L5_uncover_500ms_f1769_right.png",
+          "cropRegion": {
+            "x": 227,
+            "y": 512,
+            "width": 92,
+            "height": 62
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 92,
+          "height": 62,
+          "bytes": 6620,
+          "sha256": "ead520387aad254b75d8f933be65c1386e0b7de7863668312fdfe886db1dcbcc"
+        }
+      },
+      "sourceFrameId": 1769,
+      "timestampMs": 59066.66666666667,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L6_baseline",
+      "leg": 6,
+      "cycle": 3,
+      "kind": "baseline",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 60866.666666666664,
+      "requestedFrameId": 1823,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L6_baseline_f1823_left.png",
+          "cropRegion": {
+            "x": 350,
+            "y": 515,
+            "width": 90,
+            "height": 62
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "REFERENCE_EYE",
+          "width": 90,
+          "height": 62,
+          "bytes": 7147,
+          "sha256": "cc162d218461b45046ba86748a30ba6b540202d595c91972b8e7fe635170cec3"
+        },
+        "right": {
+          "file": "crops/L6_baseline_f1823_right.png",
+          "cropRegion": {
+            "x": 207,
+            "y": 513,
+            "width": 95,
+            "height": 62
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "REFERENCE_EYE",
+          "width": 95,
+          "height": 62,
+          "bytes": 6730,
+          "sha256": "3b700b2e66b450343c47f3d3b32d8cfeaa371ca79fc2e6c83893b803de532b2f"
+        }
+      },
+      "sourceFrameId": 1823,
+      "timestampMs": 60866.666666666664,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L6_cover_on",
+      "leg": 6,
+      "cycle": 3,
+      "kind": "cover_on",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 60900.00000000001,
+      "requestedFrameId": 1824,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L6_cover_on_f1824_left.png",
+          "cropRegion": {
+            "x": 352,
+            "y": 515,
+            "width": 89,
+            "height": 64
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "OCCLUDED",
+          "role": "EXPECTED_COVERED_NOT_MEASURED",
+          "width": 89,
+          "height": 64,
+          "bytes": 6811,
+          "sha256": "e63743de19bbce9e95e19f2dfa6d3b4f9461448a94b7a11027e0adcd31552e89"
+        },
+        "right": {
+          "file": "crops/L6_cover_on_f1824_right.png",
+          "cropRegion": {
+            "x": 208,
+            "y": 513,
+            "width": 94,
+            "height": 63
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "OBSERVED_FELLOW_EYE",
+          "width": 94,
+          "height": 63,
+          "bytes": 6693,
+          "sha256": "000b96214e60701508a20827acb069361be5a5b853cdfa155b7a11dcf0e23434"
+        }
+      },
+      "sourceFrameId": 1824,
+      "timestampMs": 60900.00000000001,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "OCCLUDED",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": false,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L6_cover_500ms",
+      "leg": 6,
+      "cycle": 3,
+      "kind": "cover_500ms",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 61400.00000000001,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L6_cover_500ms_f1839_left.png",
+          "cropRegion": {
+            "x": 357,
+            "y": 533,
+            "width": 92,
+            "height": 60
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "OCCLUDED",
+          "role": "EXPECTED_COVERED_NOT_MEASURED",
+          "width": 92,
+          "height": 60,
+          "bytes": 6959,
+          "sha256": "487ec639eb26867aa812482543b4d74cbbc1826620b4161f1e0d493b99025d7d"
+        },
+        "right": {
+          "file": "crops/L6_cover_500ms_f1839_right.png",
+          "cropRegion": {
+            "x": 207,
+            "y": 511,
+            "width": 91,
+            "height": 61
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "OBSERVED_FELLOW_EYE",
+          "width": 91,
+          "height": 61,
+          "bytes": 6419,
+          "sha256": "5b04ef543711f03ff895b530c6cac6e7b46e14323a85c8995f3ae94005d24ae3"
+        }
+      },
+      "sourceFrameId": 1839,
+      "timestampMs": 61400.00000000001,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "OCCLUDED",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": false,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L6_uncover",
+      "leg": 6,
+      "cycle": 3,
+      "kind": "uncover",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 68466.66666666667,
+      "requestedFrameId": 2051,
+      "imageEvent": "c3_left_uncover",
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L6_uncover_f2051_left.png",
+          "cropRegion": {
+            "x": 349,
+            "y": 510,
+            "width": 92,
+            "height": 61
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 92,
+          "height": 61,
+          "bytes": 6403,
+          "sha256": "0da2100653ebb8636f038f37f6f402a8745992c9b52617b0e37a04cd42d59f91"
+        },
+        "right": {
+          "file": "crops/L6_uncover_f2051_right.png",
+          "cropRegion": {
+            "x": 211,
+            "y": 509,
+            "width": 89,
+            "height": 59
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 89,
+          "height": 59,
+          "bytes": 6420,
+          "sha256": "e6697c7cf75cc5ba3115894f31fd2e85cc7676ce67de0308720223dfb68c33d1"
+        }
+      },
+      "sourceFrameId": 2051,
+      "timestampMs": 68466.66666666667,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    },
+    {
+      "snapshotId": "L6_uncover_500ms",
+      "leg": 6,
+      "cycle": 3,
+      "kind": "uncover_500ms",
+      "coveredEye": "left",
+      "trackedEye": "right",
+      "requestedTimestampMs": 68966.66666666667,
+      "requestedFrameId": null,
+      "imageEvent": null,
+      "measurementValid": true,
+      "status": "CROPPED",
+      "eyes": {
+        "left": {
+          "file": "crops/L6_uncover_500ms_f2066_left.png",
+          "cropRegion": {
+            "x": 351,
+            "y": 511,
+            "width": 92,
+            "height": 62
+          },
+          "imageSide": "IMAGE_RIGHT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 92,
+          "height": 62,
+          "bytes": 6931,
+          "sha256": "201b2b6a267e3843c9fbe00df6c92856b253ac7850bd1686cf8baea356cdc510"
+        },
+        "right": {
+          "file": "crops/L6_uncover_500ms_f2066_right.png",
+          "cropRegion": {
+            "x": 212,
+            "y": 510,
+            "width": 88,
+            "height": 60
+          },
+          "imageSide": "IMAGE_LEFT",
+          "visibility": "VISIBLE",
+          "role": "UNCOVER_IMAGE_EVIDENCE",
+          "width": 88,
+          "height": 60,
+          "bytes": 6521,
+          "sha256": "efc8935232758f1c107617ce9e266fc56734a9b1a3bb16e8ca9f7ffcdbdb2d16"
+        }
+      },
+      "sourceFrameId": 2066,
+      "timestampMs": 68966.66666666667,
+      "timeOffsetMs": 0,
+      "sourceVisibility": {
+        "left": "VISIBLE",
+        "right": "VISIBLE"
+      },
+      "sourceValidSamples": {
+        "left": true,
+        "right": true
+      }
+    }
+  ],
+  "export": {
+    "format": "PNG",
+    "resampled": false,
+    "losslessPixelVerified": true,
+    "croppedPairs": 28,
+    "imageFiles": 56,
+    "sequentialSourceDecodeVerified": true,
+    "presentationTimeToleranceMs": 0.1
+  }
+}

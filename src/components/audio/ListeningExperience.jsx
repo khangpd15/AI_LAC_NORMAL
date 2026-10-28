@@ -107,7 +107,7 @@ export function ListeningProvider({ children }) {
     {track && !miniHidden && ['playing', 'paused', 'loading', 'error'].includes(status) && createPortal(
       <aside className="listening-mini" aria-label="Trình phát thu nhỏ">
         <GuideCover kind={track.cover} decorative />
-        <div className="mini-track-info"><span>{status === 'playing' ? 'ĐANG NGHE CÙNG IRIS' : status === 'loading' ? 'ĐANG CHUẨN BỊ GIỌNG ĐỌC' : status === 'error' ? 'CHẠM PHÁT ĐỂ THỬ LẠI' : 'ĐÃ TẠM DỪNG'}</span><strong>{track.title}</strong></div>
+        <div className="mini-track-info"><span>{status === 'playing' ? 'ĐANG NGHE CÙNG LUMI' : status === 'loading' ? 'ĐANG CHUẨN BỊ GIỌNG ĐỌC' : status === 'error' ? 'CHẠM PHÁT ĐỂ THỬ LẠI' : 'ĐÃ TẠM DỪNG'}</span><strong>{track.title}</strong></div>
         <PlayerControls compact />
         <button className="listen-icon-button" aria-label="Dừng và đóng trình phát" onClick={() => { requestRef.current?.abort(); audioRef.current.pause(); setStatus('paused'); setMiniHidden(true); }}><AudioIcon name="close" /></button>
       </aside>, document.body)}
@@ -142,11 +142,11 @@ export default function AudioGuide({ guideId, compact = false }) {
   return <article className={`listening-card ${compact ? 'listening-card-compact' : ''}`}>
     <GuideCover kind={guide.cover} />
     <div className="listening-card-body">
-      <div className="listening-meta"><span className="listen-chip">{guide.topic}</span><span>Giọng đọc Iris · Tiếng Việt</span></div>
+      <div className="listening-meta"><span className="listen-chip">{guide.topic}</span><span>Giọng đọc Lumi · Tiếng Việt</span></div>
       <h3>{guide.title}</h3><p>{guide.description}</p>
       <div className="listen-waveform" aria-hidden="true">{Array.from({ length: 56 }, (_, i) => <i key={i} style={{ height: `${12 + ((active ? player.peaks[i] : undefined) ?? (Math.sin(i * 1.9) ** 2 * .6)) * 28}px`, opacity: active && player.duration > 0 && i / 56 < player.position / player.duration ? 1 : .3 }} />)}</div>
       <PlayerControls guide={guide} />
-      <p className="listen-status" role="status">{!active ? 'Sẵn sàng nghe cùng Iris' : player.error || (player.status === 'loading' ? 'Đang chuẩn bị giọng đọc…' : player.status === 'playing' ? 'Đang phát' : player.status === 'ended' ? 'Đã nghe xong' : 'Đã tạm dừng')}</p>
+      <p className="listen-status" role="status">{!active ? 'Sẵn sàng nghe cùng Lumi' : player.error || (player.status === 'loading' ? 'Đang chuẩn bị giọng đọc…' : player.status === 'playing' ? 'Đang phát' : player.status === 'ended' ? 'Đã nghe xong' : 'Đã tạm dừng')}</p>
       <details className="listen-transcript"><summary>Đọc nội dung bài nghe</summary><p>{guide.text}</p></details>
     </div>
   </article>;
@@ -156,7 +156,7 @@ export function HomeListeningSection() {
   const [filter, setFilter] = useState('Tất cả');
   const guides = ['home', 'care', 'family'];
   return <section className="home-listening-section" aria-labelledby="home-listening-title">
-    <div className="listening-section-heading"><div><span className="section-eyebrow">MỘT CHÚT LẮNG NGHE, THÊM NHIỀU THẤU HIỂU</span><h2 id="home-listening-title">Chăm sóc mắt, theo cách nhẹ nhàng.</h2></div><p>Không cần đọc nhiều.<br />Để Iris đồng hành cùng bạn.</p></div>
+    <div className="listening-section-heading"><div><span className="section-eyebrow">MỘT CHÚT LẮNG NGHE, THÊM NHIỀU THẤU HIỂU</span><h2 id="home-listening-title">Chăm sóc mắt, theo cách nhẹ nhàng.</h2></div><p>Không cần đọc nhiều.<br />Để Lumi đồng hành cùng bạn.</p></div>
     <div className="listening-filters" aria-label="Lọc chủ đề bài nghe">{['Tất cả', 'Bắt đầu', 'Chăm sóc mắt', 'Gia đình'].map((topic) => <button key={topic} aria-pressed={filter === topic} onClick={() => setFilter(topic)}>{topic}</button>)}</div>
     <div className="home-listening-grid">{guides.filter((id) => filter === 'Tất cả' || listeningGuides[id].topic === filter).map((id) => <AudioGuide key={id} guideId={id} />)}</div>
   </section>;

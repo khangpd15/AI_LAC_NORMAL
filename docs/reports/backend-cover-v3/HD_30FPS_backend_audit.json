@@ -1,0 +1,81 @@
+{
+  "clip": "HD_30FPS",
+  "sourceSha256": "035021c2f00891a9ccb462100030ce8484f79d8b1146f51a689c5bd21d5db3e5",
+  "timing": {
+    "eligible30fps": true,
+    "effectiveFps": 29.95750708215297,
+    "medianFps": 30.000000000000068,
+    "p95IntervalMs": 33.333333333343035,
+    "maxIntervalMs": 66.66666666666606,
+    "sourceFrames": 2116,
+    "durationMs": 70600.00000000001,
+    "reason": null
+  },
+  "cropFiles": 56,
+  "sourceOrientation": "UNKNOWN",
+  "events": [
+    {
+      "snapshotId": "L1_uncover",
+      "frameId": 378,
+      "timestampMs": 12600.000000000002,
+      "sourceTimeOffsetMs": 0,
+      "clinicalLabel": null,
+      "status": "UNVERIFIED_CROP_ORIENTATION",
+      "featureExtraction": {
+        "status": "OK",
+        "dimensions": 1530,
+        "finite": true
+      }
+    },
+    {
+      "snapshotId": "L2_uncover",
+      "frameId": 738,
+      "timestampMs": 24700.000000000004,
+      "sourceTimeOffsetMs": 0,
+      "clinicalLabel": null,
+      "status": "UNVERIFIED_CROP_ORIENTATION",
+      "featureExtraction": {
+        "status": "INSUFFICIENT_CONTIGUOUS_SETTLING_TAIL"
+      }
+    },
+    {
+      "snapshotId": "L3_uncover",
+      "frameId": 1057,
+      "timestampMs": 35333.333333333336,
+      "sourceTimeOffsetMs": 0,
+      "clinicalLabel": null,
+      "status": "UNVERIFIED_CROP_ORIENTATION",
+      "featureExtraction": {
+        "status": "INSUFFICIENT_CONTIGUOUS_SETTLING_TAIL"
+      }
+    },
+    {
+      "snapshotId": "L5_uncover",
+      "frameId": 1754,
+      "timestampMs": 58566.66666666667,
+      "sourceTimeOffsetMs": 0,
+      "clinicalLabel": null,
+      "status": "UNVERIFIED_CROP_ORIENTATION",
+      "featureExtraction": {
+        "status": "OK",
+        "dimensions": 1530,
+        "finite": true
+      }
+    },
+    {
+      "snapshotId": "L6_uncover",
+      "frameId": 2051,
+      "timestampMs": 68466.66666666667,
+      "sourceTimeOffsetMs": 0,
+      "clinicalLabel": null,
+      "status": "UNVERIFIED_CROP_ORIENTATION",
+      "featureExtraction": {
+        "status": "OK",
+        "dimensions": 1530,
+        "finite": true
+      }
+    }
+  ],
+  "accuracy": null,
+  "notice": "All source frames assessed offline; this is not a live iPhone FE throughput benchmark."
+}

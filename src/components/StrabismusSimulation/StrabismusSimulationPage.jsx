@@ -420,10 +420,10 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
             type="button"
             className={`sim-tool-btn ${isVoiceEnabled ? 'active' : ''}`}
             onClick={toggleVoice}
-            title={isVoiceEnabled ? 'Tắt giọng nói Iris' : 'Bật giọng nói Iris'}
+            title={isVoiceEnabled ? 'Tắt giọng nói Lumi' : 'Bật giọng nói Lumi'}
           >
             <span className="tool-icon">{isVoiceEnabled ? '🔊' : '🔇'}</span>
-            <span className="tool-text">Iris</span>
+            <span className="tool-text">Lumi</span>
           </button>
 
           <button
@@ -449,7 +449,7 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
       </header>
 
       {/* Main Simulation Viewport */}
-      <details className="sim-listening-panel"><summary>Nghe hướng dẫn mô phỏng cùng Iris</summary><AudioGuide guideId="simulation" compact /></details>
+      <details className="sim-listening-panel"><summary>Nghe hướng dẫn mô phỏng cùng Lumi</summary><AudioGuide guideId="simulation" compact /></details>
       <div className="sim-page-intro"><div><span className="sim-eyebrow">TRẢI NGHIỆM TRỰC QUAN</span><h2>Hiểu từng hướng lệch của mắt</h2><p>Chọn kiểu lệch, chọn mắt và kéo thanh mức độ để quan sát trực tiếp.</p></div><span className="sim-education-note">Mô phỏng minh họa · Không phải kết quả đo</span></div>
       <main className="sim-main-stage">
         {/* Camera Stage Frame */}

@@ -1,4 +1,4 @@
-import { getIrisAudioUrls } from '../constants/irisVoice.js';
+import { getLumiAudioUrls } from '../constants/lumiVoice.js';
 
 export function splitGuideText(text, limit = 140) {
   const chunks = [];
@@ -35,7 +35,7 @@ export async function loadGuideAudio(text, signal) {
     const buffers = [];
     for (const chunk of splitGuideText(text)) {
       signal.throwIfAborted();
-      const response = await fetch(getIrisAudioUrls(chunk)[0], { signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) });
+      const response = await fetch(getLumiAudioUrls(chunk)[0], { signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]) });
       if (!response.ok) throw new Error('Chưa tải được giọng đọc. Hãy kiểm tra kết nối và thử lại.');
       buffers.push(await context.decodeAudioData(await response.arrayBuffer()));
     }

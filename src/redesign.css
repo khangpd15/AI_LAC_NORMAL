@@ -82,7 +82,6 @@ input[type='range'] { min-height: 44px; accent-color: var(--color-deep-green); c
 .home-main-scrollable { max-width: 1280px; margin: auto; width: 100%; padding: 0 32px; }
 .care-hero { padding: 64px 0 48px; display: grid; grid-template-columns: 1.12fr 1fr; align-items: center; gap: 56px; }
 .section-eyebrow { display: inline-flex; gap: 8px; align-items: center; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: var(--text-heading); }
-.care-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-mint); }
 .care-hero h1 { font-size: clamp(38px, 4.4vw, 60px); letter-spacing: -2px; line-height: 1.18; margin: 20px 0; font-weight: 700; }
 .care-hero h1 em { color: var(--color-deep-green); font-style: normal; }
 [data-theme='dark'] .care-hero h1 em { color: #B8E8DF; }

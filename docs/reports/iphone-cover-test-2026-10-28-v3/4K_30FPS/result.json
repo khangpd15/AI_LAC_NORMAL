@@ -1,0 +1,5391 @@
+{
+  "schema": "iphone-cover-offline-replay-v3",
+  "evaluatedDate": "2026-10-28",
+  "source": {
+    "file": "video\\VIDEO_COVER_TEST\\NORMAL\\4K_30FPS.mp4",
+    "sha256": "48d615151cba0636d0b4797eda5b06ec69d1a6567b5c65e53afdf1035262c388",
+    "bytes": 18867303,
+    "fps": 29.9573055028463,
+    "expectedFrames": 2105,
+    "width": 720,
+    "height": 1280,
+    "processingWidth": 540,
+    "processingHeight": 960,
+    "engine": "Python MediaPipe 0.10.14",
+    "cv2Version": "5.0.0",
+    "maxEdge": 960,
+    "allDecodedFrames": true,
+    "orientationDegrees": 0,
+    "patchSampler": "OpenCV bilinear remap at Canvas-style pixel centers"
+  },
+  "method": {
+    "mode": "ALL_FRAME_OFFLINE_REPLAY",
+    "phasePlanSource": "MANUAL_COARSE_VISUAL_INSPECTION_1_SECOND_CONTACT_SHEETS",
+    "mirroring": "UNKNOWN_ASSUME_UNMIRRORED_FOR_SIDE_NAMES",
+    "processingSize": [
+      540,
+      960
+    ],
+    "runtime": "v24.16.0",
+    "sourceHashes": {
+      "src/services/coverTest/uncoverCaptureService.js": "b073927d39fb88f683140b01077aa89ad3589d368d6d41cbebe11730f032eb50",
+      "src/services/coverTest/coverEventMeasurementService.js": "fe6f9845460c93192eeed07562996e88c646bec805ab218f8a7a0aabc308f53d",
+      "src/services/coverTestMeasurementService.js": "afb35b23179c95ea6f0dac48732645d6f83074c6e2f16f294f86fb439e34c7c5",
+      "src/services/coverTestProtocolService.js": "e428132a933732a368400b2e3ab8875a4e430ab2104ffe7c28e7a06576c519d1",
+      "src/services/cv/eyeCoverDetector.js": "6118e2fe45558023ca0aaefc1da75f81d38d232d0b1ba9f8acb813747a09bf29",
+      "src/services/eyeFeatureService.js": "eebdd97f2ee330ea5575764a1bb4e782dabfaa60a72f018822c39d6ceeba92f1",
+      "src/services/coverTestTimeline.js": "d351e7ae6bba7bedb0ce2d06ae23914e4e7c76ae068d62351fb6182ac0f66ad7",
+      "src/services/coverTest/eyeCropGeometry.js": "62e5ffb4098c3cd79e7d374602d144a4529b7b460b97fe3fa90595ca8ac168dd",
+      "scripts/replayIphoneCover.mjs": "2f49ecf52f2c86628150e0c03655d0d043e65e75bd80b835fd3f00966a955430",
+      "scripts/extractIphoneCoverReplay.py": "91a0192816268180eb89bc3c8fbfdcf0435bb4dc9534facc8af9806dcdba3f67"
+    },
+    "engineeringLimits": {
+      "minCoverMs": 120,
+      "minOpenMs": 120,
+      "minOpenFrames": 3,
+      "maxGapMs": 250,
+      "baselineWindowMs": 2000,
+      "analysisMs": 1500,
+      "minEarlySamples": 5,
+      "minEarlySpanMs": 300,
+      "minAnalysisSpanMs": 1000,
+      "minSettlingSamples": 5,
+      "minSettlingSpanMs": 200,
+      "settlingWindowMs": 500,
+      "minSettlingStability": 0.6
+    },
+    "appearanceLimits": {
+      "minCorrelation": 0.65,
+      "minBaselineSamples": 5,
+      "minContrastRatio": 0.65,
+      "maxTextureRatio": 1.8,
+      "minOpenMs": 120,
+      "minOpenFrames": 3
+    },
+    "windowPolicy": "OBSERVED_RECOVERY_WINDOW_WITH_3000MS_BOUND",
+    "pixelBaselinePolicy": "INITIAL_PREPARATION_ONLY",
+    "adapters": [
+      "Python MediaPipe FaceMesh refine_landmarks instead of Web MediaPipe",
+      "OpenCV bilinear RGBA patch sampling instead of browser Canvas",
+      "Manually annotated phase windows; no original app cue log",
+      "All source frames processed offline; no mobile scheduling or inference backpressure"
+    ],
+    "excluded": [
+      "iPhone/Safari runtime FPS",
+      "clinical diagnosis",
+      "server AI model",
+      "JPEG persistence"
+    ]
+  },
+  "statistics": {
+    "decodedFrames": 2105,
+    "faceDetectedFrames": 2105,
+    "faceDetectionPercent": 100,
+    "actualDurationSeconds": 70.26666666666665,
+    "headPoseRejectedFrames": 0,
+    "blinkMaskedFrames": 142,
+    "bothDirectlyVisibleFrames": 720,
+    "captureEligibleEvents": 6,
+    "procedureValidLegs": 5,
+    "primaryValidLegs": 5,
+    "recoveryValidLegs": 5,
+    "visibility": {
+      "left": {
+        "VISIBLE": 1346,
+        "OCCLUDED": 670,
+        "UNKNOWN": 89
+      },
+      "right": {
+        "VISIBLE": 1282,
+        "OCCLUDED": 614,
+        "UNKNOWN": 209
+      }
+    },
+    "directVisibility": {
+      "left": {
+        "VISIBLE": 1346,
+        "OCCLUDED": 670,
+        "UNKNOWN": 89
+      },
+      "right": {
+        "VISIBLE": 1282,
+        "OCCLUDED": 614,
+        "UNKNOWN": 209
+      }
+    },
+    "sourceFrameIntervalMedianMs": 33.33333333333326,
+    "sourceFrameIntervalMaxMs": 66.66666666666606,
+    "nativeInferenceMedianMs": 4.559599999993225,
+    "nativeInferenceP95Ms": 5.722800000512507,
+    "maxPatchGeometryErrorPixels": 5.684341886080802e-14
+  },
+  "summary": {
+    "verdict": "NO_SIGNIFICANT_REFIXATION",
+    "cycles": [
+      {
+        "cycle": 1,
+        "cycleNumber": 1,
+        "cycleIndex": 1,
+        "status": "COMPLETE",
+        "coveredEye": "LEFT",
+        "trackedEye": "RIGHT",
+        "coveredEyeSequence": [
+          "left",
+          "right"
+        ],
+        "trackedEyeSequence": [
+          "right",
+          "left"
+        ],
+        "baseline": {},
+        "rightEye": {
+          "eye": "right",
+          "cycle": 1,
+          "baselinePosition": {
+            "x": 0.04381093308697502,
+            "y": 0.03752486346669476,
+            "normalizedX": 0.4968223542406575,
+            "normalizedY": 0.4255374103325169,
+            "sampleCount": 49,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0438,
+            "y": 0.0375,
+            "normalizedX": 0.4968,
+            "normalizedY": 0.4255,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0431,
+            "y": 0.0379,
+            "normalizedX": 0.4887,
+            "normalizedY": 0.4301,
+            "t": 1499.9999999999982
+          },
+          "peakPosition": {
+            "x": 0.0433,
+            "y": 0.0361,
+            "normalizedX": 0.4906,
+            "normalizedY": 0.4092,
+            "t": 66.66666666666606
+          },
+          "dx": -0.0008,
+          "dy": -0.0007,
+          "horizontalDisplacement": 0.0008,
+          "verticalDisplacement": 0.0007,
+          "displacement": 0.0011,
+          "normalizedHorizontal": 0.0092,
+          "normalizedVertical": 0.0084,
+          "normalizedDisplacement": 0.0125,
+          "maximumDisplacement": 0.0175,
+          "horizontalPeak": 0.0289,
+          "verticalPeak": 0.0164,
+          "peakDisplacement": 0.0175,
+          "meanDisplacement": 0.0126,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "NONE",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "NONE",
+          "velocity": 0.0249,
+          "peakVelocity": 0.7073,
+          "timeToPeakMs": 99.99999999999818,
+          "meanVelocity": 0.0249,
+          "movementDurationMs": 233.33333333333394,
+          "trajectoryStability": 0.949,
+          "jitter": 0.0049,
+          "validSampleRatio": 1,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0882,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 16100.000000000002,
+              "t": 0,
+              "cycleId": 1,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 16166.666666666668,
+              "t": 66.66666666666606,
+              "cycleId": 1,
+              "trackedEye": "right",
+              "displacement": 0.0175
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 16333.333333333336,
+              "t": 233.33333333333394,
+              "cycleId": 1,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 17600,
+              "t": 1499.9999999999982,
+              "cycleId": 1,
+              "trackedEye": "right"
+            }
+          ],
+          "confidence": 0.98,
+          "sampleCount": 46,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 46,
+            "validEyeSampleCount": 46,
+            "stabilityScore": 0.949,
+            "jitter": 0.0049,
+            "validSampleRatio": 1,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c1_left_cover",
+            "eventType": "COVER",
+            "coveredEye": "LEFT",
+            "observedEye": "RIGHT",
+            "timestampMs": 16100.000000000002,
+            "frameId": 480,
+            "confirmedAtMs": 16233.333333333334,
+            "onsetIntervalMs": [
+              16000,
+              16100.000000000002
+            ],
+            "timingUncertaintyMs": 100.00000000000182,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 46,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1499.9999999999982,
+            "earlySpanMs": 499.9999999999982,
+            "maxGapMs": 33.33333333333576,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 999.9999999999982
+          }
+        },
+        "leftEye": {
+          "eye": "left",
+          "cycle": 1,
+          "baselinePosition": {
+            "x": 0.03727834993432347,
+            "y": 0.03361978261401363,
+            "normalizedX": 0.4666380273242147,
+            "normalizedY": 0.42084129436285805,
+            "sampleCount": 56,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0373,
+            "y": 0.0336,
+            "normalizedX": 0.4666,
+            "normalizedY": 0.4208,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0389,
+            "y": 0.0332,
+            "normalizedX": 0.4871,
+            "normalizedY": 0.4156,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0392,
+            "y": 0.0314,
+            "normalizedX": 0.4906,
+            "normalizedY": 0.3931,
+            "t": 366.66666666666697
+          },
+          "dx": 0.0002,
+          "dy": -0.0018,
+          "horizontalDisplacement": 0.0002,
+          "verticalDisplacement": 0.0018,
+          "displacement": 0.0018,
+          "normalizedHorizontal": 0.0029,
+          "normalizedVertical": 0.022,
+          "normalizedDisplacement": 0.0222,
+          "maximumDisplacement": 0.0367,
+          "horizontalPeak": 0.0254,
+          "verticalPeak": 0.0317,
+          "peakDisplacement": 0.0367,
+          "meanDisplacement": 0.0188,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "TEMPORAL_SUPERIOR",
+          "horizontalDirection": "TEMPORAL",
+          "verticalDirection": "SUPERIOR",
+          "velocity": 0.0443,
+          "peakVelocity": 0.9468,
+          "timeToPeakMs": 33.33333333333303,
+          "meanVelocity": 0.0443,
+          "movementDurationMs": 66.66666666666606,
+          "trajectoryStability": 0.936,
+          "jitter": 0.0089,
+          "validSampleRatio": 1,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0799,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 5666.666666666667,
+              "t": 0,
+              "cycleId": 1,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 6033.333333333334,
+              "t": 366.66666666666697,
+              "cycleId": 1,
+              "trackedEye": "left",
+              "displacement": 0.0367
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 5733.333333333333,
+              "t": 66.66666666666606,
+              "cycleId": 1,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 7166.666666666667,
+              "t": 1500,
+              "cycleId": 1,
+              "trackedEye": "left"
+            }
+          ],
+          "confidence": 0.98,
+          "sampleCount": 46,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 46,
+            "validEyeSampleCount": 46,
+            "stabilityScore": 0.936,
+            "jitter": 0.0089,
+            "validSampleRatio": 1,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c1_right_cover",
+            "eventType": "COVER",
+            "coveredEye": "RIGHT",
+            "observedEye": "LEFT",
+            "timestampMs": 5666.666666666667,
+            "frameId": 170,
+            "confirmedAtMs": 5800.000000000001,
+            "onsetIntervalMs": [
+              5600.000000000001,
+              5666.666666666667
+            ],
+            "timingUncertaintyMs": 66.66666666666606,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 46,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 33.33333333333485,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 1000
+          }
+        },
+        "samples": [],
+        "sampleCount": 92,
+        "rawTrajectory": [],
+        "summary": null,
+        "datasetQuality": null,
+        "horizontalDisplacement": 0.0008,
+        "verticalDisplacement": 0.0018,
+        "normalizedHorizontal": 0.0092,
+        "normalizedVertical": 0.022,
+        "peakVelocity": 0.9468,
+        "trajectoryStability": 0.936,
+        "isRefixationNotable": false,
+        "valid": true,
+        "quality": {
+          "isValid": true,
+          "status": "GOOD",
+          "reason": null
+        },
+        "occlusionMethod": "pixel-appearance-v2",
+        "occlusionVerified": true,
+        "measurementProtocol": "observed-cover-uncover-v1",
+        "primaryMeasurement": "cover_on_fellow_eye",
+        "uncoverRecovery": {
+          "leftEye": {
+            "eye": "left",
+            "cycle": 1,
+            "baselinePosition": {
+              "x": 0.03995661640090699,
+              "y": 0.03604845937049809,
+              "normalizedX": 0.46499208868321545,
+              "normalizedY": 0.4195112080641404,
+              "sampleCount": 49,
+              "isStable": true
+            },
+            "initialPosition": {
+              "x": 0.0405,
+              "y": 0.0363,
+              "normalizedX": 0.4716,
+              "normalizedY": 0.4225,
+              "t": 0
+            },
+            "finalPosition": {
+              "x": 0.041,
+              "y": 0.0366,
+              "normalizedX": 0.4767,
+              "normalizedY": 0.4256,
+              "t": 1500
+            },
+            "peakPosition": {
+              "x": 0.04,
+              "y": 0.0356,
+              "normalizedX": 0.4651,
+              "normalizedY": 0.4146,
+              "t": 99.99999999999636
+            },
+            "dx": -0.0004,
+            "dy": 0.0001,
+            "horizontalDisplacement": 0.0004,
+            "verticalDisplacement": 0.0001,
+            "displacement": 0.0004,
+            "normalizedHorizontal": 0.0041,
+            "normalizedVertical": 0.001,
+            "normalizedDisplacement": 0.0042,
+            "maximumDisplacement": 0.0102,
+            "horizontalPeak": 0.0168,
+            "verticalPeak": 0.0079,
+            "peakDisplacement": 0.0102,
+            "meanDisplacement": 0.0065,
+            "dxFromBaseline": 0.0006,
+            "dyFromBaseline": 0.0003,
+            "horizontalDisplacementFromBaseline": 0.0006,
+            "verticalDisplacementFromBaseline": 0.0003,
+            "displacementFromBaseline": 0.0072,
+            "movementDirection": "NONE",
+            "horizontalDirection": "NONE",
+            "verticalDirection": "NONE",
+            "velocity": 0.0085,
+            "peakVelocity": 0.3574,
+            "timeToPeakMs": 33.33333333333212,
+            "meanVelocity": 0.0085,
+            "movementDurationMs": 133.33333333333212,
+            "trajectoryStability": 0.961,
+            "jitter": 0.0036,
+            "validSampleRatio": 0.8658,
+            "trackingDurationMs": 1500,
+            "eyeWidth": 0.0859,
+            "temporalEvents": [
+              {
+                "eventType": "UNCOVER",
+                "timestamp": 23700.000000000004,
+                "t": 0,
+                "cycleId": 1,
+                "trackedEye": "left"
+              },
+              {
+                "eventType": "PEAK_MOVEMENT",
+                "timestamp": 23800,
+                "t": 99.99999999999636,
+                "cycleId": 1,
+                "trackedEye": "left",
+                "displacement": 0.0102
+              },
+              {
+                "eventType": "RECOVERY",
+                "timestamp": 23833.333333333336,
+                "t": 133.33333333333212,
+                "cycleId": 1,
+                "trackedEye": "left"
+              },
+              {
+                "eventType": "END",
+                "timestamp": 25200.000000000004,
+                "t": 1500,
+                "cycleId": 1,
+                "trackedEye": "left"
+              }
+            ],
+            "confidence": 0.93,
+            "sampleCount": 39,
+            "calibration": {
+              "status": "NOT_CALIBRATED",
+              "value": null,
+              "prismDiopters": null,
+              "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+            },
+            "dataQuality": {
+              "isValid": true,
+              "reason": null,
+              "sampleCount": 39,
+              "validEyeSampleCount": 39,
+              "stabilityScore": 0.961,
+              "jitter": 0.0036,
+              "validSampleRatio": 0.8658,
+              "warnings": [
+                "LATE_GAP_EXCLUDED_FROM_KINEMATICS"
+              ]
+            },
+            "isNotableMovement": false,
+            "engineeringThreshold": 0.1,
+            "measurementKind": "uncover_recovery",
+            "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+            "event": {
+              "eventId": "c1_left_uncover",
+              "eventType": "UNCOVER",
+              "coveredEye": "LEFT",
+              "observedEye": "LEFT",
+              "timestampMs": 23700.000000000004,
+              "frameId": 708,
+              "confirmedAtMs": 23833.333333333336,
+              "onsetIntervalMs": [
+                23633.333333333336,
+                23700.000000000004
+              ],
+              "timingUncertaintyMs": 66.66666666666788,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "coverage": {
+              "validSamples": 39,
+              "earlyValidSamples": 16,
+              "firstOffsetMs": 0,
+              "lastOffsetMs": 1500,
+              "earlySpanMs": 500,
+              "maxGapMs": 266.6666666666715,
+              "lateGaps": [
+                {
+                  "startMs": 733.3333333333285,
+                  "endMs": 1000,
+                  "durationMs": 266.6666666666715
+                }
+              ],
+              "settlingSamples": 16,
+              "settlingSpanMs": 500,
+              "settlingStartMs": 1000
+            }
+          },
+          "rightEye": {
+            "eye": "right",
+            "cycle": 1,
+            "baselinePosition": {
+              "x": 0.04161804691024627,
+              "y": 0.03574999987669657,
+              "normalizedX": 0.4966468078319799,
+              "normalizedY": 0.4266207724030354,
+              "sampleCount": 56,
+              "isStable": true
+            },
+            "initialPosition": {
+              "x": 0.0425,
+              "y": 0.0358,
+              "normalizedX": 0.5076,
+              "normalizedY": 0.4266,
+              "t": 0
+            },
+            "finalPosition": {
+              "x": 0.0423,
+              "y": 0.0357,
+              "normalizedX": 0.5048,
+              "normalizedY": 0.4263,
+              "t": 1500
+            },
+            "peakPosition": {
+              "x": 0.0416,
+              "y": 0.0346,
+              "normalizedX": 0.4967,
+              "normalizedY": 0.4127,
+              "t": 266.6666666666679
+            },
+            "dx": -0.001,
+            "dy": -0.0007,
+            "horizontalDisplacement": 0.001,
+            "verticalDisplacement": 0.0007,
+            "displacement": 0.0012,
+            "normalizedHorizontal": 0.0117,
+            "normalizedVertical": 0.0082,
+            "normalizedDisplacement": 0.0143,
+            "maximumDisplacement": 0.0177,
+            "horizontalPeak": 0.0136,
+            "verticalPeak": 0.0141,
+            "peakDisplacement": 0.0177,
+            "meanDisplacement": 0.0102,
+            "dxFromBaseline": 0.0009,
+            "dyFromBaseline": 0,
+            "horizontalDisplacementFromBaseline": 0.0009,
+            "verticalDisplacementFromBaseline": 0,
+            "displacementFromBaseline": 0.011,
+            "movementDirection": "NONE",
+            "horizontalDirection": "NONE",
+            "verticalDirection": "NONE",
+            "velocity": 0.0286,
+            "peakVelocity": 0.8165,
+            "timeToPeakMs": 66.6666666666697,
+            "meanVelocity": 0.0286,
+            "movementDurationMs": 133.33333333333576,
+            "trajectoryStability": 0.9577,
+            "jitter": 0.0054,
+            "validSampleRatio": 0.8658,
+            "trackingDurationMs": 1500,
+            "eyeWidth": 0.0838,
+            "temporalEvents": [
+              {
+                "eventType": "UNCOVER",
+                "timestamp": 12466.666666666666,
+                "t": 0,
+                "cycleId": 1,
+                "trackedEye": "right"
+              },
+              {
+                "eventType": "PEAK_MOVEMENT",
+                "timestamp": 12733.333333333334,
+                "t": 266.6666666666679,
+                "cycleId": 1,
+                "trackedEye": "right",
+                "displacement": 0.0177
+              },
+              {
+                "eventType": "RECOVERY",
+                "timestamp": 12600.000000000002,
+                "t": 133.33333333333576,
+                "cycleId": 1,
+                "trackedEye": "right"
+              },
+              {
+                "eventType": "END",
+                "timestamp": 13966.666666666666,
+                "t": 1500,
+                "cycleId": 1,
+                "trackedEye": "right"
+              }
+            ],
+            "confidence": 0.93,
+            "sampleCount": 39,
+            "calibration": {
+              "status": "NOT_CALIBRATED",
+              "value": null,
+              "prismDiopters": null,
+              "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+            },
+            "dataQuality": {
+              "isValid": true,
+              "reason": null,
+              "sampleCount": 39,
+              "validEyeSampleCount": 39,
+              "stabilityScore": 0.9577,
+              "jitter": 0.0054,
+              "validSampleRatio": 0.8658,
+              "warnings": [
+                "LATE_GAP_EXCLUDED_FROM_KINEMATICS"
+              ]
+            },
+            "isNotableMovement": false,
+            "engineeringThreshold": 0.1,
+            "measurementKind": "uncover_recovery",
+            "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+            "event": {
+              "eventId": "c1_right_uncover",
+              "eventType": "UNCOVER",
+              "coveredEye": "RIGHT",
+              "observedEye": "RIGHT",
+              "timestampMs": 12466.666666666666,
+              "frameId": 374,
+              "confirmedAtMs": 12600.000000000002,
+              "onsetIntervalMs": [
+                12400,
+                12466.666666666666
+              ],
+              "timingUncertaintyMs": 66.66666666666606,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "coverage": {
+              "validSamples": 39,
+              "earlyValidSamples": 16,
+              "firstOffsetMs": 0,
+              "lastOffsetMs": 1500,
+              "earlySpanMs": 500,
+              "maxGapMs": 266.6666666666679,
+              "lateGaps": [
+                {
+                  "startMs": 1000,
+                  "endMs": 1266.6666666666679,
+                  "durationMs": 266.6666666666679
+                }
+              ],
+              "settlingSamples": 8,
+              "settlingSpanMs": 233.33333333333212,
+              "settlingStartMs": 1266.6666666666679
+            }
+          }
+        },
+        "procedureEvidence": [
+          {
+            "procedureValid": true,
+            "primaryProcedureValid": true,
+            "reason": null,
+            "coverEvent": {
+              "eventId": "c1_left_cover",
+              "eventType": "COVER",
+              "coveredEye": "LEFT",
+              "observedEye": "RIGHT",
+              "timestampMs": 16100.000000000002,
+              "frameId": 480,
+              "confirmedAtMs": 16233.333333333334,
+              "onsetIntervalMs": [
+                16000,
+                16100.000000000002
+              ],
+              "timingUncertaintyMs": 100.00000000000182,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "uncoverEvent": {
+              "eventId": "c1_left_uncover",
+              "eventType": "UNCOVER",
+              "coveredEye": "LEFT",
+              "observedEye": "LEFT",
+              "timestampMs": 23700.000000000004,
+              "frameId": 708,
+              "confirmedAtMs": 23833.333333333336,
+              "onsetIntervalMs": [
+                23633.333333333336,
+                23700.000000000004
+              ],
+              "timingUncertaintyMs": 66.66666666666788,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "baselineSource": {
+              "frameId": 477,
+              "timestampMs": 16000
+            },
+            "interruptions": [
+              {
+                "startMs": 16033.333333333336,
+                "endMs": 16100.000000000002,
+                "durationMs": 66.66666666666606,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 23666.666666666668,
+                "endMs": 23700.000000000004,
+                "durationMs": 33.33333333333576,
+                "withinRecoveryLimit": true
+              }
+            ],
+            "source": "pixel-appearance-v2",
+            "clinicallyValidated": false
+          },
+          {
+            "procedureValid": true,
+            "primaryProcedureValid": true,
+            "reason": null,
+            "coverEvent": {
+              "eventId": "c1_right_cover",
+              "eventType": "COVER",
+              "coveredEye": "RIGHT",
+              "observedEye": "LEFT",
+              "timestampMs": 5666.666666666667,
+              "frameId": 170,
+              "confirmedAtMs": 5800.000000000001,
+              "onsetIntervalMs": [
+                5600.000000000001,
+                5666.666666666667
+              ],
+              "timingUncertaintyMs": 66.66666666666606,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "uncoverEvent": {
+              "eventId": "c1_right_uncover",
+              "eventType": "UNCOVER",
+              "coveredEye": "RIGHT",
+              "observedEye": "RIGHT",
+              "timestampMs": 12466.666666666666,
+              "frameId": 374,
+              "confirmedAtMs": 12600.000000000002,
+              "onsetIntervalMs": [
+                12400,
+                12466.666666666666
+              ],
+              "timingUncertaintyMs": 66.66666666666606,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "baselineSource": {
+              "frameId": 168,
+              "timestampMs": 5600.000000000001
+            },
+            "interruptions": [
+              {
+                "startMs": 5633.333333333334,
+                "endMs": 5666.666666666667,
+                "durationMs": 33.33333333333303,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 12433.333333333334,
+                "endMs": 12466.666666666666,
+                "durationMs": 33.33333333333212,
+                "withinRecoveryLimit": true
+              }
+            ],
+            "source": "pixel-appearance-v2",
+            "clinicallyValidated": false
+          }
+        ],
+        "primaryOcclusionVerified": true
+      },
+      {
+        "cycle": 2,
+        "cycleNumber": 2,
+        "cycleIndex": 2,
+        "status": "INCONCLUSIVE",
+        "coveredEye": "RIGHT",
+        "trackedEye": "LEFT",
+        "coveredEyeSequence": [
+          "left",
+          "right"
+        ],
+        "trackedEyeSequence": [
+          "right",
+          "left"
+        ],
+        "baseline": {},
+        "rightEye": {
+          "eye": "right",
+          "cycle": 2,
+          "baselinePosition": {
+            "x": 0.0419841150574393,
+            "y": 0.036341578117479,
+            "normalizedX": 0.4974844093028702,
+            "normalizedY": 0.43062402287563784,
+            "sampleCount": 44,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.042,
+            "y": 0.0363,
+            "normalizedX": 0.4975,
+            "normalizedY": 0.4306,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0417,
+            "y": 0.0349,
+            "normalizedX": 0.4939,
+            "normalizedY": 0.4139,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0405,
+            "y": 0.0355,
+            "normalizedX": 0.4794,
+            "normalizedY": 0.4205,
+            "t": 399.9999999999927
+          },
+          "dx": 0.0006,
+          "dy": -0.0003,
+          "horizontalDisplacement": 0.0006,
+          "verticalDisplacement": 0.0003,
+          "displacement": 0.0007,
+          "normalizedHorizontal": 0.0072,
+          "normalizedVertical": 0.0039,
+          "normalizedDisplacement": 0.0082,
+          "maximumDisplacement": 0.0208,
+          "horizontalPeak": 0.0181,
+          "verticalPeak": 0.021,
+          "peakDisplacement": 0.0208,
+          "meanDisplacement": 0.0136,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "NONE",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "NONE",
+          "velocity": 0.0164,
+          "peakVelocity": 0.6645,
+          "timeToPeakMs": 500,
+          "meanVelocity": 0.0164,
+          "movementDurationMs": 766.6666666666642,
+          "trajectoryStability": 0.9289,
+          "jitter": 0.0096,
+          "validSampleRatio": 1,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0844,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 37966.66666666667,
+              "t": 0,
+              "cycleId": 2,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 38366.666666666664,
+              "t": 399.9999999999927,
+              "cycleId": 2,
+              "trackedEye": "right",
+              "displacement": 0.0208
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 38733.333333333336,
+              "t": 766.6666666666642,
+              "cycleId": 2,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 39466.66666666667,
+              "t": 1500,
+              "cycleId": 2,
+              "trackedEye": "right"
+            }
+          ],
+          "confidence": 0.98,
+          "sampleCount": 46,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 46,
+            "validEyeSampleCount": 46,
+            "stabilityScore": 0.9289,
+            "jitter": 0.0096,
+            "validSampleRatio": 1,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c2_left_cover",
+            "eventType": "COVER",
+            "coveredEye": "LEFT",
+            "observedEye": "RIGHT",
+            "timestampMs": 37966.66666666667,
+            "frameId": 1136,
+            "confirmedAtMs": 38100,
+            "onsetIntervalMs": [
+              37866.666666666664,
+              37966.66666666667
+            ],
+            "timingUncertaintyMs": 100.00000000000728,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 46,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 33.333333333343035,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 1000
+          }
+        },
+        "leftEye": {
+          "eye": "left",
+          "cycle": 2,
+          "measurementKind": "cover_on_fellow_eye",
+          "event": null,
+          "isNotableMovement": false,
+          "dataQuality": {
+            "isValid": false,
+            "reason": "COVER_NOT_CONFIRMED"
+          }
+        },
+        "samples": [],
+        "sampleCount": 46,
+        "rawTrajectory": [],
+        "summary": null,
+        "datasetQuality": null,
+        "horizontalDisplacement": null,
+        "verticalDisplacement": null,
+        "normalizedHorizontal": null,
+        "normalizedVertical": null,
+        "peakVelocity": null,
+        "trajectoryStability": null,
+        "isRefixationNotable": false,
+        "valid": false,
+        "quality": {
+          "isValid": false,
+          "status": "INCONCLUSIVE",
+          "reason": "COVER_NOT_CONFIRMED"
+        },
+        "occlusionMethod": "pixel-appearance-v2",
+        "occlusionVerified": false,
+        "measurementProtocol": "observed-cover-uncover-v1",
+        "primaryMeasurement": "cover_on_fellow_eye",
+        "uncoverRecovery": {
+          "leftEye": {
+            "eye": "left",
+            "cycle": 2,
+            "baselinePosition": {
+              "x": 0.039770057093547494,
+              "y": 0.03589674660125251,
+              "normalizedX": 0.4619186581191971,
+              "normalizedY": 0.4169311847325877,
+              "sampleCount": 44,
+              "isStable": true
+            },
+            "initialPosition": {
+              "x": 0.0398,
+              "y": 0.037,
+              "normalizedX": 0.4621,
+              "normalizedY": 0.4293,
+              "t": 0
+            },
+            "finalPosition": {
+              "x": 0.0401,
+              "y": 0.0359,
+              "normalizedX": 0.4657,
+              "normalizedY": 0.4168,
+              "t": 1500
+            },
+            "peakPosition": {
+              "x": 0.0386,
+              "y": 0.0355,
+              "normalizedX": 0.4488,
+              "normalizedY": 0.4127,
+              "t": 500
+            },
+            "dx": -0.0011,
+            "dy": -0.0014,
+            "horizontalDisplacement": 0.0011,
+            "verticalDisplacement": 0.0014,
+            "displacement": 0.0018,
+            "normalizedHorizontal": 0.0133,
+            "normalizedVertical": 0.0166,
+            "normalizedDisplacement": 0.0213,
+            "maximumDisplacement": 0.0213,
+            "horizontalPeak": 0.014,
+            "verticalPeak": 0.02,
+            "peakDisplacement": 0.0213,
+            "meanDisplacement": 0.0144,
+            "dxFromBaseline": 0,
+            "dyFromBaseline": 0.0011,
+            "horizontalDisplacementFromBaseline": 0,
+            "verticalDisplacementFromBaseline": 0.0011,
+            "displacementFromBaseline": 0.0124,
+            "movementDirection": "NONE",
+            "horizontalDirection": "NONE",
+            "verticalDirection": "NONE",
+            "velocity": 0.0426,
+            "peakVelocity": 0.6852,
+            "timeToPeakMs": 33.33333333332848,
+            "meanVelocity": 0.0426,
+            "movementDurationMs": 100,
+            "trajectoryStability": 0.9611,
+            "jitter": 0.0043,
+            "validSampleRatio": 0.888,
+            "trackingDurationMs": 1500,
+            "eyeWidth": 0.0861,
+            "temporalEvents": [
+              {
+                "eventType": "UNCOVER",
+                "timestamp": 45300.00000000001,
+                "t": 0,
+                "cycleId": 2,
+                "trackedEye": "left"
+              },
+              {
+                "eventType": "PEAK_MOVEMENT",
+                "timestamp": 45800.00000000001,
+                "t": 500,
+                "cycleId": 2,
+                "trackedEye": "left",
+                "displacement": 0.0213
+              },
+              {
+                "eventType": "RECOVERY",
+                "timestamp": 45400.00000000001,
+                "t": 100,
+                "cycleId": 2,
+                "trackedEye": "left"
+              },
+              {
+                "eventType": "END",
+                "timestamp": 46800.00000000001,
+                "t": 1500,
+                "cycleId": 2,
+                "trackedEye": "left"
+              }
+            ],
+            "confidence": 0.94,
+            "sampleCount": 40,
+            "calibration": {
+              "status": "NOT_CALIBRATED",
+              "value": null,
+              "prismDiopters": null,
+              "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+            },
+            "dataQuality": {
+              "isValid": true,
+              "reason": null,
+              "sampleCount": 40,
+              "validEyeSampleCount": 40,
+              "stabilityScore": 0.9611,
+              "jitter": 0.0043,
+              "validSampleRatio": 0.888,
+              "warnings": []
+            },
+            "isNotableMovement": false,
+            "engineeringThreshold": 0.1,
+            "measurementKind": "uncover_recovery",
+            "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+            "event": {
+              "eventId": "c2_left_uncover",
+              "eventType": "UNCOVER",
+              "coveredEye": "LEFT",
+              "observedEye": "LEFT",
+              "timestampMs": 45300.00000000001,
+              "frameId": 1356,
+              "confirmedAtMs": 45433.333333333336,
+              "onsetIntervalMs": [
+                45100,
+                45300.00000000001
+              ],
+              "timingUncertaintyMs": 200.00000000000728,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "coverage": {
+              "validSamples": 40,
+              "earlyValidSamples": 16,
+              "firstOffsetMs": 0,
+              "lastOffsetMs": 1500,
+              "earlySpanMs": 500,
+              "maxGapMs": 233.33333333332848,
+              "lateGaps": [],
+              "settlingSamples": 16,
+              "settlingSpanMs": 500,
+              "settlingStartMs": 1000
+            }
+          },
+          "rightEye": {
+            "eye": "right",
+            "cycle": 2,
+            "measurementKind": "uncover_recovery",
+            "event": null,
+            "isNotableMovement": false,
+            "dataQuality": {
+              "isValid": false,
+              "reason": "COVER_NOT_CONFIRMED"
+            }
+          }
+        },
+        "procedureEvidence": [
+          {
+            "procedureValid": true,
+            "primaryProcedureValid": true,
+            "reason": null,
+            "coverEvent": {
+              "eventId": "c2_left_cover",
+              "eventType": "COVER",
+              "coveredEye": "LEFT",
+              "observedEye": "RIGHT",
+              "timestampMs": 37966.66666666667,
+              "frameId": 1136,
+              "confirmedAtMs": 38100,
+              "onsetIntervalMs": [
+                37866.666666666664,
+                37966.66666666667
+              ],
+              "timingUncertaintyMs": 100.00000000000728,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "uncoverEvent": {
+              "eventId": "c2_left_uncover",
+              "eventType": "UNCOVER",
+              "coveredEye": "LEFT",
+              "observedEye": "LEFT",
+              "timestampMs": 45300.00000000001,
+              "frameId": 1356,
+              "confirmedAtMs": 45433.333333333336,
+              "onsetIntervalMs": [
+                45100,
+                45300.00000000001
+              ],
+              "timingUncertaintyMs": 200.00000000000728,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "baselineSource": {
+              "frameId": 1133,
+              "timestampMs": 37866.666666666664
+            },
+            "interruptions": [
+              {
+                "startMs": 36000,
+                "endMs": 36200,
+                "durationMs": 200,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 36700,
+                "endMs": 36966.66666666667,
+                "durationMs": 266.6666666666715,
+                "withinRecoveryLimit": false
+              },
+              {
+                "startMs": 37900.00000000001,
+                "endMs": 37966.66666666667,
+                "durationMs": 66.66666666666424,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 41533.333333333336,
+                "endMs": 41766.66666666667,
+                "durationMs": 233.33333333333576,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 45133.333333333336,
+                "endMs": 45300.00000000001,
+                "durationMs": 166.66666666667152,
+                "withinRecoveryLimit": true
+              }
+            ],
+            "source": "pixel-appearance-v2",
+            "clinicallyValidated": false
+          },
+          {
+            "procedureValid": false,
+            "primaryProcedureValid": false,
+            "reason": "COVER_NOT_CONFIRMED",
+            "coverEvent": null,
+            "uncoverEvent": null,
+            "baselineSource": {
+              "frameId": 823,
+              "timestampMs": 27533.333333333336
+            },
+            "interruptions": [
+              {
+                "startMs": 26100,
+                "endMs": 26333.333333333336,
+                "durationMs": 233.33333333333576,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 27566.66666666667,
+                "endMs": 27600,
+                "durationMs": 33.33333333332848,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 27666.666666666668,
+                "endMs": 27733.333333333336,
+                "durationMs": 66.66666666666788,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 27800,
+                "endMs": 27833.333333333336,
+                "durationMs": 33.33333333333576,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 34100,
+                "endMs": 34166.66666666667,
+                "durationMs": 66.66666666667152,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 34200,
+                "endMs": 34233.333333333336,
+                "durationMs": 33.33333333333576,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 34733.333333333336,
+                "endMs": 34766.666666666664,
+                "durationMs": 33.33333333332848,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 35433.333333333336,
+                "endMs": 35666.66666666667,
+                "durationMs": 233.33333333333576,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 35966.66666666667,
+                "endMs": 36200,
+                "durationMs": 233.33333333332848,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 36700,
+                "endMs": 36966.66666666667,
+                "durationMs": 266.6666666666715,
+                "withinRecoveryLimit": false
+              },
+              {
+                "startMs": 37900.00000000001,
+                "endMs": 38966.66666666667,
+                "durationMs": 1066.6666666666642,
+                "withinRecoveryLimit": false
+              }
+            ],
+            "source": "pixel-appearance-v2",
+            "clinicallyValidated": false
+          }
+        ],
+        "primaryOcclusionVerified": false
+      },
+      {
+        "cycle": 3,
+        "cycleNumber": 3,
+        "cycleIndex": 3,
+        "status": "COMPLETE",
+        "coveredEye": "LEFT",
+        "trackedEye": "RIGHT",
+        "coveredEyeSequence": [
+          "left",
+          "right"
+        ],
+        "trackedEyeSequence": [
+          "right",
+          "left"
+        ],
+        "baseline": {},
+        "rightEye": {
+          "eye": "right",
+          "cycle": 3,
+          "baselinePosition": {
+            "x": 0.04331341331322079,
+            "y": 0.03624515235401614,
+            "normalizedX": 0.5013436428861704,
+            "normalizedY": 0.4195300099468306,
+            "sampleCount": 53,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0433,
+            "y": 0.0362,
+            "normalizedX": 0.5013,
+            "normalizedY": 0.4195,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0435,
+            "y": 0.0357,
+            "normalizedX": 0.5032,
+            "normalizedY": 0.4127,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0411,
+            "y": 0.0357,
+            "normalizedX": 0.4762,
+            "normalizedY": 0.4137,
+            "t": 366.6666666666715
+          },
+          "dx": -0.001,
+          "dy": -0.0004,
+          "horizontalDisplacement": 0.001,
+          "verticalDisplacement": 0.0004,
+          "displacement": 0.0011,
+          "normalizedHorizontal": 0.0116,
+          "normalizedVertical": 0.0048,
+          "normalizedDisplacement": 0.0125,
+          "maximumDisplacement": 0.0258,
+          "horizontalPeak": 0.0251,
+          "verticalPeak": 0.0139,
+          "peakDisplacement": 0.0258,
+          "meanDisplacement": 0.0111,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "TEMPORAL",
+          "horizontalDirection": "TEMPORAL",
+          "verticalDirection": "NONE",
+          "velocity": 0.0251,
+          "peakVelocity": 0.5778,
+          "timeToPeakMs": 33.333333333343035,
+          "meanVelocity": 0.0251,
+          "movementDurationMs": 300.0000000000073,
+          "trajectoryStability": 0.9165,
+          "jitter": 0.0103,
+          "validSampleRatio": 0.9768,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0864,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 59366.666666666664,
+              "t": 0,
+              "cycleId": 3,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 59733.333333333336,
+              "t": 366.6666666666715,
+              "cycleId": 3,
+              "trackedEye": "right",
+              "displacement": 0.0258
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 59666.66666666667,
+              "t": 300.0000000000073,
+              "cycleId": 3,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 60866.666666666664,
+              "t": 1500,
+              "cycleId": 3,
+              "trackedEye": "right"
+            }
+          ],
+          "confidence": 0.97,
+          "sampleCount": 44,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 44,
+            "validEyeSampleCount": 44,
+            "stabilityScore": 0.9165,
+            "jitter": 0.0103,
+            "validSampleRatio": 0.9768,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c3_left_cover",
+            "eventType": "COVER",
+            "coveredEye": "LEFT",
+            "observedEye": "RIGHT",
+            "timestampMs": 59366.666666666664,
+            "frameId": 1778,
+            "confirmedAtMs": 59500.00000000001,
+            "onsetIntervalMs": [
+              59300.00000000001,
+              59366.666666666664
+            ],
+            "timingUncertaintyMs": 66.66666666665697,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 44,
+            "earlyValidSamples": 14,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 100,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 1000
+          }
+        },
+        "leftEye": {
+          "eye": "left",
+          "cycle": 3,
+          "baselinePosition": {
+            "x": 0.037763966030838224,
+            "y": 0.03401021356487231,
+            "normalizedX": 0.46244420980281575,
+            "normalizedY": 0.41647708093977653,
+            "sampleCount": 60,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0378,
+            "y": 0.034,
+            "normalizedX": 0.4624,
+            "normalizedY": 0.4165,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0387,
+            "y": 0.033,
+            "normalizedX": 0.4744,
+            "normalizedY": 0.4044,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0372,
+            "y": 0.0315,
+            "normalizedX": 0.455,
+            "normalizedY": 0.3858,
+            "t": 66.66666666667152
+          },
+          "dx": 0.0002,
+          "dy": -0.0002,
+          "horizontalDisplacement": 0.0002,
+          "verticalDisplacement": 0.0002,
+          "displacement": 0.0003,
+          "normalizedHorizontal": 0.0023,
+          "normalizedVertical": 0.0027,
+          "normalizedDisplacement": 0.0036,
+          "maximumDisplacement": 0.0315,
+          "horizontalPeak": 0.0168,
+          "verticalPeak": 0.0306,
+          "peakDisplacement": 0.0315,
+          "meanDisplacement": 0.0122,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "SUPERIOR",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "SUPERIOR",
+          "velocity": 0.0071,
+          "peakVelocity": 0.988,
+          "timeToPeakMs": 66.66666666667152,
+          "meanVelocity": 0.0071,
+          "movementDurationMs": 166.66666666667152,
+          "trajectoryStability": 0.9467,
+          "jitter": 0.0091,
+          "validSampleRatio": 0.7992,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0817,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 48733.333333333336,
+              "t": 0,
+              "cycleId": 3,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 48800.00000000001,
+              "t": 66.66666666667152,
+              "cycleId": 3,
+              "trackedEye": "left",
+              "displacement": 0.0315
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 48900.00000000001,
+              "t": 166.66666666667152,
+              "cycleId": 3,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 50233.333333333336,
+              "t": 1500,
+              "cycleId": 3,
+              "trackedEye": "left"
+            }
+          ],
+          "confidence": 0.9,
+          "sampleCount": 36,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 36,
+            "validEyeSampleCount": 36,
+            "stabilityScore": 0.9467,
+            "jitter": 0.0091,
+            "validSampleRatio": 0.7992,
+            "warnings": [
+              "LATE_GAP_EXCLUDED_FROM_KINEMATICS"
+            ]
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c3_right_cover",
+            "eventType": "COVER",
+            "coveredEye": "RIGHT",
+            "observedEye": "LEFT",
+            "timestampMs": 48733.333333333336,
+            "frameId": 1459,
+            "confirmedAtMs": 48866.666666666664,
+            "onsetIntervalMs": [
+              48666.66666666667,
+              48733.333333333336
+            ],
+            "timingUncertaintyMs": 66.66666666666424,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 36,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 366.66666666666424,
+            "lateGaps": [
+              {
+                "startMs": 933.3333333333358,
+                "endMs": 1300,
+                "durationMs": 366.66666666666424
+              }
+            ],
+            "settlingSamples": 7,
+            "settlingSpanMs": 200,
+            "settlingStartMs": 1300
+          }
+        },
+        "samples": [],
+        "sampleCount": 80,
+        "rawTrajectory": [],
+        "summary": null,
+        "datasetQuality": null,
+        "horizontalDisplacement": 0.001,
+        "verticalDisplacement": 0.0004,
+        "normalizedHorizontal": 0.0116,
+        "normalizedVertical": 0.0048,
+        "peakVelocity": 0.988,
+        "trajectoryStability": 0.9165,
+        "isRefixationNotable": false,
+        "valid": true,
+        "quality": {
+          "isValid": true,
+          "status": "GOOD",
+          "reason": null
+        },
+        "occlusionMethod": "pixel-appearance-v2",
+        "occlusionVerified": true,
+        "measurementProtocol": "observed-cover-uncover-v1",
+        "primaryMeasurement": "cover_on_fellow_eye",
+        "uncoverRecovery": {
+          "leftEye": {
+            "eye": "left",
+            "cycle": 3,
+            "baselinePosition": {
+              "x": 0.04228711059258324,
+              "y": 0.03736681558933788,
+              "normalizedX": 0.4710278258665807,
+              "normalizedY": 0.41622162545412345,
+              "sampleCount": 53,
+              "isStable": true
+            },
+            "initialPosition": {
+              "x": 0.0414,
+              "y": 0.036,
+              "normalizedX": 0.4608,
+              "normalizedY": 0.401,
+              "t": 0
+            },
+            "finalPosition": {
+              "x": 0.0423,
+              "y": 0.0355,
+              "normalizedX": 0.4713,
+              "normalizedY": 0.3951,
+              "t": 1500
+            },
+            "peakPosition": {
+              "x": 0.0403,
+              "y": 0.0352,
+              "normalizedX": 0.4491,
+              "normalizedY": 0.3917,
+              "t": 300
+            },
+            "dx": -0.0001,
+            "dy": -0.0001,
+            "horizontalDisplacement": 0.0001,
+            "verticalDisplacement": 0.0001,
+            "displacement": 0.0001,
+            "normalizedHorizontal": 0.0011,
+            "normalizedVertical": 0.0008,
+            "normalizedDisplacement": 0.0013,
+            "maximumDisplacement": 0.0149,
+            "horizontalPeak": 0.0215,
+            "verticalPeak": 0.0103,
+            "peakDisplacement": 0.0149,
+            "meanDisplacement": 0.011,
+            "dxFromBaseline": -0.0009,
+            "dyFromBaseline": -0.0014,
+            "horizontalDisplacementFromBaseline": 0.0009,
+            "verticalDisplacementFromBaseline": 0.0014,
+            "displacementFromBaseline": 0.0183,
+            "movementDirection": "NONE",
+            "horizontalDirection": "NONE",
+            "verticalDirection": "NONE",
+            "velocity": 0.0026,
+            "peakVelocity": 0.9144,
+            "timeToPeakMs": 33.33333333332848,
+            "meanVelocity": 0.0026,
+            "movementDurationMs": 66.66666666665697,
+            "trajectoryStability": 0.9515,
+            "jitter": 0.0049,
+            "validSampleRatio": 1,
+            "trackingDurationMs": 1500,
+            "eyeWidth": 0.0898,
+            "temporalEvents": [
+              {
+                "eventType": "UNCOVER",
+                "timestamp": 66966.66666666667,
+                "t": 0,
+                "cycleId": 3,
+                "trackedEye": "left"
+              },
+              {
+                "eventType": "PEAK_MOVEMENT",
+                "timestamp": 67266.66666666667,
+                "t": 300,
+                "cycleId": 3,
+                "trackedEye": "left",
+                "displacement": 0.0149
+              },
+              {
+                "eventType": "RECOVERY",
+                "timestamp": 67033.33333333333,
+                "t": 66.66666666665697,
+                "cycleId": 3,
+                "trackedEye": "left"
+              },
+              {
+                "eventType": "END",
+                "timestamp": 68466.66666666667,
+                "t": 1500,
+                "cycleId": 3,
+                "trackedEye": "left"
+              }
+            ],
+            "confidence": 0.99,
+            "sampleCount": 46,
+            "calibration": {
+              "status": "NOT_CALIBRATED",
+              "value": null,
+              "prismDiopters": null,
+              "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+            },
+            "dataQuality": {
+              "isValid": true,
+              "reason": null,
+              "sampleCount": 46,
+              "validEyeSampleCount": 46,
+              "stabilityScore": 0.9515,
+              "jitter": 0.0049,
+              "validSampleRatio": 1,
+              "warnings": []
+            },
+            "isNotableMovement": false,
+            "engineeringThreshold": 0.1,
+            "measurementKind": "uncover_recovery",
+            "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+            "event": {
+              "eventId": "c3_left_uncover",
+              "eventType": "UNCOVER",
+              "coveredEye": "LEFT",
+              "observedEye": "LEFT",
+              "timestampMs": 66966.66666666667,
+              "frameId": 2006,
+              "confirmedAtMs": 67100.00000000001,
+              "onsetIntervalMs": [
+                66866.66666666667,
+                66966.66666666667
+              ],
+              "timingUncertaintyMs": 100,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "coverage": {
+              "validSamples": 46,
+              "earlyValidSamples": 16,
+              "firstOffsetMs": 0,
+              "lastOffsetMs": 1500,
+              "earlySpanMs": 500,
+              "maxGapMs": 33.333333333343035,
+              "lateGaps": [],
+              "settlingSamples": 16,
+              "settlingSpanMs": 500,
+              "settlingStartMs": 1000
+            }
+          },
+          "rightEye": {
+            "eye": "right",
+            "cycle": 3,
+            "baselinePosition": {
+              "x": 0.04226779635860432,
+              "y": 0.03633860706965566,
+              "normalizedX": 0.4966365408244494,
+              "normalizedY": 0.42696997875970133,
+              "sampleCount": 60,
+              "isStable": true
+            },
+            "initialPosition": {
+              "x": 0.0437,
+              "y": 0.0361,
+              "normalizedX": 0.5138,
+              "normalizedY": 0.4245,
+              "t": 0
+            },
+            "finalPosition": {
+              "x": 0.0424,
+              "y": 0.0351,
+              "normalizedX": 0.4981,
+              "normalizedY": 0.4122,
+              "t": 1466.666666666657
+            },
+            "peakPosition": {
+              "x": 0.0424,
+              "y": 0.0351,
+              "normalizedX": 0.4984,
+              "normalizedY": 0.4119,
+              "t": 466.66666666665697
+            },
+            "dx": -0.001,
+            "dy": -0.0009,
+            "horizontalDisplacement": 0.001,
+            "verticalDisplacement": 0.0009,
+            "displacement": 0.0014,
+            "normalizedHorizontal": 0.0122,
+            "normalizedVertical": 0.0106,
+            "normalizedDisplacement": 0.0161,
+            "maximumDisplacement": 0.0198,
+            "horizontalPeak": 0.0179,
+            "verticalPeak": 0.0143,
+            "peakDisplacement": 0.0198,
+            "meanDisplacement": 0.0138,
+            "dxFromBaseline": 0.0015,
+            "dyFromBaseline": -0.0002,
+            "horizontalDisplacementFromBaseline": 0.0015,
+            "verticalDisplacementFromBaseline": 0.0002,
+            "displacementFromBaseline": 0.0173,
+            "movementDirection": "NONE",
+            "horizontalDirection": "NONE",
+            "verticalDirection": "NONE",
+            "velocity": 0.0323,
+            "peakVelocity": 0.3982,
+            "timeToPeakMs": 199.99999999999272,
+            "meanVelocity": 0.0323,
+            "movementDurationMs": 233.33333333333576,
+            "trajectoryStability": 0.9679,
+            "jitter": 0.0038,
+            "validSampleRatio": 0.7947,
+            "trackingDurationMs": 1467,
+            "eyeWidth": 0.0851,
+            "temporalEvents": [
+              {
+                "eventType": "UNCOVER",
+                "timestamp": 55900.00000000001,
+                "t": 0,
+                "cycleId": 3,
+                "trackedEye": "right"
+              },
+              {
+                "eventType": "PEAK_MOVEMENT",
+                "timestamp": 56366.666666666664,
+                "t": 466.66666666665697,
+                "cycleId": 3,
+                "trackedEye": "right",
+                "displacement": 0.0198
+              },
+              {
+                "eventType": "RECOVERY",
+                "timestamp": 56133.33333333334,
+                "t": 233.33333333333576,
+                "cycleId": 3,
+                "trackedEye": "right"
+              },
+              {
+                "eventType": "END",
+                "timestamp": 57366.666666666664,
+                "t": 1466.666666666657,
+                "cycleId": 3,
+                "trackedEye": "right"
+              }
+            ],
+            "confidence": 0.91,
+            "sampleCount": 35,
+            "calibration": {
+              "status": "NOT_CALIBRATED",
+              "value": null,
+              "prismDiopters": null,
+              "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+            },
+            "dataQuality": {
+              "isValid": true,
+              "reason": null,
+              "sampleCount": 35,
+              "validEyeSampleCount": 35,
+              "stabilityScore": 0.9679,
+              "jitter": 0.0038,
+              "validSampleRatio": 0.7947,
+              "warnings": [
+                "LATE_GAP_EXCLUDED_FROM_KINEMATICS"
+              ]
+            },
+            "isNotableMovement": false,
+            "engineeringThreshold": 0.1,
+            "measurementKind": "uncover_recovery",
+            "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+            "event": {
+              "eventId": "c3_right_uncover",
+              "eventType": "UNCOVER",
+              "coveredEye": "RIGHT",
+              "observedEye": "RIGHT",
+              "timestampMs": 55900.00000000001,
+              "frameId": 1674,
+              "confirmedAtMs": 56033.333333333336,
+              "onsetIntervalMs": [
+                55833.333333333336,
+                55900.00000000001
+              ],
+              "timingUncertaintyMs": 66.66666666667152,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "coverage": {
+              "validSamples": 35,
+              "earlyValidSamples": 16,
+              "firstOffsetMs": 0,
+              "lastOffsetMs": 1466.666666666657,
+              "earlySpanMs": 500,
+              "maxGapMs": 366.66666666666424,
+              "lateGaps": [
+                {
+                  "startMs": 766.6666666666642,
+                  "endMs": 1133.3333333333285,
+                  "durationMs": 366.66666666666424
+                }
+              ],
+              "settlingSamples": 11,
+              "settlingSpanMs": 333.3333333333285,
+              "settlingStartMs": 1133.3333333333285
+            }
+          }
+        },
+        "procedureEvidence": [
+          {
+            "procedureValid": true,
+            "primaryProcedureValid": true,
+            "reason": null,
+            "coverEvent": {
+              "eventId": "c3_left_cover",
+              "eventType": "COVER",
+              "coveredEye": "LEFT",
+              "observedEye": "RIGHT",
+              "timestampMs": 59366.666666666664,
+              "frameId": 1778,
+              "confirmedAtMs": 59500.00000000001,
+              "onsetIntervalMs": [
+                59300.00000000001,
+                59366.666666666664
+              ],
+              "timingUncertaintyMs": 66.66666666665697,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "uncoverEvent": {
+              "eventId": "c3_left_uncover",
+              "eventType": "UNCOVER",
+              "coveredEye": "LEFT",
+              "observedEye": "LEFT",
+              "timestampMs": 66966.66666666667,
+              "frameId": 2006,
+              "confirmedAtMs": 67100.00000000001,
+              "onsetIntervalMs": [
+                66866.66666666667,
+                66966.66666666667
+              ],
+              "timingUncertaintyMs": 100,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "baselineSource": {
+              "frameId": 1776,
+              "timestampMs": 59300.00000000001
+            },
+            "interruptions": [
+              {
+                "startMs": 57000.00000000001,
+                "endMs": 57033.333333333336,
+                "durationMs": 33.33333333332848,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 57766.66666666667,
+                "endMs": 58000.00000000001,
+                "durationMs": 233.33333333333576,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 59333.333333333336,
+                "endMs": 59366.666666666664,
+                "durationMs": 33.33333333332848,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 59600,
+                "endMs": 59666.66666666667,
+                "durationMs": 66.66666666667152,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 62133.33333333334,
+                "endMs": 62166.66666666667,
+                "durationMs": 33.33333333332848,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 62433.333333333336,
+                "endMs": 65666.66666666667,
+                "durationMs": 3233.3333333333358,
+                "withinRecoveryLimit": false
+              },
+              {
+                "startMs": 65700,
+                "endMs": 65866.66666666667,
+                "durationMs": 166.66666666667152,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 65900,
+                "endMs": 66066.66666666667,
+                "durationMs": 166.66666666667152,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 66100.00000000001,
+                "endMs": 66133.33333333334,
+                "durationMs": 33.33333333332848,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 66433.33333333334,
+                "endMs": 66466.66666666667,
+                "durationMs": 33.33333333332848,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 66500,
+                "endMs": 66533.33333333333,
+                "durationMs": 33.33333333332848,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 66566.66666666667,
+                "endMs": 66600.00000000001,
+                "durationMs": 33.333333333343035,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 66800.00000000001,
+                "endMs": 66833.33333333334,
+                "durationMs": 33.33333333332848,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 66900,
+                "endMs": 66966.66666666667,
+                "durationMs": 66.66666666667152,
+                "withinRecoveryLimit": true
+              }
+            ],
+            "source": "pixel-appearance-v2",
+            "clinicallyValidated": false
+          },
+          {
+            "procedureValid": true,
+            "primaryProcedureValid": true,
+            "reason": null,
+            "coverEvent": {
+              "eventId": "c3_right_cover",
+              "eventType": "COVER",
+              "coveredEye": "RIGHT",
+              "observedEye": "LEFT",
+              "timestampMs": 48733.333333333336,
+              "frameId": 1459,
+              "confirmedAtMs": 48866.666666666664,
+              "onsetIntervalMs": [
+                48666.66666666667,
+                48733.333333333336
+              ],
+              "timingUncertaintyMs": 66.66666666666424,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "uncoverEvent": {
+              "eventId": "c3_right_uncover",
+              "eventType": "UNCOVER",
+              "coveredEye": "RIGHT",
+              "observedEye": "RIGHT",
+              "timestampMs": 55900.00000000001,
+              "frameId": 1674,
+              "confirmedAtMs": 56033.333333333336,
+              "onsetIntervalMs": [
+                55833.333333333336,
+                55900.00000000001
+              ],
+              "timingUncertaintyMs": 66.66666666667152,
+              "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+            },
+            "baselineSource": {
+              "frameId": 1457,
+              "timestampMs": 48666.66666666667
+            },
+            "interruptions": [
+              {
+                "startMs": 48700,
+                "endMs": 48733.333333333336,
+                "durationMs": 33.33333333333576,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 49700,
+                "endMs": 50033.333333333336,
+                "durationMs": 333.33333333333576,
+                "withinRecoveryLimit": false
+              },
+              {
+                "startMs": 54833.333333333336,
+                "endMs": 55133.33333333334,
+                "durationMs": 300.0000000000073,
+                "withinRecoveryLimit": false
+              },
+              {
+                "startMs": 55266.66666666667,
+                "endMs": 55333.333333333336,
+                "durationMs": 66.66666666666424,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 55766.66666666667,
+                "endMs": 55833.333333333336,
+                "durationMs": 66.66666666666424,
+                "withinRecoveryLimit": true
+              },
+              {
+                "startMs": 55866.666666666664,
+                "endMs": 55900.00000000001,
+                "durationMs": 33.333333333343035,
+                "withinRecoveryLimit": true
+              }
+            ],
+            "source": "pixel-appearance-v2",
+            "clinicallyValidated": false
+          }
+        ],
+        "primaryOcclusionVerified": true
+      }
+    ],
+    "validCycles": 2,
+    "totalCycles": 3,
+    "aggregatedRight": {
+      "eye": "right",
+      "validCycles": 2,
+      "totalCycles": 2,
+      "medianDisplacement": 0.0125,
+      "meanDisplacement": 0.0125,
+      "medianHorizontal": 0.0104,
+      "meanHorizontal": 0.0104,
+      "medianVertical": 0.0066,
+      "meanVertical": 0.0066,
+      "medianPeakVelocity": 0.6425,
+      "notableMovementCycles": 0,
+      "verdict": "NO_SIGNAL_DETECTED",
+      "verdictLabel": "Không ghi nhận chuyển động tái định thị đáng chú ý trong lần sàng lọc này",
+      "dataQuality": {
+        "isValid": true,
+        "reason": null
+      },
+      "cycles": [
+        {
+          "eye": "right",
+          "cycle": 1,
+          "baselinePosition": {
+            "x": 0.04381093308697502,
+            "y": 0.03752486346669476,
+            "normalizedX": 0.4968223542406575,
+            "normalizedY": 0.4255374103325169,
+            "sampleCount": 49,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0438,
+            "y": 0.0375,
+            "normalizedX": 0.4968,
+            "normalizedY": 0.4255,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0431,
+            "y": 0.0379,
+            "normalizedX": 0.4887,
+            "normalizedY": 0.4301,
+            "t": 1499.9999999999982
+          },
+          "peakPosition": {
+            "x": 0.0433,
+            "y": 0.0361,
+            "normalizedX": 0.4906,
+            "normalizedY": 0.4092,
+            "t": 66.66666666666606
+          },
+          "dx": -0.0008,
+          "dy": -0.0007,
+          "horizontalDisplacement": 0.0008,
+          "verticalDisplacement": 0.0007,
+          "displacement": 0.0011,
+          "normalizedHorizontal": 0.0092,
+          "normalizedVertical": 0.0084,
+          "normalizedDisplacement": 0.0125,
+          "maximumDisplacement": 0.0175,
+          "horizontalPeak": 0.0289,
+          "verticalPeak": 0.0164,
+          "peakDisplacement": 0.0175,
+          "meanDisplacement": 0.0126,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "NONE",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "NONE",
+          "velocity": 0.0249,
+          "peakVelocity": 0.7073,
+          "timeToPeakMs": 99.99999999999818,
+          "meanVelocity": 0.0249,
+          "movementDurationMs": 233.33333333333394,
+          "trajectoryStability": 0.949,
+          "jitter": 0.0049,
+          "validSampleRatio": 1,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0882,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 16100.000000000002,
+              "t": 0,
+              "cycleId": 1,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 16166.666666666668,
+              "t": 66.66666666666606,
+              "cycleId": 1,
+              "trackedEye": "right",
+              "displacement": 0.0175
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 16333.333333333336,
+              "t": 233.33333333333394,
+              "cycleId": 1,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 17600,
+              "t": 1499.9999999999982,
+              "cycleId": 1,
+              "trackedEye": "right"
+            }
+          ],
+          "confidence": 0.98,
+          "sampleCount": 46,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 46,
+            "validEyeSampleCount": 46,
+            "stabilityScore": 0.949,
+            "jitter": 0.0049,
+            "validSampleRatio": 1,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c1_left_cover",
+            "eventType": "COVER",
+            "coveredEye": "LEFT",
+            "observedEye": "RIGHT",
+            "timestampMs": 16100.000000000002,
+            "frameId": 480,
+            "confirmedAtMs": 16233.333333333334,
+            "onsetIntervalMs": [
+              16000,
+              16100.000000000002
+            ],
+            "timingUncertaintyMs": 100.00000000000182,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 46,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1499.9999999999982,
+            "earlySpanMs": 499.9999999999982,
+            "maxGapMs": 33.33333333333576,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 999.9999999999982
+          }
+        },
+        {
+          "eye": "right",
+          "cycle": 3,
+          "baselinePosition": {
+            "x": 0.04331341331322079,
+            "y": 0.03624515235401614,
+            "normalizedX": 0.5013436428861704,
+            "normalizedY": 0.4195300099468306,
+            "sampleCount": 53,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0433,
+            "y": 0.0362,
+            "normalizedX": 0.5013,
+            "normalizedY": 0.4195,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0435,
+            "y": 0.0357,
+            "normalizedX": 0.5032,
+            "normalizedY": 0.4127,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0411,
+            "y": 0.0357,
+            "normalizedX": 0.4762,
+            "normalizedY": 0.4137,
+            "t": 366.6666666666715
+          },
+          "dx": -0.001,
+          "dy": -0.0004,
+          "horizontalDisplacement": 0.001,
+          "verticalDisplacement": 0.0004,
+          "displacement": 0.0011,
+          "normalizedHorizontal": 0.0116,
+          "normalizedVertical": 0.0048,
+          "normalizedDisplacement": 0.0125,
+          "maximumDisplacement": 0.0258,
+          "horizontalPeak": 0.0251,
+          "verticalPeak": 0.0139,
+          "peakDisplacement": 0.0258,
+          "meanDisplacement": 0.0111,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "TEMPORAL",
+          "horizontalDirection": "TEMPORAL",
+          "verticalDirection": "NONE",
+          "velocity": 0.0251,
+          "peakVelocity": 0.5778,
+          "timeToPeakMs": 33.333333333343035,
+          "meanVelocity": 0.0251,
+          "movementDurationMs": 300.0000000000073,
+          "trajectoryStability": 0.9165,
+          "jitter": 0.0103,
+          "validSampleRatio": 0.9768,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0864,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 59366.666666666664,
+              "t": 0,
+              "cycleId": 3,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 59733.333333333336,
+              "t": 366.6666666666715,
+              "cycleId": 3,
+              "trackedEye": "right",
+              "displacement": 0.0258
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 59666.66666666667,
+              "t": 300.0000000000073,
+              "cycleId": 3,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 60866.666666666664,
+              "t": 1500,
+              "cycleId": 3,
+              "trackedEye": "right"
+            }
+          ],
+          "confidence": 0.97,
+          "sampleCount": 44,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 44,
+            "validEyeSampleCount": 44,
+            "stabilityScore": 0.9165,
+            "jitter": 0.0103,
+            "validSampleRatio": 0.9768,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c3_left_cover",
+            "eventType": "COVER",
+            "coveredEye": "LEFT",
+            "observedEye": "RIGHT",
+            "timestampMs": 59366.666666666664,
+            "frameId": 1778,
+            "confirmedAtMs": 59500.00000000001,
+            "onsetIntervalMs": [
+              59300.00000000001,
+              59366.666666666664
+            ],
+            "timingUncertaintyMs": 66.66666666665697,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 44,
+            "earlyValidSamples": 14,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 100,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 1000
+          }
+        }
+      ]
+    },
+    "aggregatedLeft": {
+      "eye": "left",
+      "validCycles": 2,
+      "totalCycles": 2,
+      "medianDisplacement": 0.0129,
+      "meanDisplacement": 0.0129,
+      "medianHorizontal": 0.0026,
+      "meanHorizontal": 0.0026,
+      "medianVertical": 0.0123,
+      "meanVertical": 0.0123,
+      "medianPeakVelocity": 0.9674,
+      "notableMovementCycles": 0,
+      "verdict": "NO_SIGNAL_DETECTED",
+      "verdictLabel": "Không ghi nhận chuyển động tái định thị đáng chú ý trong lần sàng lọc này",
+      "dataQuality": {
+        "isValid": true,
+        "reason": null
+      },
+      "cycles": [
+        {
+          "eye": "left",
+          "cycle": 1,
+          "baselinePosition": {
+            "x": 0.03727834993432347,
+            "y": 0.03361978261401363,
+            "normalizedX": 0.4666380273242147,
+            "normalizedY": 0.42084129436285805,
+            "sampleCount": 56,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0373,
+            "y": 0.0336,
+            "normalizedX": 0.4666,
+            "normalizedY": 0.4208,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0389,
+            "y": 0.0332,
+            "normalizedX": 0.4871,
+            "normalizedY": 0.4156,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0392,
+            "y": 0.0314,
+            "normalizedX": 0.4906,
+            "normalizedY": 0.3931,
+            "t": 366.66666666666697
+          },
+          "dx": 0.0002,
+          "dy": -0.0018,
+          "horizontalDisplacement": 0.0002,
+          "verticalDisplacement": 0.0018,
+          "displacement": 0.0018,
+          "normalizedHorizontal": 0.0029,
+          "normalizedVertical": 0.022,
+          "normalizedDisplacement": 0.0222,
+          "maximumDisplacement": 0.0367,
+          "horizontalPeak": 0.0254,
+          "verticalPeak": 0.0317,
+          "peakDisplacement": 0.0367,
+          "meanDisplacement": 0.0188,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "TEMPORAL_SUPERIOR",
+          "horizontalDirection": "TEMPORAL",
+          "verticalDirection": "SUPERIOR",
+          "velocity": 0.0443,
+          "peakVelocity": 0.9468,
+          "timeToPeakMs": 33.33333333333303,
+          "meanVelocity": 0.0443,
+          "movementDurationMs": 66.66666666666606,
+          "trajectoryStability": 0.936,
+          "jitter": 0.0089,
+          "validSampleRatio": 1,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0799,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 5666.666666666667,
+              "t": 0,
+              "cycleId": 1,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 6033.333333333334,
+              "t": 366.66666666666697,
+              "cycleId": 1,
+              "trackedEye": "left",
+              "displacement": 0.0367
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 5733.333333333333,
+              "t": 66.66666666666606,
+              "cycleId": 1,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 7166.666666666667,
+              "t": 1500,
+              "cycleId": 1,
+              "trackedEye": "left"
+            }
+          ],
+          "confidence": 0.98,
+          "sampleCount": 46,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 46,
+            "validEyeSampleCount": 46,
+            "stabilityScore": 0.936,
+            "jitter": 0.0089,
+            "validSampleRatio": 1,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c1_right_cover",
+            "eventType": "COVER",
+            "coveredEye": "RIGHT",
+            "observedEye": "LEFT",
+            "timestampMs": 5666.666666666667,
+            "frameId": 170,
+            "confirmedAtMs": 5800.000000000001,
+            "onsetIntervalMs": [
+              5600.000000000001,
+              5666.666666666667
+            ],
+            "timingUncertaintyMs": 66.66666666666606,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 46,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 33.33333333333485,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 1000
+          }
+        },
+        {
+          "eye": "left",
+          "cycle": 3,
+          "baselinePosition": {
+            "x": 0.037763966030838224,
+            "y": 0.03401021356487231,
+            "normalizedX": 0.46244420980281575,
+            "normalizedY": 0.41647708093977653,
+            "sampleCount": 60,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0378,
+            "y": 0.034,
+            "normalizedX": 0.4624,
+            "normalizedY": 0.4165,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0387,
+            "y": 0.033,
+            "normalizedX": 0.4744,
+            "normalizedY": 0.4044,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0372,
+            "y": 0.0315,
+            "normalizedX": 0.455,
+            "normalizedY": 0.3858,
+            "t": 66.66666666667152
+          },
+          "dx": 0.0002,
+          "dy": -0.0002,
+          "horizontalDisplacement": 0.0002,
+          "verticalDisplacement": 0.0002,
+          "displacement": 0.0003,
+          "normalizedHorizontal": 0.0023,
+          "normalizedVertical": 0.0027,
+          "normalizedDisplacement": 0.0036,
+          "maximumDisplacement": 0.0315,
+          "horizontalPeak": 0.0168,
+          "verticalPeak": 0.0306,
+          "peakDisplacement": 0.0315,
+          "meanDisplacement": 0.0122,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "SUPERIOR",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "SUPERIOR",
+          "velocity": 0.0071,
+          "peakVelocity": 0.988,
+          "timeToPeakMs": 66.66666666667152,
+          "meanVelocity": 0.0071,
+          "movementDurationMs": 166.66666666667152,
+          "trajectoryStability": 0.9467,
+          "jitter": 0.0091,
+          "validSampleRatio": 0.7992,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0817,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 48733.333333333336,
+              "t": 0,
+              "cycleId": 3,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 48800.00000000001,
+              "t": 66.66666666667152,
+              "cycleId": 3,
+              "trackedEye": "left",
+              "displacement": 0.0315
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 48900.00000000001,
+              "t": 166.66666666667152,
+              "cycleId": 3,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 50233.333333333336,
+              "t": 1500,
+              "cycleId": 3,
+              "trackedEye": "left"
+            }
+          ],
+          "confidence": 0.9,
+          "sampleCount": 36,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 36,
+            "validEyeSampleCount": 36,
+            "stabilityScore": 0.9467,
+            "jitter": 0.0091,
+            "validSampleRatio": 0.7992,
+            "warnings": [
+              "LATE_GAP_EXCLUDED_FROM_KINEMATICS"
+            ]
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c3_right_cover",
+            "eventType": "COVER",
+            "coveredEye": "RIGHT",
+            "observedEye": "LEFT",
+            "timestampMs": 48733.333333333336,
+            "frameId": 1459,
+            "confirmedAtMs": 48866.666666666664,
+            "onsetIntervalMs": [
+              48666.66666666667,
+              48733.333333333336
+            ],
+            "timingUncertaintyMs": 66.66666666666424,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 36,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 366.66666666666424,
+            "lateGaps": [
+              {
+                "startMs": 933.3333333333358,
+                "endMs": 1300,
+                "durationMs": 366.66666666666424
+              }
+            ],
+            "settlingSamples": 7,
+            "settlingSpanMs": 200,
+            "settlingStartMs": 1300
+          }
+        }
+      ]
+    },
+    "consistency": "NO_NOTABLE_REFIXATION",
+    "quality": {
+      "status": "GOOD",
+      "score": 0.6666666666666666,
+      "reasons": [
+        "COVER_NOT_CONFIRMED"
+      ]
+    }
+  },
+  "legs": [
+    {
+      "startMs": 4000,
+      "trackingStartMs": 12000,
+      "endMs": 15000,
+      "eye": "right",
+      "cycle": 1,
+      "screenSide": "IMAGE_LEFT",
+      "actualEndMs": 14966.666666666666,
+      "result": {
+        "coveredEye": "RIGHT",
+        "coverOn": {
+          "eye": "left",
+          "cycle": 1,
+          "baselinePosition": {
+            "x": 0.03727834993432347,
+            "y": 0.03361978261401363,
+            "normalizedX": 0.4666380273242147,
+            "normalizedY": 0.42084129436285805,
+            "sampleCount": 56,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0373,
+            "y": 0.0336,
+            "normalizedX": 0.4666,
+            "normalizedY": 0.4208,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0389,
+            "y": 0.0332,
+            "normalizedX": 0.4871,
+            "normalizedY": 0.4156,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0392,
+            "y": 0.0314,
+            "normalizedX": 0.4906,
+            "normalizedY": 0.3931,
+            "t": 366.66666666666697
+          },
+          "dx": 0.0002,
+          "dy": -0.0018,
+          "horizontalDisplacement": 0.0002,
+          "verticalDisplacement": 0.0018,
+          "displacement": 0.0018,
+          "normalizedHorizontal": 0.0029,
+          "normalizedVertical": 0.022,
+          "normalizedDisplacement": 0.0222,
+          "maximumDisplacement": 0.0367,
+          "horizontalPeak": 0.0254,
+          "verticalPeak": 0.0317,
+          "peakDisplacement": 0.0367,
+          "meanDisplacement": 0.0188,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "TEMPORAL_SUPERIOR",
+          "horizontalDirection": "TEMPORAL",
+          "verticalDirection": "SUPERIOR",
+          "velocity": 0.0443,
+          "peakVelocity": 0.9468,
+          "timeToPeakMs": 33.33333333333303,
+          "meanVelocity": 0.0443,
+          "movementDurationMs": 66.66666666666606,
+          "trajectoryStability": 0.936,
+          "jitter": 0.0089,
+          "validSampleRatio": 1,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0799,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 5666.666666666667,
+              "t": 0,
+              "cycleId": 1,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 6033.333333333334,
+              "t": 366.66666666666697,
+              "cycleId": 1,
+              "trackedEye": "left",
+              "displacement": 0.0367
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 5733.333333333333,
+              "t": 66.66666666666606,
+              "cycleId": 1,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 7166.666666666667,
+              "t": 1500,
+              "cycleId": 1,
+              "trackedEye": "left"
+            }
+          ],
+          "confidence": 0.98,
+          "sampleCount": 46,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 46,
+            "validEyeSampleCount": 46,
+            "stabilityScore": 0.936,
+            "jitter": 0.0089,
+            "validSampleRatio": 1,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c1_right_cover",
+            "eventType": "COVER",
+            "coveredEye": "RIGHT",
+            "observedEye": "LEFT",
+            "timestampMs": 5666.666666666667,
+            "frameId": 170,
+            "confirmedAtMs": 5800.000000000001,
+            "onsetIntervalMs": [
+              5600.000000000001,
+              5666.666666666667
+            ],
+            "timingUncertaintyMs": 66.66666666666606,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 46,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 33.33333333333485,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 1000
+          }
+        },
+        "uncoverRecovery": {
+          "eye": "right",
+          "cycle": 1,
+          "baselinePosition": {
+            "x": 0.04161804691024627,
+            "y": 0.03574999987669657,
+            "normalizedX": 0.4966468078319799,
+            "normalizedY": 0.4266207724030354,
+            "sampleCount": 56,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0425,
+            "y": 0.0358,
+            "normalizedX": 0.5076,
+            "normalizedY": 0.4266,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0423,
+            "y": 0.0357,
+            "normalizedX": 0.5048,
+            "normalizedY": 0.4263,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0416,
+            "y": 0.0346,
+            "normalizedX": 0.4967,
+            "normalizedY": 0.4127,
+            "t": 266.6666666666679
+          },
+          "dx": -0.001,
+          "dy": -0.0007,
+          "horizontalDisplacement": 0.001,
+          "verticalDisplacement": 0.0007,
+          "displacement": 0.0012,
+          "normalizedHorizontal": 0.0117,
+          "normalizedVertical": 0.0082,
+          "normalizedDisplacement": 0.0143,
+          "maximumDisplacement": 0.0177,
+          "horizontalPeak": 0.0136,
+          "verticalPeak": 0.0141,
+          "peakDisplacement": 0.0177,
+          "meanDisplacement": 0.0102,
+          "dxFromBaseline": 0.0009,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0.0009,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0.011,
+          "movementDirection": "NONE",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "NONE",
+          "velocity": 0.0286,
+          "peakVelocity": 0.8165,
+          "timeToPeakMs": 66.6666666666697,
+          "meanVelocity": 0.0286,
+          "movementDurationMs": 133.33333333333576,
+          "trajectoryStability": 0.9577,
+          "jitter": 0.0054,
+          "validSampleRatio": 0.8658,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0838,
+          "temporalEvents": [
+            {
+              "eventType": "UNCOVER",
+              "timestamp": 12466.666666666666,
+              "t": 0,
+              "cycleId": 1,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 12733.333333333334,
+              "t": 266.6666666666679,
+              "cycleId": 1,
+              "trackedEye": "right",
+              "displacement": 0.0177
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 12600.000000000002,
+              "t": 133.33333333333576,
+              "cycleId": 1,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 13966.666666666666,
+              "t": 1500,
+              "cycleId": 1,
+              "trackedEye": "right"
+            }
+          ],
+          "confidence": 0.93,
+          "sampleCount": 39,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 39,
+            "validEyeSampleCount": 39,
+            "stabilityScore": 0.9577,
+            "jitter": 0.0054,
+            "validSampleRatio": 0.8658,
+            "warnings": [
+              "LATE_GAP_EXCLUDED_FROM_KINEMATICS"
+            ]
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "uncover_recovery",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c1_right_uncover",
+            "eventType": "UNCOVER",
+            "coveredEye": "RIGHT",
+            "observedEye": "RIGHT",
+            "timestampMs": 12466.666666666666,
+            "frameId": 374,
+            "confirmedAtMs": 12600.000000000002,
+            "onsetIntervalMs": [
+              12400,
+              12466.666666666666
+            ],
+            "timingUncertaintyMs": 66.66666666666606,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 39,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 266.6666666666679,
+            "lateGaps": [
+              {
+                "startMs": 1000,
+                "endMs": 1266.6666666666679,
+                "durationMs": 266.6666666666679
+              }
+            ],
+            "settlingSamples": 8,
+            "settlingSpanMs": 233.33333333333212,
+            "settlingStartMs": 1266.6666666666679
+          }
+        },
+        "evidence": {
+          "procedureValid": true,
+          "primaryProcedureValid": true,
+          "reason": null,
+          "coverEvent": {
+            "eventId": "c1_right_cover",
+            "eventType": "COVER",
+            "coveredEye": "RIGHT",
+            "observedEye": "LEFT",
+            "timestampMs": 5666.666666666667,
+            "frameId": 170,
+            "confirmedAtMs": 5800.000000000001,
+            "onsetIntervalMs": [
+              5600.000000000001,
+              5666.666666666667
+            ],
+            "timingUncertaintyMs": 66.66666666666606,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "uncoverEvent": {
+            "eventId": "c1_right_uncover",
+            "eventType": "UNCOVER",
+            "coveredEye": "RIGHT",
+            "observedEye": "RIGHT",
+            "timestampMs": 12466.666666666666,
+            "frameId": 374,
+            "confirmedAtMs": 12600.000000000002,
+            "onsetIntervalMs": [
+              12400,
+              12466.666666666666
+            ],
+            "timingUncertaintyMs": 66.66666666666606,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "baselineSource": {
+            "frameId": 168,
+            "timestampMs": 5600.000000000001
+          },
+          "interruptions": [
+            {
+              "startMs": 5633.333333333334,
+              "endMs": 5666.666666666667,
+              "durationMs": 33.33333333333303,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 12433.333333333334,
+              "endMs": 12466.666666666666,
+              "durationMs": 33.33333333333212,
+              "withinRecoveryLimit": true
+            }
+          ],
+          "source": "pixel-appearance-v2",
+          "clinicallyValidated": false
+        }
+      },
+      "diagnostics": {
+        "frames": 330,
+        "validEyeSamples": {
+          "left": 316,
+          "right": 111
+        },
+        "visibility": {
+          "left": {
+            "VISIBLE": 323,
+            "OCCLUDED": 0,
+            "UNKNOWN": 7
+          },
+          "right": {
+            "VISIBLE": 117,
+            "OCCLUDED": 203,
+            "UNKNOWN": 10
+          }
+        },
+        "firstUnsafeFrame": {
+          "frameId": 405,
+          "timestampMs": 13500,
+          "qualityValid": true,
+          "visibility": {
+            "left": "UNKNOWN",
+            "right": "UNKNOWN"
+          },
+          "metrics": {
+            "timestampMs": 13500,
+            "left": {
+              "minLum": 30.524,
+              "pupilContrast": 23.27,
+              "dynamicRange": 108.32,
+              "stdDev": 22.86,
+              "mean": 102.16,
+              "aperture": 0.101,
+              "skinRatio": 0.997,
+              "isLuminanceShift": false,
+              "visibility": "UNKNOWN",
+              "appearance": {
+                "correlation": 0.8385712341150838,
+                "exposureShift": 9.150028433753391,
+                "contrastThreshold": 12.673513477867244,
+                "meanShift": -2.7804110613128046,
+                "textureRatio": 0.9717418998735166,
+                "maxMeanShift": 35.292982174743884
+              }
+            },
+            "right": {
+              "minLum": 40.63399999999999,
+              "pupilContrast": 13.06,
+              "dynamicRange": 100.09,
+              "stdDev": 19.45,
+              "mean": 106.35,
+              "aperture": 0.06,
+              "skinRatio": 1,
+              "isLuminanceShift": false,
+              "visibility": "UNKNOWN",
+              "appearance": {
+                "correlation": 0.7707596233546276,
+                "exposureShift": 6.369617372440587,
+                "contrastThreshold": 12.536903759620824,
+                "meanShift": 2.7804110613128046,
+                "textureRatio": 0.9514617895526821,
+                "maxMeanShift": 30.670741022511606
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "startMs": 15000,
+      "trackingStartMs": 23000,
+      "endMs": 26000,
+      "eye": "left",
+      "cycle": 1,
+      "screenSide": "IMAGE_RIGHT",
+      "actualEndMs": 25966.666666666668,
+      "result": {
+        "coveredEye": "LEFT",
+        "coverOn": {
+          "eye": "right",
+          "cycle": 1,
+          "baselinePosition": {
+            "x": 0.04381093308697502,
+            "y": 0.03752486346669476,
+            "normalizedX": 0.4968223542406575,
+            "normalizedY": 0.4255374103325169,
+            "sampleCount": 49,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0438,
+            "y": 0.0375,
+            "normalizedX": 0.4968,
+            "normalizedY": 0.4255,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0431,
+            "y": 0.0379,
+            "normalizedX": 0.4887,
+            "normalizedY": 0.4301,
+            "t": 1499.9999999999982
+          },
+          "peakPosition": {
+            "x": 0.0433,
+            "y": 0.0361,
+            "normalizedX": 0.4906,
+            "normalizedY": 0.4092,
+            "t": 66.66666666666606
+          },
+          "dx": -0.0008,
+          "dy": -0.0007,
+          "horizontalDisplacement": 0.0008,
+          "verticalDisplacement": 0.0007,
+          "displacement": 0.0011,
+          "normalizedHorizontal": 0.0092,
+          "normalizedVertical": 0.0084,
+          "normalizedDisplacement": 0.0125,
+          "maximumDisplacement": 0.0175,
+          "horizontalPeak": 0.0289,
+          "verticalPeak": 0.0164,
+          "peakDisplacement": 0.0175,
+          "meanDisplacement": 0.0126,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "NONE",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "NONE",
+          "velocity": 0.0249,
+          "peakVelocity": 0.7073,
+          "timeToPeakMs": 99.99999999999818,
+          "meanVelocity": 0.0249,
+          "movementDurationMs": 233.33333333333394,
+          "trajectoryStability": 0.949,
+          "jitter": 0.0049,
+          "validSampleRatio": 1,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0882,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 16100.000000000002,
+              "t": 0,
+              "cycleId": 1,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 16166.666666666668,
+              "t": 66.66666666666606,
+              "cycleId": 1,
+              "trackedEye": "right",
+              "displacement": 0.0175
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 16333.333333333336,
+              "t": 233.33333333333394,
+              "cycleId": 1,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 17600,
+              "t": 1499.9999999999982,
+              "cycleId": 1,
+              "trackedEye": "right"
+            }
+          ],
+          "confidence": 0.98,
+          "sampleCount": 46,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 46,
+            "validEyeSampleCount": 46,
+            "stabilityScore": 0.949,
+            "jitter": 0.0049,
+            "validSampleRatio": 1,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c1_left_cover",
+            "eventType": "COVER",
+            "coveredEye": "LEFT",
+            "observedEye": "RIGHT",
+            "timestampMs": 16100.000000000002,
+            "frameId": 480,
+            "confirmedAtMs": 16233.333333333334,
+            "onsetIntervalMs": [
+              16000,
+              16100.000000000002
+            ],
+            "timingUncertaintyMs": 100.00000000000182,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 46,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1499.9999999999982,
+            "earlySpanMs": 499.9999999999982,
+            "maxGapMs": 33.33333333333576,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 999.9999999999982
+          }
+        },
+        "uncoverRecovery": {
+          "eye": "left",
+          "cycle": 1,
+          "baselinePosition": {
+            "x": 0.03995661640090699,
+            "y": 0.03604845937049809,
+            "normalizedX": 0.46499208868321545,
+            "normalizedY": 0.4195112080641404,
+            "sampleCount": 49,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0405,
+            "y": 0.0363,
+            "normalizedX": 0.4716,
+            "normalizedY": 0.4225,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.041,
+            "y": 0.0366,
+            "normalizedX": 0.4767,
+            "normalizedY": 0.4256,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.04,
+            "y": 0.0356,
+            "normalizedX": 0.4651,
+            "normalizedY": 0.4146,
+            "t": 99.99999999999636
+          },
+          "dx": -0.0004,
+          "dy": 0.0001,
+          "horizontalDisplacement": 0.0004,
+          "verticalDisplacement": 0.0001,
+          "displacement": 0.0004,
+          "normalizedHorizontal": 0.0041,
+          "normalizedVertical": 0.001,
+          "normalizedDisplacement": 0.0042,
+          "maximumDisplacement": 0.0102,
+          "horizontalPeak": 0.0168,
+          "verticalPeak": 0.0079,
+          "peakDisplacement": 0.0102,
+          "meanDisplacement": 0.0065,
+          "dxFromBaseline": 0.0006,
+          "dyFromBaseline": 0.0003,
+          "horizontalDisplacementFromBaseline": 0.0006,
+          "verticalDisplacementFromBaseline": 0.0003,
+          "displacementFromBaseline": 0.0072,
+          "movementDirection": "NONE",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "NONE",
+          "velocity": 0.0085,
+          "peakVelocity": 0.3574,
+          "timeToPeakMs": 33.33333333333212,
+          "meanVelocity": 0.0085,
+          "movementDurationMs": 133.33333333333212,
+          "trajectoryStability": 0.961,
+          "jitter": 0.0036,
+          "validSampleRatio": 0.8658,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0859,
+          "temporalEvents": [
+            {
+              "eventType": "UNCOVER",
+              "timestamp": 23700.000000000004,
+              "t": 0,
+              "cycleId": 1,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 23800,
+              "t": 99.99999999999636,
+              "cycleId": 1,
+              "trackedEye": "left",
+              "displacement": 0.0102
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 23833.333333333336,
+              "t": 133.33333333333212,
+              "cycleId": 1,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 25200.000000000004,
+              "t": 1500,
+              "cycleId": 1,
+              "trackedEye": "left"
+            }
+          ],
+          "confidence": 0.93,
+          "sampleCount": 39,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 39,
+            "validEyeSampleCount": 39,
+            "stabilityScore": 0.961,
+            "jitter": 0.0036,
+            "validSampleRatio": 0.8658,
+            "warnings": [
+              "LATE_GAP_EXCLUDED_FROM_KINEMATICS"
+            ]
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "uncover_recovery",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c1_left_uncover",
+            "eventType": "UNCOVER",
+            "coveredEye": "LEFT",
+            "observedEye": "LEFT",
+            "timestampMs": 23700.000000000004,
+            "frameId": 708,
+            "confirmedAtMs": 23833.333333333336,
+            "onsetIntervalMs": [
+              23633.333333333336,
+              23700.000000000004
+            ],
+            "timingUncertaintyMs": 66.66666666666788,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 39,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 266.6666666666715,
+            "lateGaps": [
+              {
+                "startMs": 733.3333333333285,
+                "endMs": 1000,
+                "durationMs": 266.6666666666715
+              }
+            ],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 1000
+          }
+        },
+        "evidence": {
+          "procedureValid": true,
+          "primaryProcedureValid": true,
+          "reason": null,
+          "coverEvent": {
+            "eventId": "c1_left_cover",
+            "eventType": "COVER",
+            "coveredEye": "LEFT",
+            "observedEye": "RIGHT",
+            "timestampMs": 16100.000000000002,
+            "frameId": 480,
+            "confirmedAtMs": 16233.333333333334,
+            "onsetIntervalMs": [
+              16000,
+              16100.000000000002
+            ],
+            "timingUncertaintyMs": 100.00000000000182,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "uncoverEvent": {
+            "eventId": "c1_left_uncover",
+            "eventType": "UNCOVER",
+            "coveredEye": "LEFT",
+            "observedEye": "LEFT",
+            "timestampMs": 23700.000000000004,
+            "frameId": 708,
+            "confirmedAtMs": 23833.333333333336,
+            "onsetIntervalMs": [
+              23633.333333333336,
+              23700.000000000004
+            ],
+            "timingUncertaintyMs": 66.66666666666788,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "baselineSource": {
+            "frameId": 477,
+            "timestampMs": 16000
+          },
+          "interruptions": [
+            {
+              "startMs": 16033.333333333336,
+              "endMs": 16100.000000000002,
+              "durationMs": 66.66666666666606,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 23666.666666666668,
+              "endMs": 23700.000000000004,
+              "durationMs": 33.33333333333576,
+              "withinRecoveryLimit": true
+            }
+          ],
+          "source": "pixel-appearance-v2",
+          "clinicallyValidated": false
+        }
+      },
+      "diagnostics": {
+        "frames": 327,
+        "validEyeSamples": {
+          "left": 90,
+          "right": 320
+        },
+        "visibility": {
+          "left": {
+            "VISIBLE": 93,
+            "OCCLUDED": 227,
+            "UNKNOWN": 7
+          },
+          "right": {
+            "VISIBLE": 323,
+            "OCCLUDED": 0,
+            "UNKNOWN": 4
+          }
+        },
+        "firstUnsafeFrame": {
+          "frameId": 731,
+          "timestampMs": 24466.666666666668,
+          "qualityValid": true,
+          "visibility": {
+            "left": "UNKNOWN",
+            "right": "UNKNOWN"
+          },
+          "metrics": {
+            "timestampMs": 24466.666666666668,
+            "left": {
+              "minLum": 37.595,
+              "pupilContrast": 22.32,
+              "dynamicRange": 97.68,
+              "stdDev": 21.97,
+              "mean": 100.67,
+              "aperture": 0.1,
+              "skinRatio": 1,
+              "isLuminanceShift": false,
+              "visibility": "UNKNOWN",
+              "appearance": {
+                "correlation": 0.8447944455248279,
+                "exposureShift": 5.275879996253423,
+                "contrastThreshold": 15.66809319234792,
+                "meanShift": -0.3884813738127946,
+                "textureRatio": 0.9337704715080258,
+                "maxMeanShift": 35.292982174743884
+              }
+            },
+            "right": {
+              "minLum": 49.122,
+              "pupilContrast": 19.98,
+              "dynamicRange": 88.94,
+              "stdDev": 18.51,
+              "mean": 102.47,
+              "aperture": 0.101,
+              "skinRatio": 1,
+              "isLuminanceShift": false,
+              "visibility": "UNKNOWN",
+              "appearance": {
+                "correlation": 0.8834391995807804,
+                "exposureShift": 4.887398622440628,
+                "contrastThreshold": 12.024937763702148,
+                "meanShift": 0.3884813738127946,
+                "textureRatio": 0.9050594288796044,
+                "maxMeanShift": 30.670741022511606
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "startMs": 26000,
+      "trackingStartMs": 34000,
+      "endMs": 36000,
+      "eye": "right",
+      "cycle": 2,
+      "screenSide": "IMAGE_LEFT",
+      "actualEndMs": 38966.66666666667,
+      "result": {
+        "coveredEye": "RIGHT",
+        "coverOn": {
+          "eye": "left",
+          "cycle": 2,
+          "measurementKind": "cover_on_fellow_eye",
+          "event": null,
+          "isNotableMovement": false,
+          "dataQuality": {
+            "isValid": false,
+            "reason": "COVER_NOT_CONFIRMED"
+          }
+        },
+        "uncoverRecovery": {
+          "eye": "right",
+          "cycle": 2,
+          "measurementKind": "uncover_recovery",
+          "event": null,
+          "isNotableMovement": false,
+          "dataQuality": {
+            "isValid": false,
+            "reason": "COVER_NOT_CONFIRMED"
+          }
+        },
+        "evidence": {
+          "procedureValid": false,
+          "primaryProcedureValid": false,
+          "reason": "COVER_NOT_CONFIRMED",
+          "coverEvent": null,
+          "uncoverEvent": null,
+          "baselineSource": {
+            "frameId": 823,
+            "timestampMs": 27533.333333333336
+          },
+          "interruptions": [
+            {
+              "startMs": 26100,
+              "endMs": 26333.333333333336,
+              "durationMs": 233.33333333333576,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 27566.66666666667,
+              "endMs": 27600,
+              "durationMs": 33.33333333332848,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 27666.666666666668,
+              "endMs": 27733.333333333336,
+              "durationMs": 66.66666666666788,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 27800,
+              "endMs": 27833.333333333336,
+              "durationMs": 33.33333333333576,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 34100,
+              "endMs": 34166.66666666667,
+              "durationMs": 66.66666666667152,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 34200,
+              "endMs": 34233.333333333336,
+              "durationMs": 33.33333333333576,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 34733.333333333336,
+              "endMs": 34766.666666666664,
+              "durationMs": 33.33333333332848,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 35433.333333333336,
+              "endMs": 35666.66666666667,
+              "durationMs": 233.33333333333576,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 35966.66666666667,
+              "endMs": 36200,
+              "durationMs": 233.33333333332848,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 36700,
+              "endMs": 36966.66666666667,
+              "durationMs": 266.6666666666715,
+              "withinRecoveryLimit": false
+            },
+            {
+              "startMs": 37900.00000000001,
+              "endMs": 38966.66666666667,
+              "durationMs": 1066.6666666666642,
+              "withinRecoveryLimit": false
+            }
+          ],
+          "source": "pixel-appearance-v2",
+          "clinicallyValidated": false
+        }
+      },
+      "diagnostics": {
+        "frames": 390,
+        "validEyeSamples": {
+          "left": 335,
+          "right": 148
+        },
+        "visibility": {
+          "left": {
+            "VISIBLE": 341,
+            "OCCLUDED": 31,
+            "UNKNOWN": 18
+          },
+          "right": {
+            "VISIBLE": 158,
+            "OCCLUDED": 208,
+            "UNKNOWN": 24
+          }
+        },
+        "firstUnsafeFrame": {
+          "frameId": 780,
+          "timestampMs": 26100,
+          "qualityValid": true,
+          "visibility": {
+            "left": "UNKNOWN",
+            "right": "UNKNOWN"
+          },
+          "metrics": {
+            "timestampMs": 26100,
+            "left": {
+              "minLum": 34.236,
+              "pupilContrast": 26.3,
+              "dynamicRange": 103.69,
+              "stdDev": 22.43,
+              "mean": 102.6,
+              "aperture": 0.089,
+              "skinRatio": 0.999,
+              "isLuminanceShift": false,
+              "visibility": "UNKNOWN",
+              "appearance": {
+                "correlation": 0.8568344001610775,
+                "exposureShift": 8.362361767087123,
+                "contrastThreshold": 12.673513477867244,
+                "meanShift": -1.5463186133965223,
+                "textureRatio": 0.9533382560172353,
+                "maxMeanShift": 35.292982174743884
+              }
+            },
+            "right": {
+              "minLum": 47.007999999999996,
+              "pupilContrast": 15.88,
+              "dynamicRange": 95.43,
+              "stdDev": 19.44,
+              "mean": 105.56,
+              "aperture": 0.098,
+              "skinRatio": 1,
+              "isLuminanceShift": false,
+              "visibility": "UNKNOWN",
+              "appearance": {
+                "correlation": 0.8183584013929567,
+                "exposureShift": 6.8160431536906,
+                "contrastThreshold": 14.164826480934279,
+                "meanShift": 1.5463186133965223,
+                "textureRatio": 0.9506976504155803,
+                "maxMeanShift": 30.670741022511606
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "startMs": 36000,
+      "trackingStartMs": 45000,
+      "endMs": 47000,
+      "eye": "left",
+      "cycle": 2,
+      "screenSide": "IMAGE_RIGHT",
+      "actualEndMs": 46966.66666666667,
+      "result": {
+        "coveredEye": "LEFT",
+        "coverOn": {
+          "eye": "right",
+          "cycle": 2,
+          "baselinePosition": {
+            "x": 0.0419841150574393,
+            "y": 0.036341578117479,
+            "normalizedX": 0.4974844093028702,
+            "normalizedY": 0.43062402287563784,
+            "sampleCount": 44,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.042,
+            "y": 0.0363,
+            "normalizedX": 0.4975,
+            "normalizedY": 0.4306,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0417,
+            "y": 0.0349,
+            "normalizedX": 0.4939,
+            "normalizedY": 0.4139,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0405,
+            "y": 0.0355,
+            "normalizedX": 0.4794,
+            "normalizedY": 0.4205,
+            "t": 399.9999999999927
+          },
+          "dx": 0.0006,
+          "dy": -0.0003,
+          "horizontalDisplacement": 0.0006,
+          "verticalDisplacement": 0.0003,
+          "displacement": 0.0007,
+          "normalizedHorizontal": 0.0072,
+          "normalizedVertical": 0.0039,
+          "normalizedDisplacement": 0.0082,
+          "maximumDisplacement": 0.0208,
+          "horizontalPeak": 0.0181,
+          "verticalPeak": 0.021,
+          "peakDisplacement": 0.0208,
+          "meanDisplacement": 0.0136,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "NONE",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "NONE",
+          "velocity": 0.0164,
+          "peakVelocity": 0.6645,
+          "timeToPeakMs": 500,
+          "meanVelocity": 0.0164,
+          "movementDurationMs": 766.6666666666642,
+          "trajectoryStability": 0.9289,
+          "jitter": 0.0096,
+          "validSampleRatio": 1,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0844,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 37966.66666666667,
+              "t": 0,
+              "cycleId": 2,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 38366.666666666664,
+              "t": 399.9999999999927,
+              "cycleId": 2,
+              "trackedEye": "right",
+              "displacement": 0.0208
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 38733.333333333336,
+              "t": 766.6666666666642,
+              "cycleId": 2,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 39466.66666666667,
+              "t": 1500,
+              "cycleId": 2,
+              "trackedEye": "right"
+            }
+          ],
+          "confidence": 0.98,
+          "sampleCount": 46,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 46,
+            "validEyeSampleCount": 46,
+            "stabilityScore": 0.9289,
+            "jitter": 0.0096,
+            "validSampleRatio": 1,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c2_left_cover",
+            "eventType": "COVER",
+            "coveredEye": "LEFT",
+            "observedEye": "RIGHT",
+            "timestampMs": 37966.66666666667,
+            "frameId": 1136,
+            "confirmedAtMs": 38100,
+            "onsetIntervalMs": [
+              37866.666666666664,
+              37966.66666666667
+            ],
+            "timingUncertaintyMs": 100.00000000000728,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 46,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 33.333333333343035,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 1000
+          }
+        },
+        "uncoverRecovery": {
+          "eye": "left",
+          "cycle": 2,
+          "baselinePosition": {
+            "x": 0.039770057093547494,
+            "y": 0.03589674660125251,
+            "normalizedX": 0.4619186581191971,
+            "normalizedY": 0.4169311847325877,
+            "sampleCount": 44,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0398,
+            "y": 0.037,
+            "normalizedX": 0.4621,
+            "normalizedY": 0.4293,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0401,
+            "y": 0.0359,
+            "normalizedX": 0.4657,
+            "normalizedY": 0.4168,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0386,
+            "y": 0.0355,
+            "normalizedX": 0.4488,
+            "normalizedY": 0.4127,
+            "t": 500
+          },
+          "dx": -0.0011,
+          "dy": -0.0014,
+          "horizontalDisplacement": 0.0011,
+          "verticalDisplacement": 0.0014,
+          "displacement": 0.0018,
+          "normalizedHorizontal": 0.0133,
+          "normalizedVertical": 0.0166,
+          "normalizedDisplacement": 0.0213,
+          "maximumDisplacement": 0.0213,
+          "horizontalPeak": 0.014,
+          "verticalPeak": 0.02,
+          "peakDisplacement": 0.0213,
+          "meanDisplacement": 0.0144,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0.0011,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0.0011,
+          "displacementFromBaseline": 0.0124,
+          "movementDirection": "NONE",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "NONE",
+          "velocity": 0.0426,
+          "peakVelocity": 0.6852,
+          "timeToPeakMs": 33.33333333332848,
+          "meanVelocity": 0.0426,
+          "movementDurationMs": 100,
+          "trajectoryStability": 0.9611,
+          "jitter": 0.0043,
+          "validSampleRatio": 0.888,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0861,
+          "temporalEvents": [
+            {
+              "eventType": "UNCOVER",
+              "timestamp": 45300.00000000001,
+              "t": 0,
+              "cycleId": 2,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 45800.00000000001,
+              "t": 500,
+              "cycleId": 2,
+              "trackedEye": "left",
+              "displacement": 0.0213
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 45400.00000000001,
+              "t": 100,
+              "cycleId": 2,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 46800.00000000001,
+              "t": 1500,
+              "cycleId": 2,
+              "trackedEye": "left"
+            }
+          ],
+          "confidence": 0.94,
+          "sampleCount": 40,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 40,
+            "validEyeSampleCount": 40,
+            "stabilityScore": 0.9611,
+            "jitter": 0.0043,
+            "validSampleRatio": 0.888,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "uncover_recovery",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c2_left_uncover",
+            "eventType": "UNCOVER",
+            "coveredEye": "LEFT",
+            "observedEye": "LEFT",
+            "timestampMs": 45300.00000000001,
+            "frameId": 1356,
+            "confirmedAtMs": 45433.333333333336,
+            "onsetIntervalMs": [
+              45100,
+              45300.00000000001
+            ],
+            "timingUncertaintyMs": 200.00000000000728,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 40,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 233.33333333332848,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 1000
+          }
+        },
+        "evidence": {
+          "procedureValid": true,
+          "primaryProcedureValid": true,
+          "reason": null,
+          "coverEvent": {
+            "eventId": "c2_left_cover",
+            "eventType": "COVER",
+            "coveredEye": "LEFT",
+            "observedEye": "RIGHT",
+            "timestampMs": 37966.66666666667,
+            "frameId": 1136,
+            "confirmedAtMs": 38100,
+            "onsetIntervalMs": [
+              37866.666666666664,
+              37966.66666666667
+            ],
+            "timingUncertaintyMs": 100.00000000000728,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "uncoverEvent": {
+            "eventId": "c2_left_uncover",
+            "eventType": "UNCOVER",
+            "coveredEye": "LEFT",
+            "observedEye": "LEFT",
+            "timestampMs": 45300.00000000001,
+            "frameId": 1356,
+            "confirmedAtMs": 45433.333333333336,
+            "onsetIntervalMs": [
+              45100,
+              45300.00000000001
+            ],
+            "timingUncertaintyMs": 200.00000000000728,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "baselineSource": {
+            "frameId": 1133,
+            "timestampMs": 37866.666666666664
+          },
+          "interruptions": [
+            {
+              "startMs": 36000,
+              "endMs": 36200,
+              "durationMs": 200,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 36700,
+              "endMs": 36966.66666666667,
+              "durationMs": 266.6666666666715,
+              "withinRecoveryLimit": false
+            },
+            {
+              "startMs": 37900.00000000001,
+              "endMs": 37966.66666666667,
+              "durationMs": 66.66666666666424,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 41533.333333333336,
+              "endMs": 41766.66666666667,
+              "durationMs": 233.33333333333576,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 45133.333333333336,
+              "endMs": 45300.00000000001,
+              "durationMs": 166.66666666667152,
+              "withinRecoveryLimit": true
+            }
+          ],
+          "source": "pixel-appearance-v2",
+          "clinicallyValidated": false
+        }
+      },
+      "diagnostics": {
+        "frames": 330,
+        "validEyeSamples": {
+          "left": 97,
+          "right": 297
+        },
+        "visibility": {
+          "left": {
+            "VISIBLE": 100,
+            "OCCLUDED": 215,
+            "UNKNOWN": 15
+          },
+          "right": {
+            "VISIBLE": 313,
+            "OCCLUDED": 0,
+            "UNKNOWN": 17
+          }
+        },
+        "firstUnsafeFrame": {
+          "frameId": 1077,
+          "timestampMs": 36000,
+          "qualityValid": true,
+          "visibility": {
+            "left": "UNKNOWN",
+            "right": "UNKNOWN"
+          },
+          "metrics": {
+            "timestampMs": 36000,
+            "left": {
+              "minLum": 38.183,
+              "pupilContrast": 16.73,
+              "dynamicRange": 100.42,
+              "stdDev": 22.21,
+              "mean": 105.7,
+              "aperture": 0.06,
+              "skinRatio": 1,
+              "isLuminanceShift": false,
+              "visibility": "UNKNOWN",
+              "appearance": {
+                "correlation": 0.7719494815747825,
+                "exposureShift": 11.535368277503608,
+                "contrastThreshold": 12.673513477867244,
+                "meanShift": -1.6169735613129745,
+                "textureRatio": 0.944044810254273,
+                "maxMeanShift": 35.292982174743884
+              }
+            },
+            "right": {
+              "minLum": 49.595,
+              "pupilContrast": 12.83,
+              "dynamicRange": 93.83,
+              "stdDev": 19.28,
+              "mean": 108.73,
+              "aperture": 0.077,
+              "skinRatio": 1,
+              "isLuminanceShift": false,
+              "visibility": "UNKNOWN",
+              "appearance": {
+                "correlation": 0.7543011945395621,
+                "exposureShift": 9.918394716190633,
+                "contrastThreshold": 11,
+                "meanShift": 1.6169735613129745,
+                "textureRatio": 0.9427903996499136,
+                "maxMeanShift": 30.670741022511606
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "startMs": 47000,
+      "trackingStartMs": 55000,
+      "endMs": 57000,
+      "eye": "right",
+      "cycle": 3,
+      "screenSide": "IMAGE_LEFT",
+      "actualEndMs": 57366.666666666664,
+      "result": {
+        "coveredEye": "RIGHT",
+        "coverOn": {
+          "eye": "left",
+          "cycle": 3,
+          "baselinePosition": {
+            "x": 0.037763966030838224,
+            "y": 0.03401021356487231,
+            "normalizedX": 0.46244420980281575,
+            "normalizedY": 0.41647708093977653,
+            "sampleCount": 60,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0378,
+            "y": 0.034,
+            "normalizedX": 0.4624,
+            "normalizedY": 0.4165,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0387,
+            "y": 0.033,
+            "normalizedX": 0.4744,
+            "normalizedY": 0.4044,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0372,
+            "y": 0.0315,
+            "normalizedX": 0.455,
+            "normalizedY": 0.3858,
+            "t": 66.66666666667152
+          },
+          "dx": 0.0002,
+          "dy": -0.0002,
+          "horizontalDisplacement": 0.0002,
+          "verticalDisplacement": 0.0002,
+          "displacement": 0.0003,
+          "normalizedHorizontal": 0.0023,
+          "normalizedVertical": 0.0027,
+          "normalizedDisplacement": 0.0036,
+          "maximumDisplacement": 0.0315,
+          "horizontalPeak": 0.0168,
+          "verticalPeak": 0.0306,
+          "peakDisplacement": 0.0315,
+          "meanDisplacement": 0.0122,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "SUPERIOR",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "SUPERIOR",
+          "velocity": 0.0071,
+          "peakVelocity": 0.988,
+          "timeToPeakMs": 66.66666666667152,
+          "meanVelocity": 0.0071,
+          "movementDurationMs": 166.66666666667152,
+          "trajectoryStability": 0.9467,
+          "jitter": 0.0091,
+          "validSampleRatio": 0.7992,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0817,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 48733.333333333336,
+              "t": 0,
+              "cycleId": 3,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 48800.00000000001,
+              "t": 66.66666666667152,
+              "cycleId": 3,
+              "trackedEye": "left",
+              "displacement": 0.0315
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 48900.00000000001,
+              "t": 166.66666666667152,
+              "cycleId": 3,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 50233.333333333336,
+              "t": 1500,
+              "cycleId": 3,
+              "trackedEye": "left"
+            }
+          ],
+          "confidence": 0.9,
+          "sampleCount": 36,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 36,
+            "validEyeSampleCount": 36,
+            "stabilityScore": 0.9467,
+            "jitter": 0.0091,
+            "validSampleRatio": 0.7992,
+            "warnings": [
+              "LATE_GAP_EXCLUDED_FROM_KINEMATICS"
+            ]
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c3_right_cover",
+            "eventType": "COVER",
+            "coveredEye": "RIGHT",
+            "observedEye": "LEFT",
+            "timestampMs": 48733.333333333336,
+            "frameId": 1459,
+            "confirmedAtMs": 48866.666666666664,
+            "onsetIntervalMs": [
+              48666.66666666667,
+              48733.333333333336
+            ],
+            "timingUncertaintyMs": 66.66666666666424,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 36,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 366.66666666666424,
+            "lateGaps": [
+              {
+                "startMs": 933.3333333333358,
+                "endMs": 1300,
+                "durationMs": 366.66666666666424
+              }
+            ],
+            "settlingSamples": 7,
+            "settlingSpanMs": 200,
+            "settlingStartMs": 1300
+          }
+        },
+        "uncoverRecovery": {
+          "eye": "right",
+          "cycle": 3,
+          "baselinePosition": {
+            "x": 0.04226779635860432,
+            "y": 0.03633860706965566,
+            "normalizedX": 0.4966365408244494,
+            "normalizedY": 0.42696997875970133,
+            "sampleCount": 60,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0437,
+            "y": 0.0361,
+            "normalizedX": 0.5138,
+            "normalizedY": 0.4245,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0424,
+            "y": 0.0351,
+            "normalizedX": 0.4981,
+            "normalizedY": 0.4122,
+            "t": 1466.666666666657
+          },
+          "peakPosition": {
+            "x": 0.0424,
+            "y": 0.0351,
+            "normalizedX": 0.4984,
+            "normalizedY": 0.4119,
+            "t": 466.66666666665697
+          },
+          "dx": -0.001,
+          "dy": -0.0009,
+          "horizontalDisplacement": 0.001,
+          "verticalDisplacement": 0.0009,
+          "displacement": 0.0014,
+          "normalizedHorizontal": 0.0122,
+          "normalizedVertical": 0.0106,
+          "normalizedDisplacement": 0.0161,
+          "maximumDisplacement": 0.0198,
+          "horizontalPeak": 0.0179,
+          "verticalPeak": 0.0143,
+          "peakDisplacement": 0.0198,
+          "meanDisplacement": 0.0138,
+          "dxFromBaseline": 0.0015,
+          "dyFromBaseline": -0.0002,
+          "horizontalDisplacementFromBaseline": 0.0015,
+          "verticalDisplacementFromBaseline": 0.0002,
+          "displacementFromBaseline": 0.0173,
+          "movementDirection": "NONE",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "NONE",
+          "velocity": 0.0323,
+          "peakVelocity": 0.3982,
+          "timeToPeakMs": 199.99999999999272,
+          "meanVelocity": 0.0323,
+          "movementDurationMs": 233.33333333333576,
+          "trajectoryStability": 0.9679,
+          "jitter": 0.0038,
+          "validSampleRatio": 0.7947,
+          "trackingDurationMs": 1467,
+          "eyeWidth": 0.0851,
+          "temporalEvents": [
+            {
+              "eventType": "UNCOVER",
+              "timestamp": 55900.00000000001,
+              "t": 0,
+              "cycleId": 3,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 56366.666666666664,
+              "t": 466.66666666665697,
+              "cycleId": 3,
+              "trackedEye": "right",
+              "displacement": 0.0198
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 56133.33333333334,
+              "t": 233.33333333333576,
+              "cycleId": 3,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 57366.666666666664,
+              "t": 1466.666666666657,
+              "cycleId": 3,
+              "trackedEye": "right"
+            }
+          ],
+          "confidence": 0.91,
+          "sampleCount": 35,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 35,
+            "validEyeSampleCount": 35,
+            "stabilityScore": 0.9679,
+            "jitter": 0.0038,
+            "validSampleRatio": 0.7947,
+            "warnings": [
+              "LATE_GAP_EXCLUDED_FROM_KINEMATICS"
+            ]
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "uncover_recovery",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c3_right_uncover",
+            "eventType": "UNCOVER",
+            "coveredEye": "RIGHT",
+            "observedEye": "RIGHT",
+            "timestampMs": 55900.00000000001,
+            "frameId": 1674,
+            "confirmedAtMs": 56033.333333333336,
+            "onsetIntervalMs": [
+              55833.333333333336,
+              55900.00000000001
+            ],
+            "timingUncertaintyMs": 66.66666666667152,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 35,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1466.666666666657,
+            "earlySpanMs": 500,
+            "maxGapMs": 366.66666666666424,
+            "lateGaps": [
+              {
+                "startMs": 766.6666666666642,
+                "endMs": 1133.3333333333285,
+                "durationMs": 366.66666666666424
+              }
+            ],
+            "settlingSamples": 11,
+            "settlingSpanMs": 333.3333333333285,
+            "settlingStartMs": 1133.3333333333285
+          }
+        },
+        "evidence": {
+          "procedureValid": true,
+          "primaryProcedureValid": true,
+          "reason": null,
+          "coverEvent": {
+            "eventId": "c3_right_cover",
+            "eventType": "COVER",
+            "coveredEye": "RIGHT",
+            "observedEye": "LEFT",
+            "timestampMs": 48733.333333333336,
+            "frameId": 1459,
+            "confirmedAtMs": 48866.666666666664,
+            "onsetIntervalMs": [
+              48666.66666666667,
+              48733.333333333336
+            ],
+            "timingUncertaintyMs": 66.66666666666424,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "uncoverEvent": {
+            "eventId": "c3_right_uncover",
+            "eventType": "UNCOVER",
+            "coveredEye": "RIGHT",
+            "observedEye": "RIGHT",
+            "timestampMs": 55900.00000000001,
+            "frameId": 1674,
+            "confirmedAtMs": 56033.333333333336,
+            "onsetIntervalMs": [
+              55833.333333333336,
+              55900.00000000001
+            ],
+            "timingUncertaintyMs": 66.66666666667152,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "baselineSource": {
+            "frameId": 1457,
+            "timestampMs": 48666.66666666667
+          },
+          "interruptions": [
+            {
+              "startMs": 48700,
+              "endMs": 48733.333333333336,
+              "durationMs": 33.33333333333576,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 49700,
+              "endMs": 50033.333333333336,
+              "durationMs": 333.33333333333576,
+              "withinRecoveryLimit": false
+            },
+            {
+              "startMs": 54833.333333333336,
+              "endMs": 55133.33333333334,
+              "durationMs": 300.0000000000073,
+              "withinRecoveryLimit": false
+            },
+            {
+              "startMs": 55266.66666666667,
+              "endMs": 55333.333333333336,
+              "durationMs": 66.66666666666424,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 55766.66666666667,
+              "endMs": 55833.333333333336,
+              "durationMs": 66.66666666666424,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 55866.666666666664,
+              "endMs": 55900.00000000001,
+              "durationMs": 33.333333333343035,
+              "withinRecoveryLimit": true
+            }
+          ],
+          "source": "pixel-appearance-v2",
+          "clinicallyValidated": false
+        }
+      },
+      "diagnostics": {
+        "frames": 312,
+        "validEyeSamples": {
+          "left": 285,
+          "right": 86
+        },
+        "visibility": {
+          "left": {
+            "VISIBLE": 292,
+            "OCCLUDED": 0,
+            "UNKNOWN": 20
+          },
+          "right": {
+            "VISIBLE": 90,
+            "OCCLUDED": 203,
+            "UNKNOWN": 19
+          }
+        },
+        "firstUnsafeFrame": {
+          "frameId": 1488,
+          "timestampMs": 49700,
+          "qualityValid": true,
+          "visibility": {
+            "left": "UNKNOWN",
+            "right": "UNKNOWN"
+          },
+          "metrics": {
+            "timestampMs": 49700,
+            "left": {
+              "minLum": 39.562999999999995,
+              "pupilContrast": 18.4,
+              "dynamicRange": 96.23,
+              "stdDev": 21.29,
+              "mean": 101.41,
+              "aperture": 0.1,
+              "skinRatio": 1,
+              "isLuminanceShift": false,
+              "visibility": "UNKNOWN",
+              "appearance": {
+                "correlation": 0.81692256361392,
+                "exposureShift": 0,
+                "contrastThreshold": 25.34702695573449,
+                "meanShift": 5.628521018273716,
+                "textureRatio": 0.9049525082951672,
+                "maxMeanShift": 35.292982174743884
+              }
+            },
+            "right": {
+              "minLum": 49.884,
+              "pupilContrast": 14.42,
+              "dynamicRange": 105.81,
+              "stdDev": 16.71,
+              "mean": 125.63,
+              "aperture": 0.273,
+              "skinRatio": 1,
+              "isLuminanceShift": true,
+              "visibility": "UNKNOWN",
+              "appearance": {
+                "correlation": -0.018968858774980328,
+                "exposureShift": 5.628521018273716,
+                "contrastThreshold": 11,
+                "meanShift": 22.806133717562986,
+                "textureRatio": 0.8172170521046614,
+                "maxMeanShift": 30.670741022511606
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "startMs": 57000,
+      "trackingStartMs": 66000,
+      "endMs": 71000,
+      "eye": "left",
+      "cycle": 3,
+      "screenSide": "IMAGE_RIGHT",
+      "actualEndMs": 70233.33333333333,
+      "result": {
+        "coveredEye": "LEFT",
+        "coverOn": {
+          "eye": "right",
+          "cycle": 3,
+          "baselinePosition": {
+            "x": 0.04331341331322079,
+            "y": 0.03624515235401614,
+            "normalizedX": 0.5013436428861704,
+            "normalizedY": 0.4195300099468306,
+            "sampleCount": 53,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0433,
+            "y": 0.0362,
+            "normalizedX": 0.5013,
+            "normalizedY": 0.4195,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0435,
+            "y": 0.0357,
+            "normalizedX": 0.5032,
+            "normalizedY": 0.4127,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0411,
+            "y": 0.0357,
+            "normalizedX": 0.4762,
+            "normalizedY": 0.4137,
+            "t": 366.6666666666715
+          },
+          "dx": -0.001,
+          "dy": -0.0004,
+          "horizontalDisplacement": 0.001,
+          "verticalDisplacement": 0.0004,
+          "displacement": 0.0011,
+          "normalizedHorizontal": 0.0116,
+          "normalizedVertical": 0.0048,
+          "normalizedDisplacement": 0.0125,
+          "maximumDisplacement": 0.0258,
+          "horizontalPeak": 0.0251,
+          "verticalPeak": 0.0139,
+          "peakDisplacement": 0.0258,
+          "meanDisplacement": 0.0111,
+          "dxFromBaseline": 0,
+          "dyFromBaseline": 0,
+          "horizontalDisplacementFromBaseline": 0,
+          "verticalDisplacementFromBaseline": 0,
+          "displacementFromBaseline": 0,
+          "movementDirection": "TEMPORAL",
+          "horizontalDirection": "TEMPORAL",
+          "verticalDirection": "NONE",
+          "velocity": 0.0251,
+          "peakVelocity": 0.5778,
+          "timeToPeakMs": 33.333333333343035,
+          "meanVelocity": 0.0251,
+          "movementDurationMs": 300.0000000000073,
+          "trajectoryStability": 0.9165,
+          "jitter": 0.0103,
+          "validSampleRatio": 0.9768,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0864,
+          "temporalEvents": [
+            {
+              "eventType": "COVER",
+              "timestamp": 59366.666666666664,
+              "t": 0,
+              "cycleId": 3,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 59733.333333333336,
+              "t": 366.6666666666715,
+              "cycleId": 3,
+              "trackedEye": "right",
+              "displacement": 0.0258
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 59666.66666666667,
+              "t": 300.0000000000073,
+              "cycleId": 3,
+              "trackedEye": "right"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 60866.666666666664,
+              "t": 1500,
+              "cycleId": 3,
+              "trackedEye": "right"
+            }
+          ],
+          "confidence": 0.97,
+          "sampleCount": 44,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 44,
+            "validEyeSampleCount": 44,
+            "stabilityScore": 0.9165,
+            "jitter": 0.0103,
+            "validSampleRatio": 0.9768,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "cover_on_fellow_eye",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c3_left_cover",
+            "eventType": "COVER",
+            "coveredEye": "LEFT",
+            "observedEye": "RIGHT",
+            "timestampMs": 59366.666666666664,
+            "frameId": 1778,
+            "confirmedAtMs": 59500.00000000001,
+            "onsetIntervalMs": [
+              59300.00000000001,
+              59366.666666666664
+            ],
+            "timingUncertaintyMs": 66.66666666665697,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 44,
+            "earlyValidSamples": 14,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 100,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 1000
+          }
+        },
+        "uncoverRecovery": {
+          "eye": "left",
+          "cycle": 3,
+          "baselinePosition": {
+            "x": 0.04228711059258324,
+            "y": 0.03736681558933788,
+            "normalizedX": 0.4710278258665807,
+            "normalizedY": 0.41622162545412345,
+            "sampleCount": 53,
+            "isStable": true
+          },
+          "initialPosition": {
+            "x": 0.0414,
+            "y": 0.036,
+            "normalizedX": 0.4608,
+            "normalizedY": 0.401,
+            "t": 0
+          },
+          "finalPosition": {
+            "x": 0.0423,
+            "y": 0.0355,
+            "normalizedX": 0.4713,
+            "normalizedY": 0.3951,
+            "t": 1500
+          },
+          "peakPosition": {
+            "x": 0.0403,
+            "y": 0.0352,
+            "normalizedX": 0.4491,
+            "normalizedY": 0.3917,
+            "t": 300
+          },
+          "dx": -0.0001,
+          "dy": -0.0001,
+          "horizontalDisplacement": 0.0001,
+          "verticalDisplacement": 0.0001,
+          "displacement": 0.0001,
+          "normalizedHorizontal": 0.0011,
+          "normalizedVertical": 0.0008,
+          "normalizedDisplacement": 0.0013,
+          "maximumDisplacement": 0.0149,
+          "horizontalPeak": 0.0215,
+          "verticalPeak": 0.0103,
+          "peakDisplacement": 0.0149,
+          "meanDisplacement": 0.011,
+          "dxFromBaseline": -0.0009,
+          "dyFromBaseline": -0.0014,
+          "horizontalDisplacementFromBaseline": 0.0009,
+          "verticalDisplacementFromBaseline": 0.0014,
+          "displacementFromBaseline": 0.0183,
+          "movementDirection": "NONE",
+          "horizontalDirection": "NONE",
+          "verticalDirection": "NONE",
+          "velocity": 0.0026,
+          "peakVelocity": 0.9144,
+          "timeToPeakMs": 33.33333333332848,
+          "meanVelocity": 0.0026,
+          "movementDurationMs": 66.66666666665697,
+          "trajectoryStability": 0.9515,
+          "jitter": 0.0049,
+          "validSampleRatio": 1,
+          "trackingDurationMs": 1500,
+          "eyeWidth": 0.0898,
+          "temporalEvents": [
+            {
+              "eventType": "UNCOVER",
+              "timestamp": 66966.66666666667,
+              "t": 0,
+              "cycleId": 3,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "PEAK_MOVEMENT",
+              "timestamp": 67266.66666666667,
+              "t": 300,
+              "cycleId": 3,
+              "trackedEye": "left",
+              "displacement": 0.0149
+            },
+            {
+              "eventType": "RECOVERY",
+              "timestamp": 67033.33333333333,
+              "t": 66.66666666665697,
+              "cycleId": 3,
+              "trackedEye": "left"
+            },
+            {
+              "eventType": "END",
+              "timestamp": 68466.66666666667,
+              "t": 1500,
+              "cycleId": 3,
+              "trackedEye": "left"
+            }
+          ],
+          "confidence": 0.99,
+          "sampleCount": 46,
+          "calibration": {
+            "status": "NOT_CALIBRATED",
+            "value": null,
+            "prismDiopters": null,
+            "note": "Chưa có hiệu chuẩn thực nghiệm với PACT; không suy diễn độ lăng kính khi chưa có kiểm định."
+          },
+          "dataQuality": {
+            "isValid": true,
+            "reason": null,
+            "sampleCount": 46,
+            "validEyeSampleCount": 46,
+            "stabilityScore": 0.9515,
+            "jitter": 0.0049,
+            "validSampleRatio": 1,
+            "warnings": []
+          },
+          "isNotableMovement": false,
+          "engineeringThreshold": 0.1,
+          "measurementKind": "uncover_recovery",
+          "coordinateSpace": "CANTHAL_FRAME_REFERENCE_WIDTH",
+          "event": {
+            "eventId": "c3_left_uncover",
+            "eventType": "UNCOVER",
+            "coveredEye": "LEFT",
+            "observedEye": "LEFT",
+            "timestampMs": 66966.66666666667,
+            "frameId": 2006,
+            "confirmedAtMs": 67100.00000000001,
+            "onsetIntervalMs": [
+              66866.66666666667,
+              66966.66666666667
+            ],
+            "timingUncertaintyMs": 100,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "coverage": {
+            "validSamples": 46,
+            "earlyValidSamples": 16,
+            "firstOffsetMs": 0,
+            "lastOffsetMs": 1500,
+            "earlySpanMs": 500,
+            "maxGapMs": 33.333333333343035,
+            "lateGaps": [],
+            "settlingSamples": 16,
+            "settlingSpanMs": 500,
+            "settlingStartMs": 1000
+          }
+        },
+        "evidence": {
+          "procedureValid": true,
+          "primaryProcedureValid": true,
+          "reason": null,
+          "coverEvent": {
+            "eventId": "c3_left_cover",
+            "eventType": "COVER",
+            "coveredEye": "LEFT",
+            "observedEye": "RIGHT",
+            "timestampMs": 59366.666666666664,
+            "frameId": 1778,
+            "confirmedAtMs": 59500.00000000001,
+            "onsetIntervalMs": [
+              59300.00000000001,
+              59366.666666666664
+            ],
+            "timingUncertaintyMs": 66.66666666665697,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "uncoverEvent": {
+            "eventId": "c3_left_uncover",
+            "eventType": "UNCOVER",
+            "coveredEye": "LEFT",
+            "observedEye": "LEFT",
+            "timestampMs": 66966.66666666667,
+            "frameId": 2006,
+            "confirmedAtMs": 67100.00000000001,
+            "onsetIntervalMs": [
+              66866.66666666667,
+              66966.66666666667
+            ],
+            "timingUncertaintyMs": 100,
+            "evidence": "OBSERVED_VISIBILITY_TRANSITION"
+          },
+          "baselineSource": {
+            "frameId": 1776,
+            "timestampMs": 59300.00000000001
+          },
+          "interruptions": [
+            {
+              "startMs": 57000.00000000001,
+              "endMs": 57033.333333333336,
+              "durationMs": 33.33333333332848,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 57766.66666666667,
+              "endMs": 58000.00000000001,
+              "durationMs": 233.33333333333576,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 59333.333333333336,
+              "endMs": 59366.666666666664,
+              "durationMs": 33.33333333332848,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 59600,
+              "endMs": 59666.66666666667,
+              "durationMs": 66.66666666667152,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 62133.33333333334,
+              "endMs": 62166.66666666667,
+              "durationMs": 33.33333333332848,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 62433.333333333336,
+              "endMs": 65666.66666666667,
+              "durationMs": 3233.3333333333358,
+              "withinRecoveryLimit": false
+            },
+            {
+              "startMs": 65700,
+              "endMs": 65866.66666666667,
+              "durationMs": 166.66666666667152,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 65900,
+              "endMs": 66066.66666666667,
+              "durationMs": 166.66666666667152,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 66100.00000000001,
+              "endMs": 66133.33333333334,
+              "durationMs": 33.33333333332848,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 66433.33333333334,
+              "endMs": 66466.66666666667,
+              "durationMs": 33.33333333332848,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 66500,
+              "endMs": 66533.33333333333,
+              "durationMs": 33.33333333332848,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 66566.66666666667,
+              "endMs": 66600.00000000001,
+              "durationMs": 33.333333333343035,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 66800.00000000001,
+              "endMs": 66833.33333333334,
+              "durationMs": 33.33333333332848,
+              "withinRecoveryLimit": true
+            },
+            {
+              "startMs": 66900,
+              "endMs": 66966.66666666667,
+              "durationMs": 66.66666666667152,
+              "withinRecoveryLimit": true
+            }
+          ],
+          "source": "pixel-appearance-v2",
+          "clinicallyValidated": false
+        }
+      },
+      "diagnostics": {
+        "frames": 398,
+        "validEyeSamples": {
+          "left": 148,
+          "right": 259
+        },
+        "visibility": {
+          "left": {
+            "VISIBLE": 151,
+            "OCCLUDED": 228,
+            "UNKNOWN": 19
+          },
+          "right": {
+            "VISIBLE": 269,
+            "OCCLUDED": 0,
+            "UNKNOWN": 129
+          }
+        },
+        "firstUnsafeFrame": {
+          "frameId": 1730,
+          "timestampMs": 57766.66666666667,
+          "qualityValid": true,
+          "visibility": {
+            "left": "UNKNOWN",
+            "right": "UNKNOWN"
+          },
+          "metrics": {
+            "timestampMs": 57766.66666666667,
+            "left": {
+              "minLum": 41.132999999999996,
+              "pupilContrast": 18.78,
+              "dynamicRange": 94.44,
+              "stdDev": 21.82,
+              "mean": 104.5,
+              "aperture": 0.051,
+              "skinRatio": 1,
+              "isLuminanceShift": false,
+              "visibility": "UNKNOWN",
+              "appearance": {
+                "correlation": 0.7648525528844305,
+                "exposureShift": 9.570620881670052,
+                "contrastThreshold": 12.673513477867244,
+                "meanShift": -0.8579384050627539,
+                "textureRatio": 0.9275310700819568,
+                "maxMeanShift": 35.292982174743884
+              }
+            },
+            "right": {
+              "minLum": 50.626999999999995,
+              "pupilContrast": 13.49,
+              "dynamicRange": 85.44,
+              "stdDev": 17.82,
+              "mean": 106.77,
+              "aperture": 0.071,
+              "skinRatio": 1,
+              "isLuminanceShift": false,
+              "visibility": "UNKNOWN",
+              "appearance": {
+                "correlation": 0.752164377486342,
+                "exposureShift": 8.712682476607299,
+                "contrastThreshold": 11,
+                "meanShift": 0.8579384050627539,
+                "textureRatio": 0.8713440079820809,
+                "maxMeanShift": 30.670741022511606
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "captureEligibleEvents": [
+    {
+      "cycle": 1,
+      "coveredEye": "right",
+      "sourceFrameId": 374,
+      "timestampMs": 12466.666666666666,
+      "confirmedAtMs": 12600.000000000002,
+      "onsetIntervalMs": [
+        12400,
+        12466.666666666666
+      ],
+      "status": "CAPTURE_ELIGIBLE_SOURCE_FRAME",
+      "jpegEncoded": false
+    },
+    {
+      "cycle": 1,
+      "coveredEye": "left",
+      "sourceFrameId": 708,
+      "timestampMs": 23700.000000000004,
+      "confirmedAtMs": 23833.333333333336,
+      "onsetIntervalMs": [
+        23633.333333333336,
+        23700.000000000004
+      ],
+      "status": "CAPTURE_ELIGIBLE_SOURCE_FRAME",
+      "jpegEncoded": false
+    },
+    {
+      "cycle": 2,
+      "coveredEye": "right",
+      "sourceFrameId": 1040,
+      "timestampMs": 34766.666666666664,
+      "confirmedAtMs": 34900.00000000001,
+      "onsetIntervalMs": [
+        34700,
+        34766.666666666664
+      ],
+      "status": "CAPTURE_ELIGIBLE_SOURCE_FRAME",
+      "jpegEncoded": false
+    },
+    {
+      "cycle": 2,
+      "coveredEye": "left",
+      "sourceFrameId": 1356,
+      "timestampMs": 45300.00000000001,
+      "confirmedAtMs": 45433.333333333336,
+      "onsetIntervalMs": [
+        45100,
+        45300.00000000001
+      ],
+      "status": "CAPTURE_ELIGIBLE_SOURCE_FRAME",
+      "jpegEncoded": false
+    },
+    {
+      "cycle": 3,
+      "coveredEye": "right",
+      "sourceFrameId": 1674,
+      "timestampMs": 55900.00000000001,
+      "confirmedAtMs": 56033.333333333336,
+      "onsetIntervalMs": [
+        55833.333333333336,
+        55900.00000000001
+      ],
+      "status": "CAPTURE_ELIGIBLE_SOURCE_FRAME",
+      "jpegEncoded": false
+    },
+    {
+      "cycle": 3,
+      "coveredEye": "left",
+      "sourceFrameId": 2006,
+      "timestampMs": 66966.66666666667,
+      "confirmedAtMs": 67100.00000000001,
+      "onsetIntervalMs": [
+        66866.66666666667,
+        66966.66666666667
+      ],
+      "status": "CAPTURE_ELIGIBLE_SOURCE_FRAME",
+      "jpegEncoded": false
+    }
+  ]
+}

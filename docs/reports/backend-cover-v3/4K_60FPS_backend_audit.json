@@ -1,0 +1,98 @@
+{
+  "clip": "4K_60FPS",
+  "sourceSha256": "9cdf0dd0785949ed3e7029550011e94dd52b58282cda6e47e0ec8d6a61106463",
+  "timing": {
+    "eligible30fps": true,
+    "effectiveFps": 29.999999999999996,
+    "medianFps": 30.000000000000018,
+    "p95IntervalMs": 33.333333333343035,
+    "maxIntervalMs": 33.33333333335031,
+    "sourceFrames": 2094,
+    "durationMs": 69766.66666666667,
+    "reason": null
+  },
+  "cropFiles": 60,
+  "sourceOrientation": "UNKNOWN",
+  "events": [
+    {
+      "snapshotId": "L1_uncover",
+      "frameId": 522,
+      "timestampMs": 17400.000000000004,
+      "sourceTimeOffsetMs": 0,
+      "clinicalLabel": null,
+      "status": "UNVERIFIED_CROP_ORIENTATION",
+      "featureExtraction": {
+        "status": "OK",
+        "dimensions": 1530,
+        "finite": true
+      }
+    },
+    {
+      "snapshotId": "L2_uncover",
+      "frameId": 827,
+      "timestampMs": 27566.66666666667,
+      "sourceTimeOffsetMs": 0,
+      "clinicalLabel": null,
+      "status": "UNVERIFIED_CROP_ORIENTATION",
+      "featureExtraction": {
+        "status": "OK",
+        "dimensions": 1530,
+        "finite": true
+      }
+    },
+    {
+      "snapshotId": "L3_uncover",
+      "frameId": 1136,
+      "timestampMs": 37866.666666666664,
+      "sourceTimeOffsetMs": 0,
+      "clinicalLabel": null,
+      "status": "UNVERIFIED_CROP_ORIENTATION",
+      "featureExtraction": {
+        "status": "OK",
+        "dimensions": 1530,
+        "finite": true
+      }
+    },
+    {
+      "snapshotId": "L4_uncover",
+      "frameId": 1458,
+      "timestampMs": 48600,
+      "sourceTimeOffsetMs": 0,
+      "clinicalLabel": null,
+      "status": "UNVERIFIED_CROP_ORIENTATION",
+      "featureExtraction": {
+        "status": "OK",
+        "dimensions": 1530,
+        "finite": true
+      }
+    },
+    {
+      "snapshotId": "L5_uncover",
+      "frameId": 1735,
+      "timestampMs": 57833.333333333336,
+      "sourceTimeOffsetMs": 0,
+      "clinicalLabel": null,
+      "status": "UNVERIFIED_CROP_ORIENTATION",
+      "featureExtraction": {
+        "status": "OK",
+        "dimensions": 1530,
+        "finite": true
+      }
+    },
+    {
+      "snapshotId": "L6_uncover",
+      "frameId": 2014,
+      "timestampMs": 67133.33333333334,
+      "sourceTimeOffsetMs": 0,
+      "clinicalLabel": null,
+      "status": "UNVERIFIED_CROP_ORIENTATION",
+      "featureExtraction": {
+        "status": "OK",
+        "dimensions": 1530,
+        "finite": true
+      }
+    }
+  ],
+  "accuracy": null,
+  "notice": "All source frames assessed offline; this is not a live iPhone FE throughput benchmark."
+}

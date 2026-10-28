@@ -321,8 +321,8 @@ export default function AppNavbar({
 
           <div className="drawer-card-box">
             <div className="drawer-card-badge">✨ TRỢ LÝ GIỌNG NÓI</div>
-            <h4>Bé Iris đồng hành</h4>
-            <p>Bật loa trên mọi trang để nghe Iris hướng dẫn từng bước kiểm tra và chăm sóc mắt thật nhẹ nhàng.</p>
+            <h4>Bé Lumi đồng hành</h4>
+            <p>Bật loa trên mọi trang để nghe Lumi hướng dẫn từng bước kiểm tra và chăm sóc mắt thật nhẹ nhàng.</p>
           </div>
         </div>
 

@@ -18,6 +18,7 @@ import AppFooter from '../common/AppFooter';
 import './homePage.css';
 import HomeHero from './HomeHero';
 import HomeCampaign from './HomeCampaign';
+import LumiChatbot from '../chat/LumiChatbot';
 import { HomeListeningSection } from '../audio/ListeningExperience';
 
 /**
@@ -31,7 +32,7 @@ export default function HomePage({
   onStartSimulation,
   onOpenAbout,
 }) {
-  // Global Audio Guide state (Iris Voice)
+  // Global Audio Guide state (Lumi Voice)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [currentSpokenId, setCurrentSpokenId] = useState(null);
 
@@ -50,7 +51,7 @@ export default function HomePage({
   // Voice narration text mapping
   const voiceScripts = {
     welcome:
-      'Xin chào! Mình là Iris. Mình sẽ hướng dẫn bạn từng bước nhé. Bạn có thể khám phá góc nhìn của con, nghe bài hướng dẫn hoặc chọn trải nghiệm trên thanh điều hướng để bắt đầu.',
+      'Xin chào! Mình là Lumi. Mình sẽ hướng dẫn bạn từng bước nhé. Bạn có thể khám phá góc nhìn của con, nghe bài hướng dẫn hoặc chọn trải nghiệm trên thanh điều hướng để bắt đầu.',
     experience:
       'Hãy thử xem thế giới có thể trông như thế nào khi một bên mắt nhìn kém.',
     simulation:
@@ -146,10 +147,10 @@ export default function HomePage({
                 type="button"
                 className="btn-story-audio-play"
                 onClick={() => playVoice('story', voiceScripts.story)}
-                title="Nghe Iris giải thích"
+                title="Nghe Lumi giải thích"
               >
                 <IconSpeakerWave size={20} isPlaying={currentSpokenId === 'story'} />
-                <span>{currentSpokenId === 'story' ? 'Dừng giọng đọc' : 'Nghe Iris nói'}</span>
+                <span>{currentSpokenId === 'story' ? 'Dừng giọng đọc' : 'Nghe Lumi nói'}</span>
               </button>
             </div>
 
@@ -236,7 +237,7 @@ export default function HomePage({
               <span>DÀNH CHO BA MẸ</span>
             </div>
             <h2 className="doors-section-heading">CÙNG CON CHĂM SÓC ĐÔI MẮT TỪ SỚM</h2>
-            <p className="doors-section-sub">Chạm vào từng hình để nghe Iris chia sẻ:</p>
+            <p className="doors-section-sub">Chạm vào từng hình để nghe Lumi chia sẻ:</p>
           </div>
 
           <div className="parent-three-cards-grid">
@@ -346,34 +347,11 @@ export default function HomePage({
         onOpenCareModal={() => setActiveModal('care_modal')}
       />
 
-      {/* ====================================================================
-          10. FIXED AUDIO GUIDE BUTTON (GÓC DƯỚI BÊN PHẢI — TỐI THIỂU 68x68px)
-          ==================================================================== */}
-      <div className="fixed-audio-guide-dock">
-        <button
-          type="button"
-          className={`btn-fixed-floating-audio ${isAudioPlaying ? 'audio-is-active' : ''}`}
-          onClick={() => playVoice('welcome', voiceScripts.welcome)}
-          aria-label={isAudioPlaying ? 'Dừng hướng dẫn giọng nói' : 'Bật hướng dẫn giọng nói'}
-          title={isAudioPlaying ? 'Bấm để dừng' : 'Bấm để Iris nói'}
-        >
-          <div className="floating-sound-icon">
-            <IconSpeakerWave size={30} isPlaying={isAudioPlaying} />
-          </div>
-
-          {isAudioPlaying && (
-            <div className="floating-voice-wave" aria-hidden="true">
-              <span className="v-bar vb-1" />
-              <span className="v-bar vb-2" />
-              <span className="v-bar vb-3" />
-            </div>
-          )}
-
-          <span className="floating-audio-tooltip">
-            {isAudioPlaying ? 'Iris đang nói...' : 'Nghe Iris hướng dẫn'}
-          </span>
-        </button>
-      </div>
+      <LumiChatbot onNavigate={(tab) => {
+        if (tab === 'screening') onStartScreening();
+        else if (tab === 'experience') onStartExperience();
+        else if (tab === 'simulation') onStartSimulation();
+      }} />
 
       {/* ====================================================================
           11. MODAL: CHĂM SÓC MẮT (KNOWLEDGE / EYE CARE MODAL)

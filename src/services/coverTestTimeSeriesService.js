@@ -404,6 +404,9 @@ export function createTimeSeriesRecorder(initialStartTime = performance.now(), {
       mediaTimeMs: features.frameMetadata?.mediaTimeMs ?? null,
       timestampSource: features.frameMetadata?.timestampSource ?? 'FEATURE_TIMESTAMP',
       observedVisibility: observed ?? null,
+      coordinateSpace: features.observedEyeLocal ? 'CANTHAL_LOCAL_V1' : null,
+      leftEyeLocal: features.observedEyeLocal?.left ?? null,
+      rightEyeLocal: features.observedEyeLocal?.right ?? null,
     };
 
     samples.push(sample);

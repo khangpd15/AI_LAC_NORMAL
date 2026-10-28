@@ -1,59 +1,78 @@
 import { EyeCoverDetector } from '../cv/eyeCoverDetector.js';
 import { getEyeAnatomicalFrame } from '../cv/strabismusEngine.js';
+import { getCanthalMovementCoordinates, COVER_EVENT_LIMITS } from './coverEventMeasurementService.js';
+import { getEyePairCropRegions } from './eyeCropGeometry.js';
 
-// Evidence is heuristic, never a claim that a hidden iris was measured.
-export function classifyEyeVisibility(patch, frame, baseline, oppositePatch = null, oppositeFrame = null) {
-  if (!patch || !frame || !baseline || frame.canthalWidth < 6) {
-    if (patch && frame && baseline && (frame.canthalWidth < 6 || (frame.palpebralHeight / Math.max(1, frame.canthalWidth)) < 0.11)) {
-      return 'OCCLUDED';
-    }
-    return 'UNKNOWN';
+// All limits describe engineering evidence, not clinical confidence.
+export const EYE_APPEARANCE_LIMITS = Object.freeze({
+  minCorrelation: 0.65, minBaselineSamples: 5, minContrastRatio: 0.65,
+  maxTextureRatio: 1.8, minOpenMs: COVER_EVENT_LIMITS.minOpenMs, minOpenFrames: COVER_EVENT_LIMITS.minOpenFrames,
+});
+
+export function isUncoverCaptureEligible(features, quality) {
+  return Boolean(features && quality?.faceDetected && quality.irisValid &&
+    quality.leftEyeDetected && quality.rightEyeDetected && quality.headPoseValid !== false &&
+    quality.blinkDetected !== true &&
+    ['isBlinkMasked', 'isBlinking', 'isBlinkMaskedLeft', 'isBlinkMaskedRight', 'isBlinkLeft', 'isBlinkRight']
+      .every(key => features[key] !== true));
+}
+
+export function appearanceCorrelation(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== 48 || b.length !== 48 ||
+      !a.every(Number.isFinite) || !b.every(Number.isFinite)) return null;
+  const am = a.reduce((sum, v) => sum + v, 0) / a.length;
+  const bm = b.reduce((sum, v) => sum + v, 0) / b.length;
+  let covariance = 0, av = 0, bv = 0;
+  for (let i = 0; i < a.length; i++) {
+    covariance += (a[i] - am) * (b[i] - bm);
+    av += (a[i] - am) ** 2;
+    bv += (b[i] - bm) ** 2;
   }
+  return av > 1 && bv > 1 ? Math.max(-1, Math.min(1, covariance / Math.sqrt(av * bv))) : null;
+}
 
+export function eyeAppearanceEvidence(patch, baseline, oppositePatch = null, oppositeBaseline = null) {
+  if (!patch || !baseline) return null;
+  // Common exposure changes should not look like an occluder on one eye.
+  const oppositeReliable = oppositePatch && oppositeBaseline &&
+    appearanceCorrelation(oppositePatch.appearance, oppositeBaseline.appearance) >= EYE_APPEARANCE_LIMITS.minCorrelation;
+  const exposureShift = oppositeReliable ? oppositePatch.mean - oppositeBaseline.mean : 0;
+  const contrastScale = oppositeReliable && oppositeBaseline?.pupilContrast > 0
+    ? Math.min(1.8, Math.max(0.5, oppositePatch.pupilContrast / oppositeBaseline.pupilContrast)) : 1;
+  return {
+    correlation: appearanceCorrelation(patch.appearance, baseline.appearance),
+    exposureShift,
+    contrastThreshold: Math.max(11, baseline.pupilContrast * EYE_APPEARANCE_LIMITS.minContrastRatio * contrastScale),
+    meanShift: patch.mean - baseline.mean - exposureShift,
+    textureRatio: patch.stdDev / Math.max(1, baseline.stdDev),
+    maxMeanShift: Math.max(25, baseline.stdDev * 1.5),
+  };
+}
+
+// Scalar darkness alone cannot establish that an eye is actually visible.
+export function classifyEyeVisibility(patch, frame, baseline, oppositePatch = null, _oppositeFrame = null, oppositeBaseline = null) {
+  if (!patch || !frame || !baseline || !Number.isFinite(frame.canthalWidth) || frame.canthalWidth < 6 ||
+      !Number.isFinite(frame.palpebralHeight) ||
+      !['mean', 'stdDev', 'pupilContrast', 'minLum', 'dynamicRange'].every(key =>
+        Number.isFinite(patch[key]) && Number.isFinite(baseline[key]))) return 'UNKNOWN';
   const aperture = frame.palpebralHeight / frame.canthalWidth;
-  const contrast = Math.max(9, baseline.pupilContrast * 0.45);
-
-  // 1. Evidence of an occluded / covered eye:
-  // - Hand covering the eye: skin chrominance, loss of contrast, lack of dark pupil.
-  const isContrastLoss = patch.pupilContrast < contrast * 0.75 || patch.pupilContrast < 10.5;
-  const isTextureLoss = patch.dynamicRange < baseline.dynamicRange * 0.65 || patch.stdDev < baseline.stdDev * 0.65;
-  const isLuminanceShift = patch.mean > baseline.mean + 20 || patch.mean < baseline.mean - 25;
-  const isSkinOccluded = (patch.skinRatio >= 0.28 && patch.pupilContrast < 13);
-  const isNoPupil = (patch.minLum !== undefined && patch.minLum > 82 && patch.pupilContrast < 13);
-  const isApertureClosed = (aperture < 0.12 && patch.pupilContrast < 13);
-  const isAsymmetricOccluded = oppositePatch && (oppositePatch.pupilContrast >= 9.5 || (oppositePatch.minLum !== undefined && oppositePatch.minLum < 85)) &&
-    (patch.pupilContrast < oppositePatch.pupilContrast * 0.65 || 
-     (patch.minLum !== undefined && oppositePatch.minLum !== undefined && patch.minLum > oppositePatch.minLum + 12) || 
-     (patch.skinRatio >= 0.28 && patch.pupilContrast < 13));
-
-  if (isContrastLoss && (isTextureLoss || isLuminanceShift || isSkinOccluded || isNoPupil || isApertureClosed || isAsymmetricOccluded)) {
-    return 'OCCLUDED';
-  }
-  if (isSkinOccluded || isAsymmetricOccluded || isNoPupil || (isApertureClosed && patch.pupilContrast < 10)) {
-    return 'OCCLUDED';
-  }
-
-  // 2. Closed lids or blink without hand occlusion evidence: mí mắt he hé hoặc nhắm
   if (aperture < 0.14) return 'UNKNOWN';
-
-  // 3. Clear open eye: Must be genuine eye (not skin, has dark pupil and contrast)
-  // Adaptive pupil threshold relative to baseline
-  const maxAllowedLum = baseline.minLum != null ? Math.min(115, baseline.minLum + 25) : 95;
-  const hasDarkPupil = patch.minLum === undefined || patch.minLum <= maxAllowedLum;
-  const notSkin = patch.skinRatio === undefined || patch.skinRatio < 0.35;
-  if (
-    notSkin &&
-    ((patch.pupilContrast >= contrast && patch.dynamicRange >= 24 && patch.stdDev >= 9 && aperture >= 0.14 && hasDarkPupil) ||
-     (patch.isEyeLike && aperture >= 0.14 && hasDarkPupil) ||
-     (patch.pupilContrast >= 10 && hasDarkPupil && aperture >= 0.14))
-  ) {
-    return 'VISIBLE';
+  const evidence = eyeAppearanceEvidence(patch, baseline, oppositePatch, oppositeBaseline);
+  const contrastLost = patch.pupilContrast < evidence.contrastThreshold;
+  const structureLost = evidence.correlation === null || evidence.correlation < EYE_APPEARANCE_LIMITS.minCorrelation;
+  const foreignSurface = evidence.textureRatio > EYE_APPEARANCE_LIMITS.maxTextureRatio &&
+    evidence.meanShift > evidence.maxMeanShift;
+  const flattened = patch.stdDev < Math.max(9, baseline.stdDev * 0.5) || patch.dynamicRange < 24;
+  if (foreignSurface || (contrastLost && (structureLost || flattened || Math.abs(evidence.meanShift) > evidence.maxMeanShift))) {
+    return 'OCCLUDED';
   }
-
+  const hasDarkPupil = Number.isFinite(patch.minLum) && patch.minLum <= Math.min(115, baseline.minLum + 25 + evidence.exposureShift);
+  if (!structureLost && !contrastLost && !foreignSurface && hasDarkPupil &&
+      patch.dynamicRange >= 24 && patch.stdDev >= 9) return 'VISIBLE';
   return 'UNKNOWN';
 }
 
-/** Keeps the FIRST clear frame while waiting for a second clear observation.
+/** Keeps the FIRST clear frame while confirming sustained visibility.
  * The event time is bounded by the last occluded and first clear frames.
  */
 export class UncoverTransition {
@@ -69,47 +88,43 @@ export class UncoverTransition {
     this.lastTimestamp = null;
     this.lastCovered = null;
     this.done = false;
+    this.clearFrames = 0;
   }
   update({ timestampMs, visibility, candidate }) {
     if (this.done || !this.eye || !Number.isFinite(timestampMs) ||
         (this.lastTimestamp !== null && timestampMs <= this.lastTimestamp)) return null;
-    // Stale gap: if frame interval exceeds 500ms, reset arming state
-    if (this.lastTimestamp !== null && timestampMs - this.lastTimestamp > 500) {
+    if (this.lastTimestamp !== null && timestampMs - this.lastTimestamp > COVER_EVENT_LIMITS.maxGapMs) {
       this.coverStart = null;
       this.armed = false;
       this.candidate = null;
+      this.clearFrames = 0;
     }
     this.lastTimestamp = timestampMs;
     const opposite = this.eye === 'left' ? 'right' : 'left';
 
     // 1. Arming during cover: Expected eye is OCCLUDED.
-    // Opposite eye may be VISIBLE or UNKNOWN (e.g. glare, partial occlusion) — only reject if opposite is also OCCLUDED.
-    if (visibility[this.eye] === 'OCCLUDED' && (visibility[opposite] !== 'OCCLUDED')) {
+    if (visibility[this.eye] === 'OCCLUDED' && visibility[opposite] === 'VISIBLE') {
       this.coverStart ??= timestampMs;
       this.lastCovered = timestampMs;
       if (timestampMs - this.coverStart >= 120) this.armed = true;
       this.candidate = null;
+      this.clearFrames = 0;
       return null;
     }
 
     // 2. Both eyes not yet clearly open:
     if (visibility.left !== 'VISIBLE' || visibility.right !== 'VISIBLE') {
       this.coverStart = null;
-      // Preserve armed state while covered eye remains not-visible (hand covering eye) or through brief blink
-      if (this.armed) {
-        if (visibility[this.eye] !== 'VISIBLE') {
-          this.lastCovered = timestampMs;
-        } else {
-          this.armed = (visibility[opposite] === 'VISIBLE' || (timestampMs - this.lastCovered <= 350)) &&
-            timestampMs - this.lastCovered <= this.windowMs;
-        }
-      }
+      // UNKNOWN never refreshes occlusion time. A short blink may recover;
+      // a long gap requires observed occlusion again before another capture.
+      this.armed = this.armed && timestampMs - this.lastCovered <= 250;
       this.candidate = null;
+      this.clearFrames = 0;
       return null;
     }
 
     // 3. Both eyes are VISIBLE: Check if armed and within uncover window
-    if (!this.armed || (!this.candidate && timestampMs - this.lastCovered > this.windowMs)) {
+    if (!this.armed || (!this.candidate && timestampMs - this.lastCovered > Math.min(this.windowMs, COVER_EVENT_LIMITS.maxGapMs))) {
       this.armed = false;
       this.coverStart = null;
       return null;
@@ -120,11 +135,15 @@ export class UncoverTransition {
       const image = candidate();
       if (image) {
         this.candidate = { image, timestampMs, lastCoveredMs: this.lastCovered };
+        this.clearFrames = 1;
       }
       return null;
     }
 
-    // 5. Second clear frame: confirm uncover event with the candidate image from the first clear frame
+    // Confirm sustained opening, while preserving the FIRST clear source image.
+    this.clearFrames++;
+    if (this.clearFrames < EYE_APPEARANCE_LIMITS.minOpenFrames ||
+        timestampMs - this.candidate.timestampMs < EYE_APPEARANCE_LIMITS.minOpenMs) return null;
     this.done = true;
     return { ...this.candidate, confirmedAtMs: timestampMs, uncoveredEye: this.eye };
   }
@@ -157,22 +176,14 @@ export class UncoverCaptureObserver {
       }
     }
 
-    // Pass 2: Classify visibility with fallback and opposite-eye awareness
-    const hasFace = Boolean(landmarks && (landmarks[1] || landmarks[168] || landmarks[152] || landmarks[10]));
-
+    // Pass 2: Classify observed appearance against each eye's own baseline.
     for (const side of ['left', 'right']) {
       const opposite = side === 'left' ? 'right' : 'left';
       const frame = frames[side];
       const patch = patches[side];
 
       if (!frame || !patch) {
-        // If face landmarks or opposite eye landmarks exist, but this eye has no frame,
-        // it means the eye is completely covered / occluded by the hand!
-        if (hasFace || frames[opposite]) {
-          visibility[side] = 'OCCLUDED';
-        } else {
-          visibility[side] = 'UNKNOWN';
-        }
+        visibility[side] = 'UNKNOWN';
         continue;
       }
 
@@ -181,32 +192,26 @@ export class UncoverCaptureObserver {
           frame.palpebralHeight / frame.canthalWidth >= 0.11 &&
           patch.isEyeLike && patch.stdDev >= 9) {
         const previous = this.baselines[side];
-        this.baselines[side] = Object.fromEntries(['pupilContrast', 'dynamicRange', 'stdDev', 'mean']
-          .map(key => [key, previous ? previous[key] * 0.8 + patch[key] * 0.2 : patch[key]]));
+        this.baselines[side] = Object.fromEntries(['pupilContrast', 'dynamicRange', 'stdDev', 'mean', 'minLum']
+          .filter(key => patch[key] !== undefined)
+          .map(key => [key, previous && previous[key] !== undefined ? previous[key] * 0.8 + patch[key] * 0.2 : patch[key]]));
         this.baselineCounts[side] = (this.baselineCounts[side] || 0) + 1;
+        if (patch.appearance) this.baselines[side].appearance = patch.appearance.map((value, i) =>
+          previous?.appearance ? previous.appearance[i] * 0.8 + value * 0.2 : value);
       }
 
-      // Provide robust fallback baseline so classification never stalls on null baseline
-      const baseline = (this.baselineCounts[side] >= 1 ? this.baselines[side] : null) ||
-        (phase === 'COVER' || phase === 'TRACKING' ? { pupilContrast: 18, dynamicRange: 45, stdDev: 15, mean: 110 } : null);
+      const baseline = this.baselineCounts[side] >= EYE_APPEARANCE_LIMITS.minBaselineSamples ? this.baselines[side] : null;
 
-      visibility[side] = classifyEyeVisibility(patch, frame, baseline, patches[opposite], frames[opposite]);
+      visibility[side] = classifyEyeVisibility(patch, frame, baseline, patches[opposite], frames[opposite], this.baselines[opposite]);
     }
 
-    // Pass 3: Cross-validate with AI EyeCoverDetector during COVER/PREPARING phase
-    if (this.transition.eye && (phase === 'COVER' || phase === 'PREPARING')) {
-      const expectedCover = this.transition.eye;
-      const opposite = expectedCover === 'left' ? 'right' : 'left';
-      if (visibility[expectedCover] !== 'OCCLUDED' && landmarks) {
-        const aiDet = this.sampler.detect(source, [landmarks]);
-        if (aiDet.isCovered && (aiDet.side === expectedCover || aiDet.side === 'both' || aiDet.side === 'one_eye')) {
-          visibility[expectedCover] = 'OCCLUDED';
-          if (visibility[opposite] === 'OCCLUDED' && aiDet.side === expectedCover) {
-            visibility[opposite] = 'VISIBLE';
-          }
-        }
-      }
-    }
+    // Measurements require sampled image evidence, independent of fallback hints
+    // used for capture feedback. Missing landmarks and closed lids stay unknown.
+    const measurementVisibility = Object.fromEntries(['left', 'right'].map(side => [side,
+      frames[side] && patches[side] && this.baselineCounts[side] >= EYE_APPEARANCE_LIMITS.minBaselineSamples &&
+        frames[side].palpebralHeight / frames[side].canthalWidth >= 0.14
+        ? visibility[side] : 'UNKNOWN',
+    ]));
 
     const debugMetrics = {
       timestampMs,
@@ -220,6 +225,7 @@ export class UncoverCaptureObserver {
         skinRatio: Number(patches.left.skinRatio?.toFixed(3)),
         isLuminanceShift: this.baselines?.left ? Boolean(patches.left.mean > this.baselines.left.mean + 20 || patches.left.mean < this.baselines.left.mean - 25) : false,
         visibility: visibility.left,
+        appearance: eyeAppearanceEvidence(patches.left, this.baselines.left, patches.right, this.baselines.right),
       } : { visibility: visibility.left },
       right: patches.right ? {
         minLum: patches.right.minLum,
@@ -231,11 +237,14 @@ export class UncoverCaptureObserver {
         skinRatio: Number(patches.right.skinRatio?.toFixed(3)),
         isLuminanceShift: this.baselines?.right ? Boolean(patches.right.mean > this.baselines.right.mean + 20 || patches.right.mean < this.baselines.right.mean - 25) : false,
         visibility: visibility.right,
+        appearance: eyeAppearanceEvidence(patches.right, this.baselines.right, patches.left, this.baselines.left),
       } : { visibility: visibility.right },
     };
 
-    const event = this.transition.update({ timestampMs, visibility, candidate: makeCandidate });
-    return { visibility, event, debugMetrics };
+    const event = this.transition.update({ timestampMs, visibility: measurementVisibility, candidate: makeCandidate });
+    const measurementCoordinates = Object.fromEntries(['left', 'right'].map(side =>
+      [side, getCanthalMovementCoordinates(frames[side])]));
+    return { visibility, measurementVisibility, measurementCoordinates, event, debugMetrics };
   }
 }
 
@@ -243,55 +252,11 @@ export class UncoverCaptureObserver {
  * JPEG encoding may complete later; frame metadata must never be re-timestamped.
  */
 export function freezeEyePair(source, landmarks, frameMetadata) {
+  const regions = getEyePairCropRegions(landmarks, source?.width, source?.height);
+  if (!regions) return null;
   const eyes = {};
   for (const side of ['left', 'right']) {
-    let cropRegion = null;
-    const frame = getEyeAnatomicalFrame(landmarks, side.toUpperCase(), source.width, source.height);
-    if (frame && frame.canthalWidth >= 6) {
-      const xs = frame.contourPts.map(p => p.x), ys = frame.contourPts.map(p => p.y);
-      const padX = frame.canthalWidth * 0.25;
-      const eyeHeight = Math.max(1, Math.max(...ys) - Math.min(...ys));
-      const padY = Math.max(frame.canthalWidth * 0.35, eyeHeight * 0.85);
-      const x = Math.max(0, Math.floor(Math.min(...xs) - padX));
-      const y = Math.max(0, Math.floor(Math.min(...ys) - padY));
-      const width = Math.min(source.width - x, Math.ceil(Math.max(...xs) + padX) - x);
-      const height = Math.min(source.height - y, Math.ceil(Math.max(...ys) + padY) - y);
-      if (width >= 8 && height >= 8) {
-        cropRegion = { x, y, width, height };
-      }
-    }
-
-    // Robust fallback if some perimeter contour landmarks are missing
-    if (!cropRegion && landmarks && landmarks.length > 0) {
-      const isLeft = side.toLowerCase() === 'left';
-      const innerIdx = isLeft ? 362 : 133;
-      const outerIdx = isLeft ? 263 : 33;
-      const topIdx = isLeft ? 386 : 159;
-      const botIdx = isLeft ? 374 : 145;
-      const pIn = landmarks[innerIdx];
-      const pOut = landmarks[outerIdx];
-      if (pIn && pOut && Number.isFinite(pIn.x) && Number.isFinite(pOut.x)) {
-        const pTop = landmarks[topIdx] || { y: (pIn.y + pOut.y) / 2 - 0.03 };
-        const pBot = landmarks[botIdx] || { y: (pIn.y + pOut.y) / 2 + 0.03 };
-        const minX = Math.min(pIn.x, pOut.x) * source.width;
-        const maxX = Math.max(pIn.x, pOut.x) * source.width;
-        const minY = Math.min(pTop.y, pBot.y, pIn.y, pOut.y) * source.height;
-        const maxY = Math.max(pTop.y, pBot.y, pIn.y, pOut.y) * source.height;
-        const eyeW = Math.max(12, maxX - minX);
-        const padX = Math.max(8, eyeW * 0.35);
-        const padY = Math.max(8, (maxY - minY) * 0.5);
-        const x = Math.max(0, Math.floor(minX - padX));
-        const y = Math.max(0, Math.floor(minY - padY));
-        const width = Math.min(source.width - x, Math.ceil(maxX + padX) - x);
-        const height = Math.min(source.height - y, Math.ceil(maxY + padY) - y);
-        if (width >= 8 && height >= 8) {
-          cropRegion = { x, y, width, height };
-        }
-      }
-    }
-
-    if (!cropRegion) return null;
-
+    const cropRegion = regions[side];
     const { x, y, width, height } = cropRegion;
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -301,15 +266,20 @@ export function freezeEyePair(source, landmarks, frameMetadata) {
     ctx.drawImage(source, x, y, width, height, 0, 0, width, height);
     eyes[side] = { canvas, cropRegion };
   }
-  return { frame: { ...frameMetadata }, eyes };
+  return { frame: { ...frameMetadata, sourceWidth: source.width, sourceHeight: source.height }, eyes };
 }
 
 export async function encodeEyePair(event, cycle, cycleStartMs) {
+  if (!Number.isFinite(event?.timestampMs) || event.image?.frame?.timestampMs !== event.timestampMs ||
+      event.image.frame.frameId == null) throw new Error('CROP_SOURCE_FRAME_MISMATCH');
   const eventId = `c${cycle}_${event.uncoveredEye}_uncover`;
   const images = {};
   const crops = {};
   await Promise.all(['left', 'right'].map(async side => {
     const { canvas, cropRegion } = event.image.eyes[side];
+    if (!canvas || !cropRegion || canvas.width !== cropRegion.width || canvas.height !== cropRegion.height ||
+        cropRegion.x < 0 || cropRegion.y < 0 || cropRegion.x + cropRegion.width > event.image.frame.sourceWidth ||
+        cropRegion.y + cropRegion.height > event.image.frame.sourceHeight) throw new Error('INVALID_EYE_CROP');
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
     if (!blob) throw new Error('JPEG_ENCODING_FAILED');
     const field = `${eventId}_${side}_eye`;
@@ -320,9 +290,10 @@ export async function encodeEyePair(event, cycle, cycleStartMs) {
     images,
     metadata: {
       eventId, cycle, uncoveredEye: event.uncoveredEye.toUpperCase(), status: 'CAPTURED',
-      trigger: 'OBSERVED_OCCLUDED_TO_VISIBLE', detector: 'pixel-contrast-v1',
+      trigger: 'OBSERVED_OCCLUDED_TO_VISIBLE', detector: 'pixel-appearance-v2',
+      cropGeometryVersion: 'source-eye-contour-v1', cropCoordinateSpace: 'SOURCE_PIXELS',
       ...event.image.frame,
-      t: event.timestampMs - cycleStartMs,
+      t: Number((event.timestampMs - cycleStartMs).toFixed(3)),
       timestampMs: event.timestampMs, confirmedAtMs: event.confirmedAtMs,
       onsetIntervalMs: [event.lastCoveredMs, event.timestampMs],
       timingUncertaintyMs: event.timestampMs - event.lastCoveredMs,

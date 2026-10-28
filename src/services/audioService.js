@@ -1,7 +1,7 @@
-import { IRIS_VOICE, getIrisAudioUrls } from '../constants/irisVoice.js';
+import { LUMI_VOICE, getLumiAudioUrls } from '../constants/lumiVoice.js';
 import { AUDIO_CONFIG, AUDIO_MESSAGES, AUDIO_STATES, SPEECH_RATE_PRESETS } from '../constants/audioConfig.js';
 
-/** Shared Iris narration service. Uses the same Vietnamese stream as listening guides
+/** Shared Lumi narration service. Uses the same Vietnamese stream as listening guides
  * on every device; browser voice availability never changes the narrator. */
 export class AudioService {
   constructor(browserWindow = typeof window !== 'undefined' ? window : null) {
@@ -50,7 +50,7 @@ export class AudioService {
     return {
       supported: this.isSupported(),
       state: this.state,
-      voice: { name: IRIS_VOICE.name, lang: IRIS_VOICE.lang, type: 'iris-stream' },
+      voice: { name: LUMI_VOICE.name, lang: LUMI_VOICE.lang, type: 'lumi-stream' },
       text: this.currentText,
       errorCount: this.errorCount,
       errorMessage: this.errorMessage,
@@ -262,7 +262,7 @@ export class AudioService {
         return;
       }
 
-      const urls = getIrisAudioUrls(clean);
+      const urls = getLumiAudioUrls(clean);
 
       let urlIndex = 0;
       let resolved = false;

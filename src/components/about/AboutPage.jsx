@@ -12,7 +12,7 @@ import './aboutPage.css';
  * REMICARE AI — ABOUT PAGE (TRANG GIỚI THIỆU)
  * 
  * Sứ mệnh • Công nghệ Y khoa • Thiết kế Dễ dùng cho Mọi Lứa Tuổi (Trẻ em đến Người cao tuổi)
- * Tích hợp Trợ lý Giọng nói Iris thân thiện (Web Speech TTS)
+ * Tích hợp Trợ lý Giọng nói Lumi thân thiện (Web Speech TTS)
  */
 export default function AboutPage({
   onNavigateHome,
@@ -26,7 +26,7 @@ export default function AboutPage({
   // Audio Voice Narration Scripts
   const voiceScripts = {
     hero:
-      'Xin chào bạn! Mình là Iris. RemiCare AI là nền tảng ứng dụng thị giác máy tính và trí tuệ nhân tạo, giúp phát hiện sớm các dấu hiệu lác lé và nhược thị cho trẻ nhỏ ngay tại nhà. Hoàn toàn bảo mật, miễn phí và thân thiện cho mọi thế hệ trong gia đình.',
+      'Xin chào bạn! Mình là Lumi. RemiCare AI là nền tảng ứng dụng thị giác máy tính và trí tuệ nhân tạo, giúp phát hiện sớm các dấu hiệu lác lé và nhược thị cho trẻ nhỏ ngay tại nhà. Hoàn toàn bảo mật, miễn phí và thân thiện cho mọi thế hệ trong gia đình.',
     story:
       'Tại sao RemiCare ra đời? Giai đoạn trước 7 đến 8 tuổi là thời gian vàng để hoàn thiện thị giác hai mắt của trẻ. Nếu phát hiện lác ẩn hay nhược thị muộn, việc tập luyện phục hồi sẽ rất khó khăn. RemiCare mang các phương pháp khám chuẩn y khoa vào webcam máy tính, giúp cha mẹ dễ dàng nhận biết sớm dấu hiệu mắt bất thường.',
     tech:
@@ -104,15 +104,15 @@ export default function AboutPage({
             hoàn toàn miễn phí, bảo mật và cực kỳ dễ sử dụng từ trẻ nhỏ đến người cao tuổi.
           </p>
 
-          {/* Iris Voice Card */}
+          {/* Lumi Voice Card */}
           <div className="about-iris-voice-card">
             <div className="iris-voice-left">
               <div className="iris-avatar-disk" aria-hidden="true">
                 👁️
               </div>
               <div className="iris-voice-meta">
-                <h4>Trợ lý giọng nói Bé Iris</h4>
-                <p>Bấm nút bên cạnh để nghe Iris giới thiệu toàn bộ trang này bằng giọng nói nhé!</p>
+                <h4>Trợ lý giọng nói Bé Lumi</h4>
+                <p>Bấm nút bên cạnh để nghe Lumi giới thiệu toàn bộ trang này bằng giọng nói nhé!</p>
               </div>
             </div>
 
@@ -120,11 +120,11 @@ export default function AboutPage({
               type="button"
               className={`btn-iris-speak ${isAudioPlaying && currentSpokenSection === 'hero' ? 'speaking' : ''}`}
               onClick={() => toggleVoice('hero', voiceScripts.hero)}
-              title="Nghe giọng nói Iris đọc lời chào mừng"
+              title="Nghe giọng nói Lumi đọc lời chào mừng"
             >
               <IconSpeakerWave size={20} isPlaying={isAudioPlaying && currentSpokenSection === 'hero'} />
               <span>
-                {isAudioPlaying && currentSpokenSection === 'hero' ? 'Dừng đọc' : 'Nghe Iris đọc'}
+                {isAudioPlaying && currentSpokenSection === 'hero' ? 'Dừng đọc' : 'Nghe Lumi đọc'}
               </span>
             </button>
           </div>
@@ -171,7 +171,7 @@ export default function AboutPage({
               type="button"
               className="btn-mini-voice"
               onClick={() => toggleVoice('story', voiceScripts.story)}
-              title="Nghe Iris đọc câu chuyện này"
+              title="Nghe Lumi đọc câu chuyện này"
             >
               <IconSpeakerWave size={16} isPlaying={isAudioPlaying && currentSpokenSection === 'story'} />
               <span>{isAudioPlaying && currentSpokenSection === 'story' ? 'Dừng' : 'Nghe kể chuyện'}</span>
@@ -293,7 +293,7 @@ export default function AboutPage({
               title="Nghe hướng dẫn sử dụng cho mọi lứa tuổi"
             >
               <IconSpeakerWave size={16} isPlaying={isAudioPlaying && currentSpokenSection === 'forAll'} />
-              <span>{isAudioPlaying && currentSpokenSection === 'forAll' ? 'Dừng' : 'Nghe Iris đọc'}</span>
+              <span>{isAudioPlaying && currentSpokenSection === 'forAll' ? 'Dừng' : 'Nghe Lumi đọc'}</span>
             </button>
           </div>
 
@@ -308,7 +308,7 @@ export default function AboutPage({
               </p>
               <ul className="audience-highlights">
                 <li>✨ Hoạt ảnh chuyển động nhẹ nhàng</li>
-                <li>🗣️ Cô Iris hướng dẫn từng lời nói</li>
+                <li>🗣️ Cô Lumi hướng dẫn từng lời nói</li>
                 <li>🎮 Trải nghiệm như một trò chơi vui</li>
               </ul>
             </div>

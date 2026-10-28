@@ -1,4 +1,4 @@
-// Iris uses the same streamed Vietnamese narrator across all screens and devices.
+// Lumi uses the same streamed Vietnamese narrator across all screens and devices.
 export const AUDIO_CONFIG = Object.freeze({
   lang: 'vi-VN',
   rate: 1.02,               // Tốc độ chuẩn 1.02x: lưu loát, dứt khoát, tự nhiên, không bị chậm chạp

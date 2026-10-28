@@ -1,12 +1,12 @@
-// Iris is RemiCare's narrator persona, backed by the existing Google Vietnamese
+// Lumi is RemiCare's narrator persona, backed by the existing Google Vietnamese
 // stream used in its listening guides. It is not a separate vendor voice ID.
-export const IRIS_VOICE = Object.freeze({
-  name: 'Iris',
+export const LUMI_VOICE = Object.freeze({
+  name: 'Lumi',
   lang: 'vi-VN',
   provider: 'google-translate',
 });
 
-export function getIrisAudioUrls(text) {
+export function getLumiAudioUrls(text) {
   const encoded = encodeURIComponent(text.trim());
   return [
     `/api/tts?text=${encoded}`,

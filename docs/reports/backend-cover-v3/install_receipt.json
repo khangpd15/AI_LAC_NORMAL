@@ -1,0 +1,58 @@
+{
+  "installedAt": "2026-10-28T10:02:47.824236+00:00",
+  "remoteDeployed": false,
+  "files": [
+    {
+      "destination": "D:\\REMICARE-STRABISMUS-AI-COVER-TEST\\app\\services\\cover_test\\predictor.py",
+      "sha256": "1d81741f8f94172eb0681147cc721443f1ced15540bf85281bc8d7019035db49"
+    },
+    {
+      "destination": "D:\\REMICARE-STRABISMUS-AI-COVER-TEST\\app\\services\\cover_test\\paired_crop_model.py",
+      "sha256": "0262e1b4ea010d638f3540504a315d75201b391efb52faba91fe20d1536177f6"
+    },
+    {
+      "destination": "D:\\REMICARE-STRABISMUS-AI-COVER-TEST\\app\\services\\cover_test\\unified_inference_service.py",
+      "sha256": "04f0f9c48f197affe07f0d73e56a786b3673a66f54d3944cbea82997f4ccf2d2"
+    },
+    {
+      "destination": "D:\\REMICARE-STRABISMUS-AI-COVER-TEST\\tests\\test_paired_crop_v3.py",
+      "sha256": "6a037d7a47586bace021c47c7479fa91698c0d147a063b10704f8b5fdb36693d"
+    },
+    {
+      "destination": "D:\\REMICARE-STRABISMUS-AI-COVER-TEST\\tests\\test_unified_inference.py",
+      "sha256": "3756e4d98f22d339db9d133ac686264861f6b6a3427c421be7a9a72c2d0d37fa"
+    },
+    {
+      "destination": "D:\\REMICARE-STRABISMUS-AI-COVER-TEST\\models\\cover_image_transfer_candidate.joblib",
+      "sha256": "696f4590cdab9aa9694c34876e875d38aca96ec16b806ed901fa6870e14b21b8"
+    },
+    {
+      "destination": "D:\\REMICARE_TRAIN_AI\\COVER_TEST_METHOD\\research\\cover_crop_v3\\train.py",
+      "sha256": "e3a5ba091fea9c7835705b9918204cc482e33a5a7b20b91f5bf13c370b321183"
+    },
+    {
+      "destination": "D:\\REMICARE_TRAIN_AI\\COVER_TEST_METHOD\\research\\cover_crop_v3\\train_image_transfer.py",
+      "sha256": "2e79106aa1ebf1fad6a3267c5e28e16cb868722f9eff0cf89821395e3424ece6"
+    },
+    {
+      "destination": "D:\\REMICARE_TRAIN_AI\\COVER_TEST_METHOD\\research\\cover_crop_v3\\test_training.py",
+      "sha256": "31d8801d6c9d651f6595861fadb480948dfe59667abda1cc4250cbdfb61f5e8e"
+    },
+    {
+      "destination": "D:\\REMICARE-STRABISMUS-AI-COVER-TEST\\docs\\BACKEND_COVER_TRAIN_V3.md",
+      "sha256": "cbccecc6349e51044a142978dee9a223594275743e2bc218cd3aa58d0f7f69b3"
+    },
+    {
+      "destination": "D:\\REMICARE_TRAIN_AI\\COVER_TEST_METHOD\\models\\cover_crop_v3\\static_image_transfer_candidate.joblib",
+      "sha256": "696f4590cdab9aa9694c34876e875d38aca96ec16b806ed901fa6870e14b21b8"
+    },
+    {
+      "destination": "D:\\REMICARE_TRAIN_AI\\COVER_TEST_METHOD\\reports\\cover_crop_v3\\image_transfer_report.json",
+      "sha256": "0127412556291509096dbbb851d7136f9280f7749ec774ec9f48bdd9419047ef"
+    },
+    {
+      "destination": "D:\\REMICARE_TRAIN_AI\\COVER_TEST_METHOD\\reports\\cover_crop_v3\\paired_training_report.json",
+      "sha256": "c71dc81b749fb9946ee04664f85fe9f98ae5d891e581b67cd5c1e4a1ebadc3fb"
+    }
+  ]
+}

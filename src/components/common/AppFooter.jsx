@@ -26,7 +26,7 @@ const footerInfo = {
   guide: { title: 'Hướng dẫn sàng lọc', paragraphs: [
     'Chọn “Sàng lọc” trên thanh điều hướng, cho phép camera và làm theo từng bước hướng dẫn trên màn hình.',
     'Giữ khuôn mặt trong khung hình. Ở bước Hirschberg, xem lại ảnh chụp trước khi xác nhận gửi ảnh để AI phân tích.',
-    'Bạn có thể nghe Iris hướng dẫn hoặc đọc nội dung ngay trên từng màn hình.',
+    'Bạn có thể nghe Lumi hướng dẫn hoặc đọc nội dung ngay trên từng màn hình.',
   ] },
   results: { title: 'Hiểu kết quả sàng lọc', paragraphs: [
     'Kết quả của RemiCare là thông tin hỗ trợ sàng lọc ban đầu. Hình ảnh chưa đủ điều kiện hoặc kết quả chưa rõ có thể cần được thực hiện lại hoặc chuyên gia xem xét.',
@@ -55,7 +55,7 @@ const footerInfo = {
     'Các hình ảnh chiến dịch trên trang có thể là ảnh minh họa do AI tạo, không phải bằng chứng xác nhận hiệu quả của hệ thống.',
   ] },
   care: { title: 'Kiến thức sức khỏe mắt', paragraphs: [
-    'Khám phá các bài nghe về chăm sóc mắt và đồng hành cùng con trên trang chủ. Bạn có thể nghe Iris đọc hoặc mở phần nội dung để đọc theo.',
+    'Khám phá các bài nghe về chăm sóc mắt và đồng hành cùng con trên trang chủ. Bạn có thể nghe Lumi đọc hoặc mở phần nội dung để đọc theo.',
     'Phần trải nghiệm góc nhìn và mô phỏng giúp bạn tìm hiểu trực quan về lác lé, nhược thị. Đây là nội dung giáo dục, không phải hướng dẫn tự điều trị.',
   ] },
 };
@@ -129,7 +129,7 @@ export default function AppFooter({ onNavigateHome, onStartExperience, onStartSc
               {socialLinks.map(link => <a key={link.icon} href={link.href} target={link.icon === 'mail' ? undefined : '_blank'} rel={link.icon === 'mail' ? undefined : 'noopener noreferrer'} aria-label={link.icon === 'mail' ? 'Gửi email đến remicare.visionhealth@gmail.com' : `RemiCare trên ${link.name} (mở tab mới)`} title={link.icon === 'mail' ? 'remicare.visionhealth@gmail.com' : link.name}><SocialIcon name={link.icon} /></a>)}
             </div>
             <div className="remicare-footer-tools">
-              <button type="button" onClick={listen} aria-label={speaking ? 'Dừng Iris giới thiệu RemiCare' : 'Nghe Iris giới thiệu RemiCare'} aria-pressed={speaking}><AudioIcon name={speaking ? 'pause' : 'sound'} width="20" height="20" /><span>{speaking ? 'Dừng giọng đọc' : 'Nghe Iris giới thiệu'}</span></button>
+              <button type="button" onClick={listen} aria-label={speaking ? 'Dừng Lumi giới thiệu RemiCare' : 'Nghe Lumi giới thiệu RemiCare'} aria-pressed={speaking}><AudioIcon name={speaking ? 'pause' : 'sound'} width="20" height="20" /><span>{speaking ? 'Dừng giọng đọc' : 'Nghe Lumi giới thiệu'}</span></button>
               <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Về đầu trang"><span aria-hidden="true">↑</span></button>
             </div>
           </div>

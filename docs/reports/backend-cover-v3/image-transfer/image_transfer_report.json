@@ -1,0 +1,84 @@
+{
+  "status": "RESEARCH_STATIC_IMAGE_TRANSFER_ONLY",
+  "inputRows": 163,
+  "trainedImages": 158,
+  "reportedSubjectIds": 158,
+  "classCounts": {
+    "NORMAL": 28,
+    "STRABISMUS": 130
+  },
+  "exclusions": {
+    "UNCONFIRMED_LABEL": 2,
+    "INVALID_REVIEWED_BBOX": 3
+  },
+  "evaluation": {
+    "accuracy": 0.9493670886075949,
+    "balancedAccuracy": 0.8991758241758241,
+    "sensitivity": 0.9769230769230769,
+    "specificity": 0.8214285714285714,
+    "accuracy95CI": [
+      0.9032787039549025,
+      0.9741231746164177
+    ],
+    "sensitivity95CI": [
+      0.9343481004651153,
+      0.99212117962635
+    ],
+    "specificity95CI": [
+      0.6440857521065705,
+      0.9212149805439572
+    ],
+    "confusionMatrix": [
+      [
+        23,
+        5
+      ],
+      [
+        3,
+        127
+      ]
+    ],
+    "evaluationUnit": "image_with_reported_subject_grouping"
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "trainImages": 126,
+      "testImages": 32,
+      "groupsDisjoint": true
+    },
+    {
+      "fold": 2,
+      "trainImages": 126,
+      "testImages": 32,
+      "groupsDisjoint": true
+    },
+    {
+      "fold": 3,
+      "trainImages": 126,
+      "testImages": 32,
+      "groupsDisjoint": true
+    },
+    {
+      "fold": 4,
+      "trainImages": 127,
+      "testImages": 31,
+      "groupsDisjoint": true
+    },
+    {
+      "fold": 5,
+      "trainImages": 127,
+      "testImages": 31,
+      "groupsDisjoint": true
+    }
+  ],
+  "promoted": false,
+  "coverTestAccuracy": null,
+  "sourceManifestSha256": "236113d3de4d7ea2cea8a6cf83423db53766c03f4811a82537161eaa2a026711",
+  "limitations": [
+    "All source candidates were marked pending identity QC; this research run does not certify patient independence.",
+    "Static Hirschberg image morphology; no paired Cover Test movements or timestamps.",
+    "Reviewed/exposed source images are not a sealed clinical holdout.",
+    "Do not use these OOF numbers as clinical or >=30fps Cover Test accuracy."
+  ]
+}
