@@ -1,5 +1,6 @@
 import AudioGuide from '../audio/ListeningExperience';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import PrivacyConsentCard from '../common/PrivacyConsentCard';
 import ScreeningProgress from './ScreeningProgress';
 import HirschbergStep from './HirschbergStep.jsx';
 import HirschbergResultStep from './HirschbergResultStep.jsx';
@@ -42,8 +43,9 @@ import {
  * B1 (HIRSCHBERG) -> B2 (HIRSCHBERG_RESULT) -> B3 (COVER_GATE) -> B4 (COVER_TEST) -> B5 (COMBINED_RESULT)
  */
 export default function BinocularVisionScreening() {
-  // Global Screening Step: 'HIRSCHBERG' | 'HIRSCHBERG_RESULT' | 'COVER_POSITION' | 'COVER' | 'SUMMARY'
-  const [currentStep, setCurrentStep] = useState('HIRSCHBERG');
+  // Global Screening Step: 'CONSENT' | 'HIRSCHBERG' | 'HIRSCHBERG_RESULT' | 'COVER_POSITION' | 'COVER' | 'SUMMARY'
+  const [currentStep, setCurrentStep] = useState('CONSENT');
+  const [hasConsented, setHasConsented] = useState(false);
   const [session, setSession] = useState(() => createBinocularSession());
   const [positionReport, setPositionReport] = useState(null);
   const [cameraValidationError, setCameraValidationError] = useState(null);
@@ -485,6 +487,11 @@ export default function BinocularVisionScreening() {
     setCurrentStep('HIRSCHBERG');
   }, [cancelSpeech]);
 
+  const handleConsentAccept = useCallback(() => {
+    setHasConsented(true);
+    setCurrentStep('HIRSCHBERG');
+  }, []);
+
   return (
     <div className="binocular-screening-page">
       {/* Top Protocol Title Bar */}
@@ -497,15 +504,45 @@ export default function BinocularVisionScreening() {
         </div>
       </div>
 
-      <div className="page-audio-intro"><AudioGuide guideId="screening" compact /></div>
-      {/* Persistent Step Progress Indicator */}
-      <ScreeningProgress currentStep={currentStep} />
+      {currentStep !== 'CONSENT' && (
+        <>
+          <div className="page-audio-intro"><AudioGuide guideId="screening" compact /></div>
+          {/* Persistent Step Progress Indicator */}
+          <ScreeningProgress currentStep={currentStep} />
+        </>
+      )}
 
       {/* Active Step Container */}
       <div className="screening-step-container">
+        {currentStep === 'CONSENT' && (
+          <div className="binocular-consent-wrapper w-full max-w-2xl mx-auto py-2">
+            <PrivacyConsentCard
+              title="Cam kết Quyền riêng tư & Bảo mật"
+              subtitle="Xử lý hoàn toàn trong bộ nhớ khả biến (In-Memory Zero-Retention)"
+              noStorageTitle="Không lưu trữ vĩnh viễn:"
+              noStorageDesc="Ảnh/khung hình của bạn được xử lý trực tiếp trong bộ nhớ RAM máy chủ và bị giải phóng ngay khi hoàn tất phép đo. Hệ thống không ghi ảnh xuống ổ đĩa, không lưu trữ cơ sở dữ liệu."
+              purposeTitle="Mục đích sử dụng:"
+              purposeDesc="Hình ảnh chỉ được dùng để tính toán các chỉ số đánh giá độ lệch trục nhãn cầu (phản xạ giác mạc Hirschberg và Digital Cover Test) phục vụ sàng lọc hỗ trợ ban đầu."
+              safetyTitle="Thông cáo an toàn:"
+              safetyDesc="Kết quả chỉ mang tính tham khảo sàng lọc, không thay thế cho việc thăm khám trực tiếp tại cơ sở chuyên khoa mắt."
+              checkboxLabel="Tôi đã đọc, hiểu rõ chính sách bảo vệ dữ liệu và đồng ý cung cấp hình ảnh phục vụ sàng lọc lác/lé."
+              buttonText="Bắt đầu sàng lọc"
+              buttonId="btn-strabismus-consent"
+              checkboxId="strabismus-consent-checkbox"
+              onAccept={handleConsentAccept}
+            />
+          </div>
+        )}
+
         {(currentStep === 'HIRSCHBERG' || currentStep === 'GAZE_4_DIRECTIONS') && (
           <HirschbergStep
-            preparationData={session?.preparation}
+            preparationData={{
+              ...(session?.preparation || {}),
+              eligibility: {
+                ...(session?.preparation?.eligibility || {}),
+                guardianConsent: hasConsented,
+              },
+            }}
             sessionId={session?.sessionId}
             onComplete={handleHirschbergComplete}
             speak={speak}

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import audioService from '../../services/audioService';
 import { AudioIcon } from '../audio/ListeningExperience';
 import './appFooter.css';
@@ -24,14 +25,20 @@ function SocialIcon({ name }) {
 
 const footerInfo = {
   guide: { title: 'Hướng dẫn sàng lọc', paragraphs: [
+<<<<<<< HEAD
     'Chọn “Sàng lọc” trên thanh điều hướng, cho phép camera và làm theo từng bước hướng dẫn trên màn hình.',
     'Giữ khuôn mặt trong khung hình. Ở bước Hirschberg, xem lại ảnh chụp trước khi xác nhận gửi ảnh để AI phân tích.',
     'Bạn có thể nghe Lumi hướng dẫn hoặc đọc nội dung ngay trên từng màn hình.',
+=======
+    'Chọn “Sàng lọc” trên thanh điều hướng, chọn giữa Sàng lọc Lác/Lé (Hirschberg & Cover Test) hoặc Sàng lọc Sụp Mí (PtosisCheck), sau đó cấp quyền camera và làm theo từng bước hướng dẫn trên màn hình.',
+    'Giữ khuôn mặt trong khung hình. Ở bước chụp ảnh, xem lại ảnh chụp trước khi xác nhận gửi ảnh để AI phân tích.',
+    'Bạn có thể nghe Iris hướng dẫn hoặc đọc nội dung ngay trên từng màn hình.',
+>>>>>>> fdbbc47753a30c9094d5981593b263b54f833642
   ] },
   results: { title: 'Hiểu kết quả sàng lọc', paragraphs: [
     'Kết quả của RemiCare là thông tin hỗ trợ sàng lọc ban đầu. Hình ảnh chưa đủ điều kiện hoặc kết quả chưa rõ có thể cần được thực hiện lại hoặc chuyên gia xem xét.',
-    'Điểm số do mô hình trả về không phải kết luận chẩn đoán. Kết quả bình thường không loại trừ hoàn toàn các bệnh lý về mắt.',
-    'Nếu bạn lo lắng về đôi mắt của mình hoặc của con, hãy mang thông tin sàng lọc đến bác sĩ chuyên khoa mắt để được tư vấn.',
+    'Điểm số và phân hạng Tier do mô hình trả về không phải kết luận chẩn đoán bệnh. Kết quả bình thường không loại trừ hoàn toàn các bệnh lý về mắt.',
+    'Nếu bạn lo lắng về đôi mắt của mình hoặc của con, hãy mang thông tin sàng lọc đến bác sĩ chuyên khoa mắt để được tư vấn chuyên sâu.',
   ] },
   faq: { title: 'Câu hỏi thường gặp', items: [
     ['RemiCare có thay thế bác sĩ không?', 'Không. Đây là công cụ trải nghiệm, nâng cao nhận thức và hỗ trợ sàng lọc ban đầu.'],
@@ -41,7 +48,7 @@ const footerInfo = {
   ] },
   privacy: { title: 'Chính sách bảo mật', paragraphs: [
     'Bạn quyết định việc cấp quyền camera trên trình duyệt. Camera được dùng cho các bước trải nghiệm và sàng lọc có hướng dẫn.',
-    'Bước phân tích Hirschberg gửi ảnh chụp cùng thông tin phiên đo đến máy chủ AI sau khi bạn xác nhận phân tích. Vì vậy, không phải toàn bộ quy trình đều xử lý trên thiết bị.',
+    'Bước phân tích Hirschberg gửi ảnh chụp cùng thông tin phiên đo đến máy chủ AI sau khi bạn xác nhận phân tích. Module PtosisCheck tuân thủ nguyên tắc Zero-Retention RAM, giải phóng bộ nhớ ngay sau khi xuất kết quả.',
     'Tính năng đọc lời dẫn có thể dùng dịch vụ giọng nói trực tuyến để tạo hoặc tải âm thanh. Lựa chọn giao diện sáng hoặc tối được lưu trong trình duyệt của bạn.',
   ] },
   terms: { title: 'Điều khoản sử dụng', paragraphs: [
@@ -51,7 +58,7 @@ const footerInfo = {
   ] },
   ai: { title: 'Thông tin về AI', paragraphs: [
     'RemiCare dùng điểm mốc khuôn mặt để bám vị trí mắt trong các trải nghiệm camera. Bộ mô phỏng tạo hiệu ứng theo hướng và mức độ bạn lựa chọn.',
-    'Ở quy trình Hirschberg, ảnh được gửi đến mô hình trên máy chủ để hỗ trợ phân tích. Chất lượng ảnh và điều kiện chụp có thể ảnh hưởng đến đầu ra.',
+    'Ở quy trình Hirschberg và Ptosis, ảnh được phân tích qua các mô hình AI chuyên dụng. Chất lượng ảnh và điều kiện chụp có thể ảnh hưởng đến kết quả đầu ra.',
     'Các hình ảnh chiến dịch trên trang có thể là ảnh minh họa do AI tạo, không phải bằng chứng xác nhận hiệu quả của hệ thống.',
   ] },
   care: { title: 'Kiến thức sức khỏe mắt', paragraphs: [
@@ -67,6 +74,7 @@ export default function AppFooter({ onNavigateHome, onStartExperience, onStartSc
   const [speaking, setSpeaking] = useState(false);
   const dialogRef = useRef(null);
   const info = footerInfo[panel];
+  const navigate = useNavigate();
 
   useEffect(() => audioService.subscribe(snapshot => {
     setSpeaking(snapshot.text === intro && ['SPEAKING', 'PAUSED'].includes(snapshot.state));
@@ -78,10 +86,16 @@ export default function AppFooter({ onNavigateHome, onStartExperience, onStartSc
     else if (!panel && dialog.open) dialog.close();
   }, [panel]);
 
-  const home = () => {
-    onNavigateHome?.();
+  const nav = (path, callback) => {
+    if (callback) {
+      callback();
+    } else if (navigate) {
+      navigate(path);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const home = () => nav('/', onNavigateHome);
   const listen = () => {
     if (speaking) audioService.stop();
     else audioService.speak(intro, { userGesture: true }).catch(error => console.warn('[AppFooter] Voice:', error));
@@ -100,10 +114,12 @@ export default function AppFooter({ onNavigateHome, onStartExperience, onStartSc
           <h3 id="footer-explore-heading">Khám phá</h3>
           <ul>
             <li><button type="button" onClick={home}>Trang chủ</button></li>
-            <li><button type="button" onClick={onOpenAbout}>Giới thiệu RemiCare</button></li>
-            <li><button type="button" onClick={onStartExperience}>Trải nghiệm góc nhìn</button></li>
-            <li><button type="button" onClick={onStartSimulation}>Mô phỏng lác lé</button></li>
-            <li><button type="button" onClick={onStartScreening}>Sàng lọc bằng AI</button></li>
+            <li><button type="button" onClick={() => nav('/gioi-thieu', onOpenAbout)}>Giới thiệu RemiCare</button></li>
+            <li><button type="button" onClick={() => nav('/trai-nghiem', onStartExperience)}>Trải nghiệm góc nhìn</button></li>
+            <li><button type="button" onClick={() => nav('/mo-phong', onStartSimulation)}>Mô phỏng lác lé</button></li>
+            <li><button type="button" onClick={() => nav('/sang-loc', onStartScreening)}>Trung tâm sàng lọc AI</button></li>
+            <li><button type="button" onClick={() => nav('/sang-loc/lac-le')}>Sàng lọc Lác / Lé</button></li>
+            <li><button type="button" onClick={() => nav('/sang-loc/sup-mi')}>Sàng lọc Sụp Mí</button></li>
             <li><button type="button" onClick={() => onOpenCareModal ? onOpenCareModal() : setPanel('care')}>Kiến thức sức khỏe mắt</button></li>
           </ul>
         </nav>
@@ -148,7 +164,7 @@ export default function AppFooter({ onNavigateHome, onStartExperience, onStartSc
         <div className="remicare-footer-dialog-heading"><h2 id="footer-dialog-title">{info?.title}</h2><button type="button" onClick={() => setPanel(null)} aria-label="Đóng thông tin">×</button></div>
         {info?.paragraphs?.map(text => <p key={text}>{text}</p>)}
         {info?.items?.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}
-        {panel === 'guide' && <button type="button" className="remicare-footer-dialog-action" onClick={() => { setPanel(null); onStartScreening?.(); }}>Bắt đầu sàng lọc →</button>}
+        {panel === 'guide' && <button type="button" className="remicare-footer-dialog-action" onClick={() => { setPanel(null); nav('/sang-loc', onStartScreening); }}>Bắt đầu sàng lọc →</button>}
       </div>
     </dialog>
   </footer>;

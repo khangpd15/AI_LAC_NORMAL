@@ -296,7 +296,7 @@ export default function HirschbergStep({
               type="button"
               className="btn btn-primary btn-large"
               onClick={handleTriggerUpload}
-              style={{ minWidth: '240px', fontSize: '1.05rem' }}
+              style={{ minWidth: 'min(100%, 240px)', minHeight: '48px', fontSize: '1.05rem', width: '100%', maxWidth: '360px' }}
             >
               📂 Tải ảnh lên để AI phân tích
             </button>

@@ -111,7 +111,7 @@ input[type='range'] { min-height: 44px; accent-color: var(--color-deep-green); c
 .three-doors-section { padding: 64px 0; margin: 0; }
 .section-title-visual-strip { text-align: left; align-items: flex-start; margin-bottom: 32px; }
 .visual-pointer-pill { background: transparent; color: var(--text-muted); border: 0; padding: 0; font-size: 11px; letter-spacing: 1.5px; box-shadow: none; }
-.doors-section-heading { color: var(--text-heading); font-size: 32px; font-weight: 700; letter-spacing: -1px; margin-top: 16px; }
+.doors-section-heading { color: var(--text-heading); font-size: 32px; font-weight: 700; letter-spacing: -0.01em; margin-top: 16px; word-spacing: normal; }
 .doors-section-sub { color: var(--text-muted); font-size: 16px; }
 .three-doors-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .door-card { padding: 24px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 24px; box-shadow: var(--shadow-sm); min-height: 0; transition: transform .2s, box-shadow .2s; }
@@ -125,7 +125,7 @@ input[type='range'] { min-height: 44px; accent-color: var(--color-deep-green); c
 .btn-door-voice, .btn-mini-voice { background: var(--bg-elevated); color: var(--text-heading); box-shadow: none; border: 0; min-width: 44px; }
 .home-listening-section { padding: 56px 0 32px; border-top: 1px solid var(--border-subtle); }
 .listening-section-heading { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; }
-.listening-section-heading h2 { margin-top: 16px; font-size: 32px; letter-spacing: -1px; }
+.listening-section-heading h2 { margin-top: 16px; font-size: 32px; letter-spacing: -0.01em; word-spacing: normal; }
 .listening-section-heading > p { font-size: 14px; color: var(--text-muted); line-height: 1.8; }
 .listening-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0; }
 .listening-filters button { border: 1px solid var(--border-subtle); border-radius: 999px; padding: 8px 20px; background: transparent; color: var(--text-muted); font-size: 14px; }
