@@ -7,9 +7,7 @@ import LumiSprite from './LumiSprite';
 export default function LumiChatbot({ onNavigate }) {
   const [open, setOpen] = useState(false);
   const [showGreeting, setShowGreeting] = useState(true);
-  const [sleeping, setSleeping] = useState(false);
   const [flying, setFlying] = useState(false);
-  const [activity, setActivity] = useState(0);
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState([{ role: 'assistant', answer: lumiWelcome }]);
   const panelId = useId();
@@ -19,15 +17,8 @@ export default function LumiChatbot({ onNavigate }) {
   const log = useRef(null);
   const previouslyOpen = useRef(false);
 
-  const wake = () => { setSleeping(false); setActivity((value) => value + 1); };
-  const close = () => { setOpen(false); wake(); };
-  const openChat = () => { wake(); setShowGreeting(false); setOpen(true); };
-
-  useEffect(() => {
-    if (open || flying) return;
-    const timer = window.setTimeout(() => setSleeping(true), 12000);
-    return () => window.clearTimeout(timer);
-  }, [open, flying, activity]);
+  const close = () => setOpen(false);
+  const openChat = () => { setShowGreeting(false); setOpen(true); };
 
   useEffect(() => {
     if (open) input.current?.focus({ preventScroll: true });
@@ -77,8 +68,8 @@ export default function LumiChatbot({ onNavigate }) {
       </button>
       <button type="button" className="lumi-greeting-dismiss" aria-label="Ẩn lời chào Lumi" onClick={() => setShowGreeting(false)}>×</button>
     </div>}
-    <button ref={launcher} type="button" className="lumi-chat-launcher" aria-label={open ? 'Đóng trò chuyện Lumi' : 'Mở trò chuyện với Lumi'} aria-expanded={open} aria-controls={open ? panelId : undefined} onPointerEnter={() => { wake(); setFlying(true); }} onPointerLeave={() => setFlying(false)} onFocus={() => { wake(); setFlying(true); }} onBlur={() => setFlying(false)} onClick={() => open ? close() : openChat()}>
-      <LumiSprite action={sleeping && !open ? 'sleep' : flying || open ? 'fly' : 'wave'} />
+    <button ref={launcher} type="button" className="lumi-chat-launcher" aria-label={open ? 'Đóng trò chuyện Lumi' : 'Mở trò chuyện với Lumi'} aria-expanded={open} aria-controls={open ? panelId : undefined} onPointerEnter={() => setFlying(true)} onPointerLeave={() => setFlying(false)} onFocus={() => setFlying(true)} onBlur={() => setFlying(false)} onClick={() => open ? close() : openChat()}>
+      <LumiSprite action={flying || open ? 'fly' : 'wave'} />
     </button>
   </div>;
 }

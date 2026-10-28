@@ -6,14 +6,9 @@
 .lumi-sprite-frame { position: absolute; inset: 0; display: block; width: 100%; height: 100%; overflow: hidden; opacity: 0; animation: lumi-action-frames var(--frame-duration) steps(1, end) infinite; animation-delay: calc(var(--frame-index) * var(--frame-duration) / 5); }
 .lumi-action-sprite[data-still='true'] .lumi-sprite-frame { animation: none; opacity: 0; }
 .lumi-action-sprite[data-still='true'] .lumi-sprite-frame:first-child { opacity: 1; }
-.lumi-action-sprite[data-action='sleep'] { --frame-start: -425; background-image: url('/images/lumi-action-frames.png'); background-size: calc(var(--sprite-size) * 821 / 49) calc(var(--sprite-size) * 468 / 49); background-position: calc(var(--sprite-size) * var(--frame-start) / 49) calc(var(--sprite-size) * -383 / 49); animation: lumi-sleep-frames 2.4s steps(8, end) infinite; }
 @keyframes lumi-action-frames {
   0% { opacity: 1; }
   20%, 100% { opacity: 0; }
-}
-@keyframes lumi-sleep-frames {
-  from { background-position-x: calc(var(--sprite-size) * var(--frame-start) / 49); }
-  to { background-position-x: calc(var(--sprite-size) * (var(--frame-start) - 392) / 49); }
 }
 @media (prefers-reduced-motion: reduce) {
   .lumi-action-sprite, .lumi-sprite-frame { animation: none; }

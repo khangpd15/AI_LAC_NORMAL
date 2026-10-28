@@ -15,7 +15,7 @@ const frameBounds = {
 
 export default function LumiSprite({ action = 'wave', still = false, className = '' }) {
   return <span className={`lumi-action-sprite ${className}`} data-action={action} data-still={still} aria-hidden="true">
-    {action !== 'sleep' && (frameBounds[action] || frameBounds.wave).map((bounds, index) =>
+    {(frameBounds[action] || frameBounds.wave).map((bounds, index) =>
       <svg key={`${action}-${index}`} className="lumi-sprite-frame" viewBox={bounds.join(' ')} preserveAspectRatio="xMidYMid meet" style={{ '--frame-index': index }}>
         <image href="/images/lumi-hello-flying.png" width="1983" height="793" />
       </svg>)}
