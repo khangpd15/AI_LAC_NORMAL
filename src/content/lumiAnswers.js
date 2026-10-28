@@ -8,4 +8,4 @@ export const lumiAnswers = [
   { id: 'result', question: 'Kết quả có thay bác sĩ được không?', keywords: ['ket qua', 'bac si', 'chan doan', 'chinh xac', 'kham', 'dieu tri', 'thuoc', 'nho mat', 'dau mat', 'nhin mo', 'nhuoc thi', 'lac le', 'bi lac'], answer: 'RemiCare hỗ trợ tìm hiểu và sàng lọc, không thay thế việc khám chuyên khoa. Lumi không chẩn đoán hay kê thuốc qua trò chuyện. Nếu bạn lo về mắt của mình hoặc của con, hãy mang thông tin sàng lọc đến bác sĩ chuyên khoa mắt để được đánh giá phù hợp.' },
 ];
 
-export const lumiWelcome = 'Chào bạn, mình là Lumi! Mình có thể hướng dẫn bạn dùng RemiCare và tìm hiểu cách chăm sóc đôi mắt. Bạn muốn hỏi điều gì?';
+export const lumiWelcome = 'Chào bạn, mình là Lumi! Mình có thể hướng dẫn bạn dùng RemiCare và tìm hiểu cách chăm sóc đôi mắt. Hãy chọn một câu hỏi bên dưới để mình hướng dẫn nhé!';

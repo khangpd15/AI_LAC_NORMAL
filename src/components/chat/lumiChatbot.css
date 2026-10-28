@@ -38,9 +38,7 @@
 .lumi-chat-suggestions { flex: none; display: flex; gap: 8px; padding: 12px 14px 4px; overflow-x: auto; overscroll-behavior-x: contain; }
 .lumi-chat-suggestions button { flex: none; border: 1px solid var(--border-subtle); border-radius: 20px; padding: 8px 12px; background: var(--bg-surface); color: var(--text-heading); font-size: 12px; white-space: nowrap; }
 .lumi-chat-suggestions button:hover { background: var(--bg-elevated); }
-.lumi-chat-form { flex: none; display: flex; align-items: center; gap: 8px; padding: 10px 14px 4px; }
-.lumi-chat-form input { flex: 1; width: 0; min-width: 0; min-height: 46px; border: 1px solid var(--border-subtle); border-radius: 16px; padding: 10px 12px; background: var(--bg-page); color: var(--text-main); font-size: 16px; }
-.lumi-chat-form button { display: grid; place-items: center; flex: none; width: 46px; height: 46px; border: 0; border-radius: 15px; background: #00545d; color: #fff; }
+.lumi-chat-choice-label { flex: none; margin: 12px 14px 0; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
 .lumi-chat-note { flex: none; margin: 5px 14px 12px; text-align: center; color: var(--text-muted); font-size: 10px; line-height: 1.5; }
 body:has(.remicare-sidebar-drawer.is-open) .lumi-chat-widget { visibility: hidden; pointer-events: none; }
 body:has(.lumi-chat-widget[data-open='true']) .listening-mini { visibility: hidden; pointer-events: none; }
@@ -60,5 +58,4 @@ body:has(.lumi-chat-widget[data-open='true']) .listening-mini { visibility: hidd
   .lumi-chat-header .lumi-mascot-working, .lumi-chat-header p, .lumi-chat-note { display: none; }
   .lumi-chat-header { padding: 4px 12px; }
   .lumi-chat-suggestions { padding-top: 4px; }
-  .lumi-chat-form { padding-bottom: 8px; }
 }
