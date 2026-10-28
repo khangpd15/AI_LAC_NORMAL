@@ -1663,11 +1663,7 @@ export default function CoverTestStep({
             <button
               type="button"
               className={coverSummary.verdict === COVER_TEST_VERDICTS.INCONCLUSIVE || capturedPairs < 6 ? 'btn btn-primary' : 'btn btn-secondary'}
-<<<<<<< HEAD
-              style={{ flex: 1, minWidth: '220px' }}
-=======
               style={{ flex: 1, minWidth: 'min(100%, 200px)', minHeight: '48px' }}
->>>>>>> fdbbc47753a30c9094d5981593b263b54f833642
               onClick={startCoverTestProtocol}
             >
               🔄 {coverSummary.verdict === COVER_TEST_VERDICTS.INCONCLUSIVE ? 'Đo lại để thu đủ dữ liệu' : capturedPairs < 6 ? 'Đo lại để đủ 6 lần chụp' : 'Đo lại Cover Test'}

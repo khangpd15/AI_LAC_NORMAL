@@ -25,15 +25,9 @@ function SocialIcon({ name }) {
 
 const footerInfo = {
   guide: { title: 'Hướng dẫn sàng lọc', paragraphs: [
-<<<<<<< HEAD
-    'Chọn “Sàng lọc” trên thanh điều hướng, cho phép camera và làm theo từng bước hướng dẫn trên màn hình.',
-    'Giữ khuôn mặt trong khung hình. Ở bước Hirschberg, xem lại ảnh chụp trước khi xác nhận gửi ảnh để AI phân tích.',
-    'Bạn có thể nghe Lumi hướng dẫn hoặc đọc nội dung ngay trên từng màn hình.',
-=======
     'Chọn “Sàng lọc” trên thanh điều hướng, chọn giữa Sàng lọc Lác/Lé (Hirschberg & Cover Test) hoặc Sàng lọc Sụp Mí (PtosisCheck), sau đó cấp quyền camera và làm theo từng bước hướng dẫn trên màn hình.',
     'Giữ khuôn mặt trong khung hình. Ở bước chụp ảnh, xem lại ảnh chụp trước khi xác nhận gửi ảnh để AI phân tích.',
-    'Bạn có thể nghe Iris hướng dẫn hoặc đọc nội dung ngay trên từng màn hình.',
->>>>>>> fdbbc47753a30c9094d5981593b263b54f833642
+    'Bạn có thể nghe Lumi hướng dẫn hoặc đọc nội dung ngay trên từng màn hình.',
   ] },
   results: { title: 'Hiểu kết quả sàng lọc', paragraphs: [
     'Kết quả của RemiCare là thông tin hỗ trợ sàng lọc ban đầu. Hình ảnh chưa đủ điều kiện hoặc kết quả chưa rõ có thể cần được thực hiện lại hoặc chuyên gia xem xét.',
