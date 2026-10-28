@@ -51,6 +51,23 @@ export async function saveCoverTestSessionApi({
   delete cleanMetadata.dateOfBirth;
   delete cleanMetadata.address;
 
+  // Existing servers retain clientMetadata but may whitelist raw-cycle fields.
+  // Keep observed evidence here as well so it survives that compatible path.
+  const observedMeasurements = cycles.filter(cycle => cycle.measurementProtocol === 'observed-cover-uncover-v1')
+    .map(cycle => ({
+      cycle: cycle.cycleIndex || cycle.cycleNumber || cycle.cycle,
+      measurementProtocol: cycle.measurementProtocol,
+      primaryMeasurement: cycle.primaryMeasurement,
+      coverOn: { leftEye: cycle.leftEye, rightEye: cycle.rightEye },
+      uncoverRecovery: cycle.uncoverRecovery,
+      procedureEvidence: cycle.procedureEvidence,
+      occlusionVerified: cycle.occlusionVerified,
+      primaryOcclusionVerified: cycle.primaryOcclusionVerified,
+      imageCaptureComplete: cycle.imageCaptureComplete ?? null,
+      quality: cycle.quality,
+    }));
+  if (observedMeasurements.length) cleanMetadata.observedCoverMeasurements = observedMeasurements;
+
   const sessionMetaPayload = {
     sessionId,
     cycleCount: cycles.length,
@@ -69,6 +86,9 @@ export async function saveCoverTestSessionApi({
     const rawSamples = cycle.samples || cycle.rawTrajectory || [];
     const cyclePayload = {
       schemaVersion: '2.0.0',
+      timestampUnit: 'milliseconds',
+      sourceTimestampField: 'timestampMs',
+      pairedFeatureVersion: 'hog64x32-canthal-seconds-v1',
       sessionId,
       cycle: cycleNum,
       coveredEye: String(cycle.coveredEye || (cycleNum % 2 === 1 ? 'LEFT' : 'RIGHT')).toUpperCase(),
@@ -78,6 +98,16 @@ export async function saveCoverTestSessionApi({
       durationMs: cycle.durationMs || 0,
       samples: rawSamples,
       uncoverEvents: cycle.uncoverEvents || [],
+      measurementProtocol: cycle.measurementProtocol || null,
+      primaryMeasurement: cycle.primaryMeasurement || null,
+      coverOn: cycle.primaryMeasurement === 'cover_on_fellow_eye'
+        ? { leftEye: cycle.leftEye, rightEye: cycle.rightEye } : null,
+      uncoverRecovery: cycle.uncoverRecovery || null,
+      procedureEvidence: cycle.procedureEvidence || [],
+      occlusionVerified: cycle.occlusionVerified ?? null,
+      primaryOcclusionVerified: cycle.primaryOcclusionVerified ?? null,
+      imageCaptureComplete: cycle.imageCaptureComplete ?? null,
+      measurementQuality: cycle.quality || null,
     };
     const jsonBlob = new Blob([JSON.stringify(cyclePayload)], { type: 'application/json' });
     formData.append(`cycle_${cycleNum}_raw`, jsonBlob, `cycle_${cycleNum}_raw.json`);

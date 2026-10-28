@@ -183,8 +183,43 @@ export function createCycleRecord(
   };
 }
 
+export function createObservedCycleRecord(cycleIndex, baselines, leftCoverLeg, rightCoverLeg, rawTrajectory = [], datasetQuality = null) {
+  const record = createCycleRecord(cycleIndex, baselines, leftCoverLeg?.coverOn,
+    rightCoverLeg?.coverOn, rawTrajectory, null, datasetQuality);
+  record.measurementProtocol = 'observed-cover-uncover-v1';
+  record.primaryMeasurement = 'cover_on_fellow_eye';
+  record.uncoverRecovery = {
+    leftEye: leftCoverLeg?.uncoverRecovery ?? null,
+    rightEye: rightCoverLeg?.uncoverRecovery ?? null,
+  };
+  record.procedureEvidence = [leftCoverLeg?.evidence, rightCoverLeg?.evidence].filter(Boolean);
+  record.occlusionMethod = 'pixel-appearance-v2';
+  record.occlusionVerified = record.procedureEvidence.length === 2 &&
+    record.procedureEvidence.every(evidence => evidence.procedureValid === true);
+  const sequenceValid = leftCoverLeg?.coveredEye === 'LEFT' && rightCoverLeg?.coveredEye === 'RIGHT' &&
+    leftCoverLeg?.coverOn?.eye === 'right' && rightCoverLeg?.coverOn?.eye === 'left';
+  record.primaryOcclusionVerified = sequenceValid && record.procedureEvidence.length === 2 &&
+    record.procedureEvidence.every(evidence => evidence.primaryProcedureValid === true);
+  if (!record.primaryOcclusionVerified) {
+    record.valid = false;
+    record.status = 'INCONCLUSIVE';
+    record.isRefixationNotable = false;
+    record.quality = { isValid: false, status: DATA_QUALITY_STATUS.INCONCLUSIVE,
+      reason: !sequenceValid ? 'EYE_SEQUENCE_NOT_CONFIRMED'
+        : record.procedureEvidence.find(evidence => evidence.reason)?.reason || 'PROCEDURE_NOT_CONFIRMED' };
+  }
+  return record;
+}
+
 export function aggregateCoverCycles(cycles = []) {
-  const validCycles = (cycles || []).filter((cycle) => cycle?.quality?.isValid || cycle?.valid);
+  const validCycles = (cycles || []).filter(cycle => {
+    if (cycle?.measurementProtocol === 'observed-cover-uncover-v1') {
+      return cycle.quality?.isValid === true && cycle.primaryOcclusionVerified === true &&
+        ['leftEye', 'rightEye'].every(key => cycle[key]?.dataQuality?.isValid === true &&
+          cycle[key]?.measurementKind === 'cover_on_fellow_eye');
+    }
+    return cycle?.quality?.isValid || cycle?.valid;
+  });
 
   if (validCycles.length < 2) {
     return {
@@ -238,9 +273,11 @@ export function aggregateCoverCycles(cycles = []) {
   const leftNotableCycles = validCycles.filter((c) => c.leftEye?.isNotableMovement).length;
 
   const hasConsistentRefixation = rightNotableCycles >= 2 || leftNotableCycles >= 2;
+  const hasIsolatedMovement = !hasConsistentRefixation && (rightNotableCycles > 0 || leftNotableCycles > 0);
 
   const verdict = hasConsistentRefixation
     ? COVER_TEST_VERDICTS.REFIXATION_DETECTED
+    : hasIsolatedMovement ? COVER_TEST_VERDICTS.INCONCLUSIVE
     : COVER_TEST_VERDICTS.NO_SIGNIFICANT_REFIXATION;
 
   return {
@@ -250,11 +287,13 @@ export function aggregateCoverCycles(cycles = []) {
     totalCycles: cycles.length,
     aggregatedRight: aggregateEyeMeasurements(validCycles.map((cycle) => cycle.rightEye).filter(Boolean), 'right'),
     aggregatedLeft: aggregateEyeMeasurements(validCycles.map((cycle) => cycle.leftEye).filter(Boolean), 'left'),
-    consistency: hasConsistentRefixation ? 'CONSISTENT_REFIXATION' : 'NO_NOTABLE_REFIXATION',
+    consistency: hasConsistentRefixation ? 'CONSISTENT_REFIXATION'
+      : hasIsolatedMovement ? 'INCONSISTENT_MOVEMENT' : 'NO_NOTABLE_REFIXATION',
     quality: {
-      status: DATA_QUALITY_STATUS.GOOD,
+      status: hasIsolatedMovement ? DATA_QUALITY_STATUS.INCONCLUSIVE : DATA_QUALITY_STATUS.GOOD,
       score: validCycles.length / SCREENING_CONFIG.CYCLES,
-      reasons: cycles.filter((cycle) => !cycle?.quality?.isValid && !cycle?.valid).map((cycle) => cycle?.quality?.reason).filter(Boolean),
+      reasons: [...(hasIsolatedMovement ? ['INCONSISTENT_MOVEMENT'] : []),
+        ...cycles.filter((cycle) => !cycle?.quality?.isValid && !cycle?.valid).map((cycle) => cycle?.quality?.reason).filter(Boolean)],
     },
   };
 }

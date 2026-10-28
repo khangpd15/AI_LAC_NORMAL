@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { checkVideoLightingAndBlur } from '../../services/positionCalibrationService.js';
-import { COVER_PHASE_MS, isCoverPhaseComplete } from '../../services/coverTestTimeline.js';
+import { COVER_PHASE_MS, isObservedCoverPhaseComplete } from '../../services/coverTestTimeline.js';
 import { createCoverTestCues } from '../../services/coverTestCues.js';
 import audioService from '../../services/audioService.js';
 import { createCoverBaselineBuffer, isCoverFrameInPhase } from '../../services/coverTestBaselineBuffer.js';
@@ -9,19 +9,17 @@ import AudioButton from '../audio/AudioButton';
 import CoverTestDebugPanel from '../debug/CoverTestDebugPanel';
 import CameraView from '../CameraView';
 import FixationTarget from './FixationTarget';
-import {
-  analyzeUncoverTrajectory,
-} from '../../services/coverTestMeasurementService.js';
+import { createCoverEventMeasurementRecorder, COVER_EVENT_LIMITS } from '../../services/coverTest/coverEventMeasurementService.js';
 import {
   COVER_TEST_VERDICTS,
   FIXATION_TARGET_CONFIG,
 } from '../../constants/binocularScreeningConfig.js';
 import { COVER_TEST_CONFIG, SCREENING_CONFIG } from '../../constants/screeningConfig.js';
 import { RESEARCH_QUALITY_CONFIG } from '../../constants/researchScreeningConfig.js';
-import { aggregateCoverCycles, createCoverFrame, createCycleRecord, generateUUIDv4, isCoverSessionCurrent, isValidUUIDv4, validateBaselinePair } from '../../services/coverTestProtocolService.js';
+import { aggregateCoverCycles, createCoverFrame, createObservedCycleRecord, generateUUIDv4, isCoverSessionCurrent, isValidUUIDv4, validateBaselinePair } from '../../services/coverTestProtocolService.js';
 import { createTimeSeriesRecorder } from '../../services/coverTestTimeSeriesService.js';
 import { captureScreeningFrame } from '../../services/screeningImageCaptureService.js';
-import { UncoverCaptureObserver, freezeEyePair, encodeEyePair } from '../../services/coverTest/uncoverCaptureService.js';
+import { UncoverCaptureObserver, freezeEyePair, encodeEyePair, isUncoverCaptureEligible } from '../../services/coverTest/uncoverCaptureService.js';
 import { saveCoverTestSession as saveCoverTestCloudSession } from '../../services/coverTest/coverTestPersistenceService.js';
 import { toCanonicalEye } from '../../utils/eyeCoordinateMapping.js';
 import CoverTestLightbox from '../coverTest/CoverTestLightbox';
@@ -122,6 +120,7 @@ export default function CoverTestStep({
   const timeSeriesRecorderRef = useRef(createTimeSeriesRecorder(0, { fullRate: true }));
   const phaseFrameHandlerRef = useRef(null);
   const uncoverObserverRef = useRef(null);
+  const eventMeasurementsRef = useRef(null);
   const uncoverEventsRef = useRef([]);
   const pendingCropsRef = useRef(new Set());
   const cycleStartRef = useRef(0);
@@ -290,6 +289,8 @@ export default function CoverTestStep({
           samplingRateHz: 30,
           samplingMode: 'UNIQUE_SOURCE_FRAMES',
           protocolVersion: 'cover-test-multimodal-v2',
+          measurementProtocol: 'observed-cover-uncover-v1',
+          primaryMeasurement: 'cover_on_fellow_eye',
           researchSchemaVersion: RESEARCH_QUALITY_CONFIG.schemaVersion,
           coverSequenceSchema: {
             timestampField: 'timestampMs',
@@ -474,6 +475,7 @@ export default function CoverTestStep({
     protocolStartRef.current = null;
     phaseFrameHandlerRef.current = null;
     uncoverObserverRef.current?.transition.reset();
+    eventMeasurementsRef.current = null;
     isTargetLockedRef.current = false;
     setLockedTargetPos(null);
     if (captureNoticeTimeoutRef.current) clearTimeout(captureNoticeTimeoutRef.current);
@@ -581,9 +583,11 @@ export default function CoverTestStep({
           playCue(state === 'TRACKING' ? 'uncover' : 'cover');
         }
 
-        const buffer = [];
         const startT = performance.now();
-        if (state === 'COVER') uncoverObserverRef.current?.transition.reset(coverEye);
+        if (state === 'COVER') {
+          uncoverObserverRef.current?.transition.reset(coverEye);
+          eventMeasurementsRef.current?.beginCover(coverEye, cycleNum);
+        }
         const initialSeconds = Math.ceil(durationMs / 1000);
         setCountdownSec(initialSeconds);
         let prevSec = initialSeconds;
@@ -599,7 +603,24 @@ export default function CoverTestStep({
           const { image, ...metadata } = captured;
           const lm = results.multiFaceLandmarks?.[0];
           const observation = uncoverObserverRef.current?.observe(image, lm, captured.timestampMs, state === 'PREPARING' ? 'BASELINE' : state,
-            () => !feats || !currentQuality?.faceDetected || currentQuality?.headPoseValid === false ? null : freezeEyePair(image, lm, metadata));
+            () => isUncoverCaptureEligible(feats, currentQuality) ? freezeEyePair(image, lm, metadata) : null);
+          const measurementVisibility = observation?.measurementVisibility;
+          const measurementFrames = {};
+          for (const side of ['left', 'right']) {
+            if (measurementVisibility?.[side] === 'VISIBLE' && observation.measurementCoordinates?.[side]) {
+              const measured = createCoverFrame(
+                { ...feats, observedVisibility: measurementVisibility },
+                { ...currentQuality, coveredEye: null, eyeVisibility: measurementVisibility }, side,
+                captured.timestampMs, captured.timestampMs - startT,
+              ).frame;
+              if (measured) measurementFrames[side] = { ...measured, ...observation.measurementCoordinates[side] };
+            }
+          }
+          eventMeasurementsRef.current?.observe({
+            timestampMs: captured.timestampMs, frameId: metadata.frameId,
+            visibility: measurementVisibility, frames: measurementFrames,
+            qualityValid: Boolean(feats && currentQuality?.faceDetected && currentQuality.headPoseValid !== false),
+          });
           if (state === 'COVER') {
             captureFeedbackRef.current = uncoverObserverRef.current?.transition.armed
               ? 'Đã nhận diện che mắt. Giữ nguyên và chờ hiệu lệnh bỏ che.'
@@ -746,7 +767,15 @@ export default function CoverTestStep({
             baselineFeedbackRef.current = 'Chưa nhận diện được khuôn mặt. Đưa mặt vào giữa camera.';
             return;
           }
-          const observedFeatures = { ...feats, observedVisibility: observation?.visibility };
+          const observedFeatures = {
+            ...feats, observedVisibility: observation?.visibility,
+            observedEyeLocal: Object.fromEntries(['left', 'right'].map(side => [side,
+              measurementFrames[side] ? {
+                x: measurementFrames[side].normalizedX,
+                y: measurementFrames[side].normalizedY, valid: true,
+              } : { x: null, y: null, valid: false },
+            ])),
+          };
           const elapsed = captured.timestampMs - startT;
           if (state === 'BASELINE' || state === 'PREPARING') {
             const imageQuality = checkVideoLightingAndBlur(videoRef.current);
@@ -765,22 +794,6 @@ export default function CoverTestStep({
               ? 'Camera đang nhận diện mắt nhắm. Để rõ cả hai mắt và nhìn vào camera.'
               : rejection === 'HEAD_MOTION' ? 'Giữ đầu thẳng, tránh nghiêng hoặc quay đầu.'
               : rejection ? 'Chưa thấy rõ mống mắt. Điều chỉnh vị trí và ánh sáng.' : null;
-          } else if (state === 'TRACKING' && trackEye) {
-            const eyeVis = observation?.visibility?.[trackEye];
-            const isCurrentlyOccluded = eyeVis === 'OCCLUDED' || currentQuality?.eyeVisibility?.[trackEye] === 'OCCLUDED';
-            // Không nạp vào buffer khi tay còn che mắt (frame OCCLUDED bị loại).
-            // Khi tay đã buông, nạp vào buffer kèm cờ chất lượng mắt mở VALID_SAMPLE hoặc UNKNOWN_SAMPLE.
-            if (!isCurrentlyOccluded) {
-              const aperture = feats?.raw ? feats.raw[`${trackEye}EyeAperture`] : null;
-              const isEyeOpen = eyeVis === 'VISIBLE' || (typeof aperture === 'number' && aperture >= 0.14);
-              const qualityFlag = isEyeOpen ? 'VALID_SAMPLE' : 'UNKNOWN_SAMPLE';
-              const tracked = createCoverFrame(observedFeatures, currentQuality, trackEye, captured.timestampMs, elapsed);
-              if (tracked.frame) {
-                tracked.frame.qualityFlag = qualityFlag;
-                tracked.frame.isEyeValid = isEyeOpen;
-                buffer.push(tracked.frame);
-              }
-            }
           }
           phaseRecorder.processFrame(captured.timestampMs, state, observedFeatures,
             currentQuality, currentBaselineRef.current, trackEye, coverEye);
@@ -798,7 +811,15 @@ export default function CoverTestStep({
           const baseline = collectingBaseline ? baselineBufferRef.current.read(now) : null;
           const baselineReady = baseline && validateBaselinePair(baseline).isValid &&
             (!positionReportRef.current || positionReportRef.current.status === 'READY');
-          const phaseRemaining = durationMs - elapsed;
+          const eventProgress = eventMeasurementsRef.current?.getProgress();
+          const phaseEvent = state === 'COVER' ? eventProgress?.coverEvent : eventProgress?.uncoverEvent;
+          const collectingEvent = state === 'COVER' || state === 'TRACKING';
+          const extendingWindow = collectingEvent && elapsed >= durationMs && elapsed < durationMs + 3000 &&
+            (!phaseEvent || now < phaseEvent.timestampMs + COVER_EVENT_LIMITS.analysisMs);
+          const phaseRemaining = extendingWindow
+            ? Math.min(startT + durationMs + 3000, phaseEvent
+              ? phaseEvent.timestampMs + COVER_EVENT_LIMITS.analysisMs : startT + durationMs + 3000) - now
+            : durationMs - elapsed;
           const remainingSec = Math.max(0, Math.ceil(phaseRemaining / 1000));
           if (protocolStartRef.current != null) setProtocolSecond(Math.floor((now - protocolStartRef.current) / 1000));
 
@@ -813,7 +834,8 @@ export default function CoverTestStep({
             // Throttle React state telemetry updates to 4 Hz (every 250ms) to avoid 60 FPS re-render churn (Section 14)
             if (now - lastTelemetryUpdateRef.current >= 250) {
               lastTelemetryUpdateRef.current = now;
-              if (state === 'COVER' || state === 'TRACKING') setInstructionSubtext(captureFeedbackRef.current);
+              if (state === 'COVER' || state === 'TRACKING') setInstructionSubtext(extendingWindow
+                ? `${captureFeedbackRef.current} Đang thu thêm dữ liệu, tiếp tục nhìn vào mục tiêu.` : captureFeedbackRef.current);
               if (baseline) {
                 setBaselineProgress({ left: baseline.leftBaseline.sampleCount, right: baseline.rightBaseline.sampleCount });
                 setInstructionSubtext(baselineFeedbackRef.current ||
@@ -837,25 +859,13 @@ export default function CoverTestStep({
             }
           }
 
-          if (isCoverPhaseComplete(elapsed, durationMs, speechFinished) || (state === 'BASELINE' && baselineReady)) {
+          if (isObservedCoverPhaseComplete({ phase: state, elapsedMs: elapsed, durationMs, speechFinished,
+            phaseStartMs: startT, progress: eventProgress }) || (state === 'BASELINE' && baselineReady)) {
             try {
               if (state === 'BASELINE' || state === 'PREPARING') {
                 finish(baselineBufferRef.current.read(now));
               } else if (state === 'TRACKING' && trackEye) {
-                const latestEyeWidth = buffer.length && buffer.at(-1)?.eyeWidth > 0 ? buffer.at(-1).eyeWidth : null;
-                const analysis = buffer.length
-                  ? analyzeUncoverTrajectory(buffer, baselineData, trackEye, cycleNum, latestEyeWidth)
-                  : null;
-
-                // Head pose safety check: detect head movements during uncover tracking
-                if (positionReportRef.current?.headPose && !positionReportRef.current.headPose.isValid) {
-                  if (analysis?.dataQuality) {
-                    analysis.dataQuality.isValid = false;
-                    analysis.dataQuality.reason = 'Phát hiện cử động đầu trong khi đo';
-                  }
-                }
-
-                finish(analysis);
+                finish(eventMeasurementsRef.current?.finishLeg() ?? null);
               } else {
                 finish(true);
               }
@@ -894,6 +904,7 @@ export default function CoverTestStep({
     uncoverEventsRef.current = [];
     pendingCropsRef.current = new Set();
     uncoverObserverRef.current = new UncoverCaptureObserver();
+    eventMeasurementsRef.current = createCoverEventMeasurementRecorder();
     setCapturedPairs(0);
     revokeAllCreatedUrls();
     setCapturedSlots(createInitialSlots());
@@ -975,7 +986,7 @@ export default function CoverTestStep({
         speechText: 'Che mắt trái.', cycleNum: c,
       });
       if (!runIsCurrent()) return;
-      const leftEyeAnalysis = await executePhase({
+      const leftCoverLeg = await executePhase({
         state: 'TRACKING', title: 'Bỏ che!', text: 'Bỏ che mắt trái nhanh.',
         subtext: 'Tiếp tục nhìn vào mục tiêu, giữ đầu yên.', trackEye: 'left',
         durationMs: COVER_PHASE_MS.uncover,
@@ -990,7 +1001,7 @@ export default function CoverTestStep({
         speechText: 'Che mắt phải.', cycleNum: c,
       });
       if (!runIsCurrent()) return;
-      const rightEyeAnalysis = await executePhase({
+      const rightCoverLeg = await executePhase({
         state: 'TRACKING', title: 'Bỏ che!', text: 'Bỏ che mắt phải nhanh.',
         subtext: c === 3 ? 'Đang ghi nhận phản ứng cuối và kiểm tra dữ liệu.' : 'Tiếp tục nhìn vào mục tiêu, giữ đầu yên.',
         trackEye: 'right', durationMs: COVER_PHASE_MS.uncover,
@@ -1000,13 +1011,12 @@ export default function CoverTestStep({
       // Record Cycle Result with timestamp-downsampled trajectory and summary (Sections 10, 11)
       const rawTrajectory = timeSeriesRecorderRef.current.getSamples();
       const datasetQuality = timeSeriesRecorderRef.current.getQuality();
-      const cycleRecord = createCycleRecord(
+      const cycleRecord = createObservedCycleRecord(
         c,
         baselines,
-        rightEyeAnalysis,
-        leftEyeAnalysis,
+        leftCoverLeg,
+        rightCoverLeg,
         rawTrajectory,
-        null,
         datasetQuality
       );
       cycleRecord.summary = timeSeriesRecorderRef.current.finalizeCycleSummary(cycleRecord);
@@ -1074,8 +1084,7 @@ export default function CoverTestStep({
           reason,
         };
       });
-      cycleRecord.occlusionMethod = 'pixel-contrast-v1';
-      cycleRecord.occlusionVerified = cycleRecord.uncoverEvents.every(event => event.status === 'CAPTURED');
+      cycleRecord.imageCaptureComplete = cycleRecord.uncoverEvents.every(event => event.status === 'CAPTURED');
     }
 
     setCapturedSlots(prev => {
@@ -1154,6 +1163,8 @@ export default function CoverTestStep({
 
     if (runIsCurrent() && accumulatedCycles.length > 0) {
       const summaryPayload = aggregateCoverCycles(accumulatedCycles);
+      summaryPayload.measurementProtocol = 'observed-cover-uncover-v1';
+      summaryPayload.primaryMeasurement = 'cover_on_fellow_eye';
       summaryPayload.datasetSampleRateHz = 30;
       summaryPayload.datasetSamplingMode = 'UNIQUE_SOURCE_FRAMES';
 
@@ -1392,7 +1403,7 @@ export default function CoverTestStep({
               {coverSummary.verdict === COVER_TEST_VERDICTS.REFIXATION_DETECTED ? (
                 <span style={{ color: '#704800' }}>🟡 Đã ghi nhận chuyển động tái định thị</span>
               ) : coverSummary.verdict === COVER_TEST_VERDICTS.NO_SIGNIFICANT_REFIXATION ? (
-                <span style={{ color: 'var(--color-deep-green)' }}>🟢 Không ghi nhận tái định thị bất thường</span>
+                <span style={{ color: 'var(--color-deep-green)' }}>🟢 Không ghi nhận chuyển động đáng chú ý trong các chu kỳ hợp lệ</span>
               ) : (
                 <span style={{ color: 'var(--text-muted)' }}>⚪ Dữ liệu chưa đủ kết luận</span>
               )}
@@ -1402,17 +1413,31 @@ export default function CoverTestStep({
           {/* Clinician & researcher data breakdown */}
           <div className="clinician-detail-box" style={{ maxWidth: '640px', margin: '0 auto 24px', background: 'var(--color-pale-teal)', border: '1px solid var(--color-soft-mint)', borderRadius: '12px', padding: '16px' }}>
             <h4 style={{ margin: '0 0 10px 0', fontSize: '0.92rem', color: 'var(--color-deep-teal)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: '700' }}>
-              Chi tiết dữ liệu lâm sàng 3 chu kỳ:
+              Chuyển động khi che mắt đối diện (3 chu kỳ):
             </h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-              {coverSummary.cycles.map((cyc) => (
-                <div key={cyc.cycleIndex} style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem' }}>
-                  <div style={{ fontWeight: '700', marginBottom: '4px', color: 'var(--color-deep-teal)' }}>Chu kỳ {cyc.cycleIndex}</div>
-                  <div>Chất lượng: <strong style={{ color: cyc.quality?.isValid ? 'var(--color-deep-green)' : '#704800' }}>{cyc.quality?.isValid ? 'Hợp lệ' : 'Chưa đạt'}</strong></div>
-                  <div>Tái định thị: <strong>{cyc.isRefixationNotable ? 'Có' : 'Không'}</strong></div>
-                </div>
-              ))}
+              {coverSummary.cycles.map((cyc) => {
+                const rightNotable = cyc.rightEye?.isNotableMovement;
+                const leftNotable = cyc.leftEye?.isNotableMovement;
+                return (
+                  <div key={cyc.cycleIndex} style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem' }}>
+                    <div style={{ fontWeight: '700', marginBottom: '4px', color: 'var(--color-deep-teal)' }}>Chu kỳ {cyc.cycleIndex}</div>
+                    <div>Chất lượng: <strong style={{ color: cyc.quality?.isValid ? 'var(--color-deep-green)' : '#704800' }}>{cyc.quality?.isValid ? 'Hợp lệ' : 'Chưa đạt'}</strong></div>
+                    <div style={{ marginTop: '2px' }}>
+                      Mắt T: <strong style={{ color: leftNotable ? '#b45309' : 'var(--text-main)' }}>{!cyc.leftEye?.dataQuality?.isValid ? 'Chưa đủ dữ liệu' : leftNotable ? 'Có' : 'Không'}</strong>
+                    </div>
+                    <div>
+                      Mắt P: <strong style={{ color: rightNotable ? '#b45309' : 'var(--text-main)' }}>{!cyc.rightEye?.dataQuality?.isValid ? 'Chưa đủ dữ liệu' : rightNotable ? 'Có' : 'Không'}</strong>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+            {coverSummary.verdict === COVER_TEST_VERDICTS.NO_SIGNIFICANT_REFIXATION && (
+              <div style={{ marginTop: '10px', fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: 1.4 }}>
+                Kết quả dựa trên chuyển động của mắt đang mở khi che mắt đối diện. Quy tắc lặp lại giữa các chu kỳ là tiêu chí kỹ thuật, chưa xác nhận hoặc loại trừ lác mắt.
+              </div>
+            )}
           </div>
 
           {/* Phase 4.2: AI Transfer Experiment Card */}
@@ -1637,11 +1662,11 @@ export default function CoverTestStep({
           <div className="cover-test-finish-actions" style={{ display: 'flex', gap: '14px', maxWidth: '640px', margin: '0 auto', flexWrap: 'wrap', width: '100%' }}>
             <button
               type="button"
-              className={capturedPairs < 6 ? 'btn btn-primary' : 'btn btn-secondary'}
+              className={coverSummary.verdict === COVER_TEST_VERDICTS.INCONCLUSIVE || capturedPairs < 6 ? 'btn btn-primary' : 'btn btn-secondary'}
               style={{ flex: 1, minWidth: 'min(100%, 200px)', minHeight: '48px' }}
               onClick={startCoverTestProtocol}
             >
-              🔄 {capturedPairs < 6 ? 'Đo lại để đủ 6 lần chụp' : 'Đo lại Cover Test'}
+              🔄 {coverSummary.verdict === COVER_TEST_VERDICTS.INCONCLUSIVE ? 'Đo lại để thu đủ dữ liệu' : capturedPairs < 6 ? 'Đo lại để đủ 6 lần chụp' : 'Đo lại Cover Test'}
             </button>
             <button
               type="button"

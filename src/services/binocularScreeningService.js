@@ -266,7 +266,7 @@ export function updateCoverTestData(sessionId, coverData) {
   let refixationDetected = false;
   if (coverData.verdict === COVER_TEST_VERDICTS.REFIXATION_DETECTED) {
     refixationDetected = true;
-  } else if (cycles.some((c) => c?.isRefixationNotable)) {
+  } else if (!coverData.verdict && cycles.some((c) => c?.quality?.isValid === true && c?.isRefixationNotable)) {
     refixationDetected = true;
   }
 
@@ -274,6 +274,8 @@ export function updateCoverTestData(sessionId, coverData) {
     status: coverData.verdict || (refixationDetected ? COVER_TEST_VERDICTS.REFIXATION_DETECTED : COVER_TEST_VERDICTS.NO_SIGNIFICANT_REFIXATION),
     cycles,
     validCycles,
+    measurementProtocol: coverData.measurementProtocol || null,
+    primaryMeasurement: coverData.primaryMeasurement || null,
     refixationDetected,
     consistency: validCycles >= 2 ? (refixationDetected ? 'CONSISTENT_MOVEMENT' : 'CONSISTENT_STABLE') : 'LOW_CYCLES',
     quality: coverData.quality || {

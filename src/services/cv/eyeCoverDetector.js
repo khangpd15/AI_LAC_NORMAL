@@ -130,6 +130,10 @@ export class EyeCoverDetector {
       let rightScleraSum = 0;
       let rightScleraCount = 0;
       let skinPixelCount = 0;
+      // Low-resolution spatial appearance, separate from scalar contrast.
+      // A finger crease or a bright occluder edge must not imitate an iris.
+      const appearanceSums = new Array(48).fill(0);
+      const appearanceCounts = new Array(48).fill(0);
 
       const totalPixels = destW * destH;
 
@@ -141,6 +145,9 @@ export class EyeCoverDetector {
           const b = imgData[idx + 2];
           // Độ chói Luminance ITU-R BT.601
           const lum = r * 0.299 + g * 0.587 + b * 0.114;
+          const cell = Math.min(5, Math.floor(py * 6 / destH)) * 8 + Math.min(7, Math.floor(px * 8 / destW));
+          appearanceSums[cell] += lum;
+          appearanceCounts[cell]++;
 
           sum += lum;
           sumSq += lum * lum;
@@ -201,6 +208,7 @@ export class EyeCoverDetector {
         sidesLum,
         skinRatio,
         isEyeLike,
+        appearance: appearanceSums.map((value, i) => value / Math.max(1, appearanceCounts[i])),
       };
     } catch {
       return {
@@ -298,14 +306,14 @@ export class EyeCoverDetector {
         const rightPatch = this.sampleEyePatch(video, rightCenterX, rightCenterY, rightCropW, rightCropH, 32, 0, 32, 24);
 
         // 4. Nhận diện mắt mở sáng rõ (Open Eye Signature)
-        // Mắt thật mở phải có độ tương phản con ngươi tốt, con ngươi tối rõ, và không bị da tay bao phủ
-        const leftIsOpen = leftPatch.skinRatio < 0.35 && (
+        // Mắt thật mở phải có độ tương phản con ngươi tốt, con ngươi tối rõ, hoặc đặc trưng isEyeLike
+        const leftIsOpen = (
           (leftPatch.pupilContrast >= 10.5 && leftPatch.minLum < 88) ||
           (leftPatch.pupilContrast >= 9.0 && leftEAR >= 0.13 && leftPatch.minLum < 85) ||
           (leftEAR >= 0.13 && leftPatch.isEyeLike)
         );
 
-        const rightIsOpen = rightPatch.skinRatio < 0.35 && (
+        const rightIsOpen = (
           (rightPatch.pupilContrast >= 10.5 && rightPatch.minLum < 88) ||
           (rightPatch.pupilContrast >= 9.0 && rightEAR >= 0.13 && rightPatch.minLum < 85) ||
           (rightEAR >= 0.13 && rightPatch.isEyeLike)
@@ -313,7 +321,7 @@ export class EyeCoverDetector {
 
         // 5. Kiểm tra che MỘT BÊN MẮT (Asymmetric Occlusion)
         // Khi che Mắt Trái: Mắt Phải mở rõ, Mắt Trái mất tương phản con ngươi, tăng sắc tố da hoặc con ngươi biến mất
-        const leftOccludedByHand = (
+        const leftOccludedByHand = !leftIsOpen && (
           (leftPatch.skinRatio >= 0.28 && leftPatch.pupilContrast < 13) ||
           (leftPatch.pupilContrast < 10.0) ||
           (rightIsOpen && leftPatch.pupilContrast < rightPatch.pupilContrast * 0.65) ||
@@ -325,7 +333,7 @@ export class EyeCoverDetector {
         );
 
         // Khi che Mắt Phải: Mắt Trái mở rõ, Mắt Phải mất tương phản con ngươi, tăng sắc tố da hoặc con ngươi biến mất
-        const rightOccludedByHand = (
+        const rightOccludedByHand = !rightIsOpen && (
           (rightPatch.skinRatio >= 0.28 && rightPatch.pupilContrast < 13) ||
           (rightPatch.pupilContrast < 10.0) ||
           (leftIsOpen && rightPatch.pupilContrast < leftPatch.pupilContrast * 0.65) ||
@@ -345,7 +353,7 @@ export class EyeCoverDetector {
                                  leftPatch.stdDev < 12 && rightPatch.stdDev < 12);
         const bothEyesClosed = (leftEAR < 0.11 && rightEAR < 0.11);
 
-        const bothOccluded = bothLackPupil || bothSkinCovered || bothFlatTexture;
+        const bothOccluded = !leftIsOpen && !rightIsOpen && (bothLackPupil || bothSkinCovered || bothFlatTexture);
 
         let frameCovered = false;
         let detectedSide = null;
