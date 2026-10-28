@@ -6,12 +6,13 @@
  * @returns {Promise<boolean>}
  */
 export function getCameraErrorMessage(error) {
-  if (error?.name === 'NotAllowedError') return 'Bạn chưa cấp quyền truy cập camera trong trình duyệt.';
-  if (error?.name === 'NotFoundError') return 'Không tìm thấy camera trên thiết bị.';
-  if (error?.name === 'NotReadableError') return 'Camera đang bận hoặc trình duyệt chưa mở được luồng hình. Hãy đóng ứng dụng khác đang dùng camera rồi thử lại.';
-  if (error?.name === 'OverconstrainedError') return 'Thiết bị không đáp ứng cấu hình camera được yêu cầu. Vui lòng thử bật lại camera.';
-  if (error?.name === 'SecurityError') return 'Trình duyệt đang chặn camera. Hãy mở trang bằng HTTPS hoặc cấp quyền camera cho trang này.';
-  return error?.message || 'Không thể khởi động camera.';
+  if (error?.name === 'NotAllowedError') return 'Bạn chưa cấp quyền truy cập camera trong trình duyệt hoặc ứng dụng.';
+  if (error?.name === 'NotFoundError') return 'Không tìm thấy thiết bị camera trên máy.';
+  if (error?.name === 'NotReadableError') return 'Camera đang bận hoặc đang bị ứng dụng khác chiếm giữ. Hãy đóng các ứng dụng khác đang dùng camera rồi thử lại.';
+  if (error?.name === 'OverconstrainedError') return 'Thiết bị không đáp ứng độ phân giải camera yêu cầu. Đang tự động chuyển sang chế độ dự phòng.';
+  if (error?.name === 'SecurityError') return 'Camera bị chặn do kết nối không an toàn. Vui lòng chạy ứng dụng qua giao thức HTTPS.';
+  if (error?.name === 'NotSupportedError') return 'Trình duyệt hoặc môi trường này không hỗ trợ truy cập camera trực tiếp.';
+  return error?.message || 'Không thể khởi động camera. Vui lòng thử lại.';
 }
 
 export async function attachStreamToVideo(videoElement, stream) {
@@ -129,6 +130,18 @@ function shouldRetryWithFallback(error, isFallbackCandidate = false) {
 }
 
 async function requestCameraWithFallback(primaryConstraints) {
+  if (!navigator?.mediaDevices?.getUserMedia) {
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    if (!isHttps && typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const err = new Error('Tính năng camera yêu cầu kết nối bảo mật HTTPS. Vui lòng truy cập qua đường dẫn HTTPS.');
+      err.name = 'SecurityError';
+      throw err;
+    }
+    const err = new Error('Trình duyệt của bạn không hỗ trợ hoặc đang chặn quyền truy cập Camera.');
+    err.name = 'NotSupportedError';
+    throw err;
+  }
+
   const defaultConstraints = getDefaultCameraConstraints();
   const fallbackConstraints = getFallbackCameraConstraints();
   const candidates = [

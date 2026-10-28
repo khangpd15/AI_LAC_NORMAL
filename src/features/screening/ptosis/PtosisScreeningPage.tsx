@@ -93,16 +93,16 @@ export default function PtosisScreeningPage() {
     <div className="ptosis-screening-container max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col items-center">
       {/* Top Banner Tiêu đề & Thông tin Bảo mật */}
       <div className="w-full mb-6 pb-5 border-b border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[var(--bg-elevated)] text-[var(--color-mint)] flex items-center justify-center flex-shrink-0 border border-[var(--color-soft-mint)]">
-            <Eye className="w-5 h-5 text-[var(--color-mint)]" />
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[var(--bg-elevated)] text-[var(--color-mint)] flex items-center justify-center flex-shrink-0 border border-[var(--color-soft-mint)]">
+            <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-mint)]" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-extrabold text-[var(--text-heading)] tracking-tight">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <h1 className="text-lg sm:text-2xl font-extrabold text-[var(--text-heading)] tracking-tight">
                 Sàng lọc Hình thái Mi mắt
               </h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--bg-elevated)] text-[var(--color-mint)] border border-[var(--color-soft-mint)]">
+              <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-[var(--bg-elevated)] text-[var(--color-mint)] border border-[var(--color-soft-mint)] whitespace-nowrap flex-shrink-0">
                 PtosisCheck AI
               </span>
             </div>

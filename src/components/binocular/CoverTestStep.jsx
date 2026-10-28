@@ -1634,11 +1634,11 @@ export default function CoverTestStep({
             onNavigate={(newIdx) => setLightboxState((prev) => ({ ...prev, currentIndex: newIdx }))}
           />
 
-          <div style={{ display: 'flex', gap: '14px', maxWidth: '640px', margin: '0 auto', flexWrap: 'wrap' }}>
+          <div className="cover-test-finish-actions" style={{ display: 'flex', gap: '14px', maxWidth: '640px', margin: '0 auto', flexWrap: 'wrap', width: '100%' }}>
             <button
               type="button"
               className={capturedPairs < 6 ? 'btn btn-primary' : 'btn btn-secondary'}
-              style={{ flex: 1, minWidth: '220px' }}
+              style={{ flex: 1, minWidth: 'min(100%, 200px)', minHeight: '48px' }}
               onClick={startCoverTestProtocol}
             >
               🔄 {capturedPairs < 6 ? 'Đo lại để đủ 6 lần chụp' : 'Đo lại Cover Test'}
@@ -1646,7 +1646,7 @@ export default function CoverTestStep({
             <button
               type="button"
               className={capturedPairs < 6 ? 'btn btn-secondary btn-large' : 'btn btn-primary btn-large'}
-              style={{ flex: 2, minWidth: '260px' }}
+              style={{ flex: 2, minWidth: 'min(100%, 240px)', minHeight: '48px' }}
               onClick={() => onComplete?.({ ...coverSummary, aiResult: aiTransferState.result,
                 analysisStatus: aiTransferState.status, capturedPairs })}
             >
