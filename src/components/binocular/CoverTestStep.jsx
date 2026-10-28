@@ -810,6 +810,7 @@ export default function CoverTestStep({
           const collectingBaseline = state === 'BASELINE' || state === 'PREPARING';
           const baseline = collectingBaseline ? baselineBufferRef.current.read(now) : null;
           const baselineReady = baseline && validateBaselinePair(baseline).isValid &&
+            uncoverObserverRef.current?.getCalibrationStatus(now).ready &&
             (!positionReportRef.current || positionReportRef.current.status === 'READY');
           const eventProgress = eventMeasurementsRef.current?.getProgress();
           const phaseEvent = state === 'COVER' ? eventProgress?.coverEvent : eventProgress?.uncoverEvent;
@@ -838,7 +839,9 @@ export default function CoverTestStep({
                 ? `${captureFeedbackRef.current} Đang thu thêm dữ liệu, tiếp tục nhìn vào mục tiêu.` : captureFeedbackRef.current);
               if (baseline) {
                 setBaselineProgress({ left: baseline.leftBaseline.sampleCount, right: baseline.rightBaseline.sampleCount });
-                setInstructionSubtext(baselineFeedbackRef.current ||
+                const appearance = uncoverObserverRef.current?.getCalibrationStatus(now);
+                setInstructionSubtext((appearance && !appearance.ready
+                  ? `Chưa xác nhận ảnh cả hai mắt mở rõ. Mẫu ảnh chuẩn: trái ${appearance.eyes.left.samples}/${appearance.requiredSamples}, phải ${appearance.eyes.right.samples}/${appearance.requiredSamples}. Giữ đầu yên, nhìn thẳng và điều chỉnh ánh sáng.` : null) || baselineFeedbackRef.current ||
                   (positionReportRef.current?.status !== 'READY' && positionReportRef.current?.feedbackMessage) ||
                   (validateBaselinePair(baseline).reason === 'BASELINE_UNSTABLE'
                     ? 'Mẫu mắt chưa ổn định. Giữ đầu yên và nhìn vào mục tiêu.' : 'Đang tích lũy mẫu rõ từ cả hai mắt.'));
@@ -942,7 +945,7 @@ export default function CoverTestStep({
     }
     // Require fresh, stable samples from BOTH eyes before starting the timed sequence.
     protocolStartRef.current = null;
-    if (!validateBaselinePair(baselines).isValid ||
+    if (!validateBaselinePair(baselines).isValid || !uncoverObserverRef.current.getCalibrationStatus(performance.now()).ready ||
         (positionReportRef.current && positionReportRef.current.status !== 'READY')) {
       baselines = await executePhase({
         state: 'BASELINE', title: 'Điều chỉnh trước khi bắt đầu',
@@ -952,10 +955,11 @@ export default function CoverTestStep({
       });
       if (!runIsCurrent()) return;
     }
-    if (!validateBaselinePair(baselines).isValid ||
+    if (!validateBaselinePair(baselines).isValid || !uncoverObserverRef.current.getCalibrationStatus(performance.now()).ready ||
         (positionReportRef.current && positionReportRef.current.status !== 'READY')) {
       invalidateActiveRun();
-      setBaselineError(baselineFeedbackRef.current ||
+      setBaselineError((!uncoverObserverRef.current.getCalibrationStatus(performance.now()).ready
+        ? 'Chưa thu được mẫu ảnh mắt mở rõ từ cả hai mắt. Điều chỉnh ánh sáng, giữ đầu yên và nhìn thẳng trước khi thử lại.' : null) || baselineFeedbackRef.current ||
         (positionReportRef.current?.status !== 'READY' && positionReportRef.current?.feedbackMessage) ||
         'Chưa thu đủ mẫu mắt ổn định. Giữ điện thoại cố định và thử lại.');
       setInstructionTitle('Chưa thu đủ mẫu mắt');
@@ -1542,17 +1546,23 @@ export default function CoverTestStep({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.86rem' }}>
                   {/* Card: Korean 10-15 FPS candidate */}
                   <div style={cardStyle}>
+                    {capturedPairs < 6 && <p role="status" style={{ color: '#8c5a00', margin: '0 0 10px' }}>
+                      Chỉ có {capturedPairs}/6 cặp ảnh bỏ che được chấp nhận. Dữ liệu ảnh chưa đầy đủ; dự đoán mô hình bên dưới chưa xác nhận kết quả sàng lọc.
+                    </p>}
+                    {cleanVersion.includes('trajectory') && <p style={{ color: 'var(--text-muted)', margin: '0 0 10px' }}>
+                      Nguồn phân tích: chuỗi chuyển động mắt, không phải mô hình phân tích ảnh bỏ che.
+                    </p>}
                     <div style={{ color: 'var(--color-deep-teal)', fontSize: '0.88rem', fontWeight: 700, marginBottom: '8px' }}>
                       {cleanLabel}
                     </div>
                     <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
-                      Model Prediction
+                      Dự đoán mô hình nghiên cứu
                     </div>
                     <div style={{ fontSize: '1.15rem', fontWeight: 800, color: cleanPrediction === 'NORMAL' ? 'var(--color-deep-green)' : 'var(--color-warm-coral)', marginBottom: '8px' }}>
                       {cleanPrediction}
                     </div>
                     {cleanProbabilities && <div style={{ color: 'var(--text-dim)', fontSize: '0.74rem', marginBottom: '3px' }}>
-                      Model class probability
+                      Xác suất mô hình theo từng nhãn (không phải độ chính xác)
                     </div>}
                     {cleanProbabilities && <div style={{ fontSize: '0.84rem', fontWeight: 600 }}>
                       NORMAL: <span style={{ color: 'var(--color-deep-green)' }}>{((cleanProbabilities.NORMAL ?? 0) * 100).toFixed(1)}%</span>

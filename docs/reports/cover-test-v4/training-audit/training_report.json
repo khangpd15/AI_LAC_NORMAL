@@ -1,0 +1,35 @@
+{
+  "rows": 17,
+  "eligibleRows": 0,
+  "exclusionReasons": {
+    "MISSING_SOURCE_OR_DEVICE_PROVENANCE": 17,
+    "MISSING_FROZEN_SUBJECT_SPLIT": 17
+  },
+  "subjectsBySplitAndClass": {
+    "train:NORMAL": 0,
+    "train:STRABISMUS": 0,
+    "validation:NORMAL": 0,
+    "validation:STRABISMUS": 0,
+    "test:NORMAL": 0,
+    "test:STRABISMUS": 0
+  },
+  "readyForTraining": false,
+  "contract": "cover-paired-crops-ms-v3",
+  "featureVersion": "hog64x32-canthal-seconds-v1",
+  "manifestSha256": "f74f45a482a149eb43a3bf605eaa63916285d9550403631ad3326a555f3eca94",
+  "targetAccuracy": 0.9,
+  "accuracy": null,
+  "status": "NEEDS_VERIFIED_PAIRED_SUBJECTS",
+  "confidencePolicy": {
+    "targetLower95CI": 0.9,
+    "requiredMetrics": [
+      "accuracy",
+      "sensitivity",
+      "specificity"
+    ],
+    "evaluationUnit": "verified_independent_subject",
+    "perfectCaseMinimumTestSubjectsPerClass": 35,
+    "planningAt95PercentCorrectPerClass": 140,
+    "note": "Planning assumptions only; no sample count guarantees performance."
+  }
+}

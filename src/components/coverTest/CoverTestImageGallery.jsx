@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { COVER_VISIBILITY_REASON_LABELS } from '../../constants/coverVisibilityReasons';
+
+const formatMetric = (value) => Number.isFinite(value) ? value.toFixed(2) : '--';
 
 /**
  * CoverTestImageGallery
@@ -55,7 +58,7 @@ export default function CoverTestImageGallery({
       return 'Tay chưa che đủ kín mống mắt (cần che tối ≥ 120ms)';
     }
     if (r === 'QUA_CUA_SO_THOI_GIAN' || r === 'WINDOW_EXPIRED') {
-      return 'Hạ tay chậm quá cửa sổ xác nhận (1.8s)';
+      return 'Chưa xác nhận được cả hai mắt rõ liên tục sau khi bỏ che; xem lý do nhận diện bên dưới';
     }
     if (r === 'NGHIENG_DAU_KHI_BO_CHE' || r === 'HEAD_POSE_INVALID') {
       return 'Đầu nghiêng quá góc cho phép khi bỏ che';
@@ -376,7 +379,10 @@ export default function CoverTestImageGallery({
                           }}
                         />
                         <div style={{ fontSize: '0.62rem', lineHeight: 1.35, color: '#334155' }}>
-                          <div>minLum: <strong>{slot.debugCropMetrics?.minLum ?? '--'}</strong> (ngưỡng &lt;85)</div>
+                          <div>Lý do: <strong>{COVER_VISIBILITY_REASON_LABELS[slot.debugCropMetrics?.visibilityReason] || 'Phiên cũ chưa ghi lý do chi tiết'}</strong></div>
+                          <div>Mẫu chuẩn: <strong>{slot.debugCropMetrics?.baselineSamples ?? '--'}/{slot.debugCropMetrics?.requiredBaselineSamples ?? 5}</strong> tối thiểu</div>
+                          <div>Khớp cấu trúc: <strong>{formatMetric(slot.debugCropMetrics?.appearance?.correlation)}</strong> (tối thiểu 0.65)</div>
+                          <div>minLum: <strong>{formatMetric(slot.debugCropMetrics?.minLum)}</strong> (so sánh với mẫu chuẩn và độ sáng)</div>
                           <div>contrast: <strong>{slot.debugCropMetrics?.pupilContrast ?? '--'}</strong> | dynRange: <strong>{slot.debugCropMetrics?.dynamicRange ?? '--'}</strong></div>
                           <div>aperture: <strong>{slot.debugCropMetrics?.aperture ?? '--'}</strong> | skinRatio: <strong>{slot.debugCropMetrics?.skinRatio ?? '--'}</strong></div>
                           <div>lumiShift: <strong>{slot.debugCropMetrics?.isLuminanceShift ? 'LỆCH SÁNG' : 'Chuẩn'}</strong></div>

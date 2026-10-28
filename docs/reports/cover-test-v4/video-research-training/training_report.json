@@ -1,0 +1,353 @@
+{
+  "status": "WEAK_LABEL_RESEARCH_CANDIDATE",
+  "clinicalValidation": false,
+  "promoted": false,
+  "featureVersion": "offline-video-open-eye-opencv-hog-canthal-v1",
+  "videos": 9,
+  "independentSubjectGroups": 7,
+  "evaluation": "leave-one-subject-out; three iPhone clips always held out together",
+  "fixedHyperparameters": {
+    "C": 0.01,
+    "randomState": 42,
+    "threshold": 0.5
+  },
+  "selectionPolicy": "No tuning against the reported heldout predictions",
+  "labelPolicy": "Six distinct subjects user-confirmed; their folder labels remain weak/unverified. iPhone clinical label reported by user.",
+  "ciScope": "Descriptive Wilson intervals over seven out-of-fold subject predictions, NOT an independent external or clinical holdout CI; overlapping training folds and weak labels limit inference.",
+  "summary": {
+    "subjects": 7,
+    "normalSubjects": 2,
+    "strabismusSubjects": 5,
+    "accuracy": 0.5714285714285714,
+    "balancedAccuracy": 0.4,
+    "sensitivity": 0.8,
+    "specificity": 0.0,
+    "descriptiveAccuracy95CI": [
+      0.2504583645276572,
+      0.8417801447485302
+    ],
+    "descriptiveSensitivity95CI": [
+      0.37553462976252533,
+      0.9637758913675698
+    ],
+    "descriptiveSpecificity95CI": [
+      0.0,
+      0.6576197724933469
+    ],
+    "coverage": 1.0
+  },
+  "predictions": [
+    {
+      "subjectId": "IPHONE_SUBJECT_001",
+      "truth": "NORMAL",
+      "prediction": "STRABISMUS",
+      "probabilityStrabismus": 0.680224959134888,
+      "abstentionReason": null,
+      "trainSubjects": [
+        "VIDEO_SUBJECT_001",
+        "VIDEO_SUBJECT_002",
+        "VIDEO_SUBJECT_003",
+        "VIDEO_SUBJECT_004",
+        "VIDEO_SUBJECT_005",
+        "VIDEO_SUBJECT_006"
+      ],
+      "heldoutFiles": [
+        "video\\VIDEO_COVER_TEST\\NORMAL\\4K_30FPS.mp4",
+        "video\\VIDEO_COVER_TEST\\NORMAL\\4K_60FPS.mp4",
+        "video\\VIDEO_COVER_TEST\\NORMAL\\HD_30FPS.mp4"
+      ]
+    },
+    {
+      "subjectId": "VIDEO_SUBJECT_001",
+      "truth": "STRABISMUS",
+      "prediction": "NORMAL",
+      "probabilityStrabismus": 0.48772526109451214,
+      "abstentionReason": null,
+      "trainSubjects": [
+        "IPHONE_SUBJECT_001",
+        "VIDEO_SUBJECT_002",
+        "VIDEO_SUBJECT_003",
+        "VIDEO_SUBJECT_004",
+        "VIDEO_SUBJECT_005",
+        "VIDEO_SUBJECT_006"
+      ],
+      "heldoutFiles": [
+        "video\\VIDEO_COVER_TEST\\ESOTROPIA\\esotropia_1.mp4"
+      ]
+    },
+    {
+      "subjectId": "VIDEO_SUBJECT_002",
+      "truth": "STRABISMUS",
+      "prediction": "STRABISMUS",
+      "probabilityStrabismus": 0.6620438824912254,
+      "abstentionReason": null,
+      "trainSubjects": [
+        "IPHONE_SUBJECT_001",
+        "VIDEO_SUBJECT_001",
+        "VIDEO_SUBJECT_003",
+        "VIDEO_SUBJECT_004",
+        "VIDEO_SUBJECT_005",
+        "VIDEO_SUBJECT_006"
+      ],
+      "heldoutFiles": [
+        "video\\VIDEO_COVER_TEST\\ESOTROPIA\\esotropia_2.mp4"
+      ]
+    },
+    {
+      "subjectId": "VIDEO_SUBJECT_003",
+      "truth": "STRABISMUS",
+      "prediction": "STRABISMUS",
+      "probabilityStrabismus": 0.6631502300488268,
+      "abstentionReason": null,
+      "trainSubjects": [
+        "IPHONE_SUBJECT_001",
+        "VIDEO_SUBJECT_001",
+        "VIDEO_SUBJECT_002",
+        "VIDEO_SUBJECT_004",
+        "VIDEO_SUBJECT_005",
+        "VIDEO_SUBJECT_006"
+      ],
+      "heldoutFiles": [
+        "video\\VIDEO_COVER_TEST\\EXOTROPIA\\exotropia_1.mp4"
+      ]
+    },
+    {
+      "subjectId": "VIDEO_SUBJECT_004",
+      "truth": "STRABISMUS",
+      "prediction": "STRABISMUS",
+      "probabilityStrabismus": 0.7551468212537364,
+      "abstentionReason": null,
+      "trainSubjects": [
+        "IPHONE_SUBJECT_001",
+        "VIDEO_SUBJECT_001",
+        "VIDEO_SUBJECT_002",
+        "VIDEO_SUBJECT_003",
+        "VIDEO_SUBJECT_005",
+        "VIDEO_SUBJECT_006"
+      ],
+      "heldoutFiles": [
+        "video\\VIDEO_COVER_TEST\\EXOTROPIA\\exotropia_2.mp4"
+      ]
+    },
+    {
+      "subjectId": "VIDEO_SUBJECT_005",
+      "truth": "STRABISMUS",
+      "prediction": "STRABISMUS",
+      "probabilityStrabismus": 0.525613186080008,
+      "abstentionReason": null,
+      "trainSubjects": [
+        "IPHONE_SUBJECT_001",
+        "VIDEO_SUBJECT_001",
+        "VIDEO_SUBJECT_002",
+        "VIDEO_SUBJECT_003",
+        "VIDEO_SUBJECT_004",
+        "VIDEO_SUBJECT_006"
+      ],
+      "heldoutFiles": [
+        "video\\VIDEO_COVER_TEST\\EXOTROPIA\\exotropia_3.mp4"
+      ]
+    },
+    {
+      "subjectId": "VIDEO_SUBJECT_006",
+      "truth": "NORMAL",
+      "prediction": "STRABISMUS",
+      "probabilityStrabismus": 0.6112576210567474,
+      "abstentionReason": null,
+      "trainSubjects": [
+        "IPHONE_SUBJECT_001",
+        "VIDEO_SUBJECT_001",
+        "VIDEO_SUBJECT_002",
+        "VIDEO_SUBJECT_003",
+        "VIDEO_SUBJECT_004",
+        "VIDEO_SUBJECT_005"
+      ],
+      "heldoutFiles": [
+        "video\\VIDEO_COVER_TEST\\NORMAL\\normal_1.mp4"
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "file": "video\\VIDEO_COVER_TEST\\ESOTROPIA\\esotropia_1.mp4",
+      "subjectId": "VIDEO_SUBJECT_001",
+      "researchLabel": "STRABISMUS",
+      "labelStatus": "folder_unverified",
+      "sourceSha256": "3b97563d1ef0fbec5c62c1c84a4910f94bb302559ac603f54db724a99a6e2ea2",
+      "quality": {
+        "decodedFrames": 4286,
+        "visibleFrames": [
+          3163,
+          3542
+        ],
+        "bothVisibleFrames": 2510,
+        "sourceSha256": "3b97563d1ef0fbec5c62c1c84a4910f94bb302559ac603f54db724a99a6e2ea2"
+      },
+      "featureEligible": true
+    },
+    {
+      "file": "video\\VIDEO_COVER_TEST\\ESOTROPIA\\esotropia_2.mp4",
+      "subjectId": "VIDEO_SUBJECT_002",
+      "researchLabel": "STRABISMUS",
+      "labelStatus": "folder_unverified",
+      "sourceSha256": "95596e19da254108e1440c832c092505857d0c944d8a880267323a2d4c40051b",
+      "quality": {
+        "decodedFrames": 372,
+        "visibleFrames": [
+          69,
+          80
+        ],
+        "bothVisibleFrames": 69,
+        "sourceSha256": "95596e19da254108e1440c832c092505857d0c944d8a880267323a2d4c40051b"
+      },
+      "featureEligible": true
+    },
+    {
+      "file": "video\\VIDEO_COVER_TEST\\EXOTROPIA\\exotropia_1.mp4",
+      "subjectId": "VIDEO_SUBJECT_003",
+      "researchLabel": "STRABISMUS",
+      "labelStatus": "folder_unverified",
+      "sourceSha256": "5e9fee10888799f76f0e85adf6a878143d7726783cef65807d6466e905f21e88",
+      "quality": {
+        "decodedFrames": 562,
+        "visibleFrames": [
+          363,
+          241
+        ],
+        "bothVisibleFrames": 46,
+        "sourceSha256": "5e9fee10888799f76f0e85adf6a878143d7726783cef65807d6466e905f21e88"
+      },
+      "featureEligible": true
+    },
+    {
+      "file": "video\\VIDEO_COVER_TEST\\EXOTROPIA\\exotropia_2.mp4",
+      "subjectId": "VIDEO_SUBJECT_004",
+      "researchLabel": "STRABISMUS",
+      "labelStatus": "folder_unverified",
+      "sourceSha256": "6fccb77674fc78127c2c744665c57706b99d68c5656405da8b3bea635c4d8099",
+      "quality": {
+        "decodedFrames": 304,
+        "visibleFrames": [
+          217,
+          219
+        ],
+        "bothVisibleFrames": 203,
+        "sourceSha256": "6fccb77674fc78127c2c744665c57706b99d68c5656405da8b3bea635c4d8099"
+      },
+      "featureEligible": true
+    },
+    {
+      "file": "video\\VIDEO_COVER_TEST\\EXOTROPIA\\exotropia_3.mp4",
+      "subjectId": "VIDEO_SUBJECT_005",
+      "researchLabel": "STRABISMUS",
+      "labelStatus": "folder_unverified",
+      "sourceSha256": "bb9ca3a2291c6212b739b34c54fbed4626bd5866a57fd9695a3bfe4e85afeca8",
+      "quality": {
+        "decodedFrames": 759,
+        "visibleFrames": [
+          536,
+          353
+        ],
+        "bothVisibleFrames": 344,
+        "sourceSha256": "bb9ca3a2291c6212b739b34c54fbed4626bd5866a57fd9695a3bfe4e85afeca8"
+      },
+      "featureEligible": true
+    },
+    {
+      "file": "video\\VIDEO_COVER_TEST\\NORMAL\\4K_30FPS.mp4",
+      "subjectId": "IPHONE_SUBJECT_001",
+      "researchLabel": "NORMAL",
+      "labelStatus": "clinician_confirmed",
+      "sourceSha256": "48d615151cba0636d0b4797eda5b06ec69d1a6567b5c65e53afdf1035262c388",
+      "quality": {
+        "decodedFrames": 2105,
+        "visibleFrames": [
+          1703,
+          1732
+        ],
+        "bothVisibleFrames": 1401,
+        "sourceSha256": "48d615151cba0636d0b4797eda5b06ec69d1a6567b5c65e53afdf1035262c388"
+      },
+      "featureEligible": true
+    },
+    {
+      "file": "video\\VIDEO_COVER_TEST\\NORMAL\\4K_60FPS.mp4",
+      "subjectId": "IPHONE_SUBJECT_001",
+      "researchLabel": "NORMAL",
+      "labelStatus": "clinician_confirmed",
+      "sourceSha256": "9cdf0dd0785949ed3e7029550011e94dd52b58282cda6e47e0ec8d6a61106463",
+      "quality": {
+        "decodedFrames": 2094,
+        "visibleFrames": [
+          1529,
+          1674
+        ],
+        "bothVisibleFrames": 1151,
+        "sourceSha256": "9cdf0dd0785949ed3e7029550011e94dd52b58282cda6e47e0ec8d6a61106463"
+      },
+      "featureEligible": true
+    },
+    {
+      "file": "video\\VIDEO_COVER_TEST\\NORMAL\\HD_30FPS.mp4",
+      "subjectId": "IPHONE_SUBJECT_001",
+      "researchLabel": "NORMAL",
+      "labelStatus": "clinician_confirmed",
+      "sourceSha256": "035021c2f00891a9ccb462100030ce8484f79d8b1146f51a689c5bd21d5db3e5",
+      "quality": {
+        "decodedFrames": 2116,
+        "visibleFrames": [
+          1333,
+          1549
+        ],
+        "bothVisibleFrames": 846,
+        "sourceSha256": "035021c2f00891a9ccb462100030ce8484f79d8b1146f51a689c5bd21d5db3e5"
+      },
+      "featureEligible": true
+    },
+    {
+      "file": "video\\VIDEO_COVER_TEST\\NORMAL\\normal_1.mp4",
+      "subjectId": "VIDEO_SUBJECT_006",
+      "researchLabel": "NORMAL",
+      "labelStatus": "folder_unverified",
+      "sourceSha256": "f49097a6f6475cc749714346709ec6f0f6bd3975c814fecc8967e275cebd4be5",
+      "quality": {
+        "decodedFrames": 796,
+        "visibleFrames": [
+          610,
+          760
+        ],
+        "bothVisibleFrames": 586,
+        "sourceSha256": "f49097a6f6475cc749714346709ec6f0f6bd3975c814fecc8967e275cebd4be5"
+      },
+      "featureEligible": true
+    }
+  ],
+  "reviewSha256": "11a2c8be29147e99abfaf57f4aec41137fd84bdb574b15ca999127f51fbcc96d",
+  "majorityLabelReference": {
+    "subjects": 7,
+    "normalSubjects": 2,
+    "strabismusSubjects": 5,
+    "accuracy": 0.7142857142857143,
+    "balancedAccuracy": 0.5,
+    "sensitivity": 1.0,
+    "specificity": 0.0,
+    "descriptiveAccuracy95CI": [
+      0.35893445183261935,
+      0.9177810759959433
+    ],
+    "descriptiveSensitivity95CI": [
+      0.5655175352168251,
+      1.0
+    ],
+    "descriptiveSpecificity95CI": [
+      0.0,
+      0.6576197724933469
+    ],
+    "coverage": 1.0
+  },
+  "featureCount": 408,
+  "sourceCodeHashes": {
+    "train_video_research.py": "ffe300b7efa30dc1d4bb7bbd5608d1cb3939921b4558cd9b5717d0ee1229f883",
+    "video_features.py": "7761c2f79826eef0dbe7c8858475da3e2408dc78724b5409fd6ef0d85ba51bf6",
+    "evidence.py": "c66d0e3430c2bc0241ba8998d61cc5404ce17d47920d77718a4537bce88484af"
+  }
+}

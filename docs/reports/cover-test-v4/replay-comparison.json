@@ -1,0 +1,422 @@
+{
+  "scope": "OFFLINE_ENGINEERING_REPLAY_NOT_CLINICAL_VALIDATION",
+  "comparisons": [
+    {
+      "file": "4K_30FPS",
+      "sourceSha256": "48d615151cba0636d0b4797eda5b06ec69d1a6567b5c65e53afdf1035262c388",
+      "sourceHashes": {
+        "src/services/coverTest/uncoverCaptureService.js": "b4672a4656ed87908d39ad5ff8bad6347beca3c9f8dca21ae8f27b5c9fb61db5",
+        "src/services/coverTest/coverEventMeasurementService.js": "fe6f9845460c93192eeed07562996e88c646bec805ab218f8a7a0aabc308f53d",
+        "src/services/coverTestMeasurementService.js": "afb35b23179c95ea6f0dac48732645d6f83074c6e2f16f294f86fb439e34c7c5",
+        "src/services/coverTestProtocolService.js": "e428132a933732a368400b2e3ab8875a4e430ab2104ffe7c28e7a06576c519d1",
+        "src/services/cv/eyeCoverDetector.js": "6118e2fe45558023ca0aaefc1da75f81d38d232d0b1ba9f8acb813747a09bf29",
+        "src/services/eyeFeatureService.js": "eebdd97f2ee330ea5575764a1bb4e782dabfaa60a72f018822c39d6ceeba92f1",
+        "src/services/coverTestTimeline.js": "d351e7ae6bba7bedb0ce2d06ae23914e4e7c76ae068d62351fb6182ac0f66ad7",
+        "src/services/coverTest/eyeCropGeometry.js": "62e5ffb4098c3cd79e7d374602d144a4529b7b460b97fe3fa90595ca8ac168dd",
+        "scripts/replayIphoneCover.mjs": "16ff8be73981dc710842a0c710735658ee1dc6ae86f4f29d0182a5a8000bf349",
+        "scripts/extractIphoneCoverReplay.py": "91a0192816268180eb89bc3c8fbfdcf0435bb4dc9534facc8af9806dcdba3f67"
+      },
+      "decodedFrames": 2105,
+      "before": {
+        "decodedFrames": 2105,
+        "faceDetectedFrames": 2105,
+        "faceDetectionPercent": 100,
+        "actualDurationSeconds": 70.26666666666665,
+        "headPoseRejectedFrames": 0,
+        "blinkMaskedFrames": 142,
+        "bothDirectlyVisibleFrames": 720,
+        "captureEligibleEvents": 6,
+        "procedureValidLegs": 5,
+        "primaryValidLegs": 5,
+        "recoveryValidLegs": 5,
+        "visibility": {
+          "left": {
+            "VISIBLE": 1346,
+            "OCCLUDED": 670,
+            "UNKNOWN": 89
+          },
+          "right": {
+            "VISIBLE": 1282,
+            "OCCLUDED": 614,
+            "UNKNOWN": 209
+          }
+        },
+        "directVisibility": {
+          "left": {
+            "VISIBLE": 1346,
+            "OCCLUDED": 670,
+            "UNKNOWN": 89
+          },
+          "right": {
+            "VISIBLE": 1282,
+            "OCCLUDED": 614,
+            "UNKNOWN": 209
+          }
+        },
+        "visibilityReasons": {
+          "left": {
+            "NO_BASELINE": 4,
+            "VISIBLE": 1346,
+            "EYELIDS_NOT_OPEN": 68,
+            "LOW_CORRELATION": 12,
+            "OCCLUDER_APPEARANCE": 670,
+            "LOW_CONTRAST": 5
+          },
+          "right": {
+            "NO_BASELINE": 4,
+            "VISIBLE": 1282,
+            "EYELIDS_NOT_OPEN": 70,
+            "LOW_CORRELATION": 23,
+            "OCCLUDER_APPEARANCE": 614,
+            "LOW_CONTRAST": 111,
+            "PUPIL_NOT_CONFIRMED": 1
+          }
+        },
+        "sourceFrameIntervalMedianMs": 33.33333333333326,
+        "sourceFrameIntervalMaxMs": 66.66666666666606,
+        "nativeInferenceMedianMs": 4.559599999993225,
+        "nativeInferenceP95Ms": 5.722800000512507,
+        "maxPatchGeometryErrorPixels": 5.684341886080802e-14
+      },
+      "after": {
+        "decodedFrames": 2105,
+        "faceDetectedFrames": 2105,
+        "faceDetectionPercent": 100,
+        "actualDurationSeconds": 70.26666666666665,
+        "headPoseRejectedFrames": 0,
+        "blinkMaskedFrames": 142,
+        "bothDirectlyVisibleFrames": 720,
+        "captureEligibleEvents": 6,
+        "procedureValidLegs": 5,
+        "primaryValidLegs": 5,
+        "recoveryValidLegs": 5,
+        "visibility": {
+          "left": {
+            "VISIBLE": 1346,
+            "OCCLUDED": 670,
+            "UNKNOWN": 89
+          },
+          "right": {
+            "VISIBLE": 1272,
+            "OCCLUDED": 615,
+            "UNKNOWN": 218
+          }
+        },
+        "directVisibility": {
+          "left": {
+            "VISIBLE": 1346,
+            "OCCLUDED": 670,
+            "UNKNOWN": 89
+          },
+          "right": {
+            "VISIBLE": 1272,
+            "OCCLUDED": 615,
+            "UNKNOWN": 218
+          }
+        },
+        "visibilityReasons": {
+          "left": {
+            "NO_BASELINE": 4,
+            "VISIBLE": 1346,
+            "EYELIDS_NOT_OPEN": 68,
+            "LOW_CORRELATION": 12,
+            "OCCLUDER_APPEARANCE": 670,
+            "LOW_CONTRAST": 5
+          },
+          "right": {
+            "NO_BASELINE": 4,
+            "VISIBLE": 1272,
+            "EYELIDS_NOT_OPEN": 70,
+            "LOW_CORRELATION": 22,
+            "OCCLUDER_APPEARANCE": 615,
+            "LOW_CONTRAST": 121,
+            "PUPIL_NOT_CONFIRMED": 1
+          }
+        },
+        "sourceFrameIntervalMedianMs": 33.33333333333326,
+        "sourceFrameIntervalMaxMs": 66.66666666666606,
+        "nativeInferenceMedianMs": 4.559599999993225,
+        "nativeInferenceP95Ms": 5.722800000512507,
+        "maxPatchGeometryErrorPixels": 5.684341886080802e-14
+      },
+      "clinicalAccuracy": null,
+      "clinical95CI": null
+    },
+    {
+      "file": "4K_60FPS",
+      "sourceSha256": "9cdf0dd0785949ed3e7029550011e94dd52b58282cda6e47e0ec8d6a61106463",
+      "sourceHashes": {
+        "src/services/coverTest/uncoverCaptureService.js": "b4672a4656ed87908d39ad5ff8bad6347beca3c9f8dca21ae8f27b5c9fb61db5",
+        "src/services/coverTest/coverEventMeasurementService.js": "fe6f9845460c93192eeed07562996e88c646bec805ab218f8a7a0aabc308f53d",
+        "src/services/coverTestMeasurementService.js": "afb35b23179c95ea6f0dac48732645d6f83074c6e2f16f294f86fb439e34c7c5",
+        "src/services/coverTestProtocolService.js": "e428132a933732a368400b2e3ab8875a4e430ab2104ffe7c28e7a06576c519d1",
+        "src/services/cv/eyeCoverDetector.js": "6118e2fe45558023ca0aaefc1da75f81d38d232d0b1ba9f8acb813747a09bf29",
+        "src/services/eyeFeatureService.js": "eebdd97f2ee330ea5575764a1bb4e782dabfaa60a72f018822c39d6ceeba92f1",
+        "src/services/coverTestTimeline.js": "d351e7ae6bba7bedb0ce2d06ae23914e4e7c76ae068d62351fb6182ac0f66ad7",
+        "src/services/coverTest/eyeCropGeometry.js": "62e5ffb4098c3cd79e7d374602d144a4529b7b460b97fe3fa90595ca8ac168dd",
+        "scripts/replayIphoneCover.mjs": "16ff8be73981dc710842a0c710735658ee1dc6ae86f4f29d0182a5a8000bf349",
+        "scripts/extractIphoneCoverReplay.py": "91a0192816268180eb89bc3c8fbfdcf0435bb4dc9534facc8af9806dcdba3f67"
+      },
+      "decodedFrames": 2094,
+      "before": {
+        "decodedFrames": 2094,
+        "faceDetectedFrames": 2094,
+        "faceDetectionPercent": 100,
+        "actualDurationSeconds": 69.8,
+        "headPoseRejectedFrames": 0,
+        "blinkMaskedFrames": 84,
+        "bothDirectlyVisibleFrames": 780,
+        "captureEligibleEvents": 6,
+        "procedureValidLegs": 6,
+        "primaryValidLegs": 6,
+        "recoveryValidLegs": 6,
+        "visibility": {
+          "left": {
+            "VISIBLE": 1413,
+            "OCCLUDED": 629,
+            "UNKNOWN": 52
+          },
+          "right": {
+            "VISIBLE": 1412,
+            "OCCLUDED": 529,
+            "UNKNOWN": 153
+          }
+        },
+        "directVisibility": {
+          "left": {
+            "VISIBLE": 1413,
+            "OCCLUDED": 629,
+            "UNKNOWN": 52
+          },
+          "right": {
+            "VISIBLE": 1412,
+            "OCCLUDED": 529,
+            "UNKNOWN": 153
+          }
+        },
+        "visibilityReasons": {
+          "left": {
+            "NO_BASELINE": 4,
+            "VISIBLE": 1413,
+            "EYELIDS_NOT_OPEN": 40,
+            "LOW_CORRELATION": 8,
+            "OCCLUDER_APPEARANCE": 629
+          },
+          "right": {
+            "NO_BASELINE": 4,
+            "VISIBLE": 1412,
+            "EYELIDS_NOT_OPEN": 48,
+            "LOW_CORRELATION": 98,
+            "OCCLUDER_APPEARANCE": 529,
+            "LOW_CONTRAST": 3
+          }
+        },
+        "sourceFrameIntervalMedianMs": 33.333333333333314,
+        "sourceFrameIntervalMaxMs": 33.33333333335031,
+        "nativeInferenceMedianMs": 7.756599999993341,
+        "nativeInferenceP95Ms": 10.497299999769893,
+        "maxPatchGeometryErrorPixels": 5.684341886080802e-14
+      },
+      "after": {
+        "decodedFrames": 2094,
+        "faceDetectedFrames": 2094,
+        "faceDetectionPercent": 100,
+        "actualDurationSeconds": 69.8,
+        "headPoseRejectedFrames": 0,
+        "blinkMaskedFrames": 84,
+        "bothDirectlyVisibleFrames": 780,
+        "captureEligibleEvents": 6,
+        "procedureValidLegs": 6,
+        "primaryValidLegs": 6,
+        "recoveryValidLegs": 6,
+        "visibility": {
+          "left": {
+            "VISIBLE": 1413,
+            "OCCLUDED": 629,
+            "UNKNOWN": 52
+          },
+          "right": {
+            "VISIBLE": 1412,
+            "OCCLUDED": 529,
+            "UNKNOWN": 153
+          }
+        },
+        "directVisibility": {
+          "left": {
+            "VISIBLE": 1413,
+            "OCCLUDED": 629,
+            "UNKNOWN": 52
+          },
+          "right": {
+            "VISIBLE": 1412,
+            "OCCLUDED": 529,
+            "UNKNOWN": 153
+          }
+        },
+        "visibilityReasons": {
+          "left": {
+            "NO_BASELINE": 4,
+            "VISIBLE": 1413,
+            "EYELIDS_NOT_OPEN": 40,
+            "LOW_CORRELATION": 8,
+            "OCCLUDER_APPEARANCE": 629
+          },
+          "right": {
+            "NO_BASELINE": 4,
+            "VISIBLE": 1412,
+            "EYELIDS_NOT_OPEN": 48,
+            "LOW_CORRELATION": 98,
+            "OCCLUDER_APPEARANCE": 529,
+            "LOW_CONTRAST": 3
+          }
+        },
+        "sourceFrameIntervalMedianMs": 33.333333333333314,
+        "sourceFrameIntervalMaxMs": 33.33333333335031,
+        "nativeInferenceMedianMs": 7.756599999993341,
+        "nativeInferenceP95Ms": 10.497299999769893,
+        "maxPatchGeometryErrorPixels": 5.684341886080802e-14
+      },
+      "clinicalAccuracy": null,
+      "clinical95CI": null
+    },
+    {
+      "file": "HD_30FPS",
+      "sourceSha256": "035021c2f00891a9ccb462100030ce8484f79d8b1146f51a689c5bd21d5db3e5",
+      "sourceHashes": {
+        "src/services/coverTest/uncoverCaptureService.js": "b4672a4656ed87908d39ad5ff8bad6347beca3c9f8dca21ae8f27b5c9fb61db5",
+        "src/services/coverTest/coverEventMeasurementService.js": "fe6f9845460c93192eeed07562996e88c646bec805ab218f8a7a0aabc308f53d",
+        "src/services/coverTestMeasurementService.js": "afb35b23179c95ea6f0dac48732645d6f83074c6e2f16f294f86fb439e34c7c5",
+        "src/services/coverTestProtocolService.js": "e428132a933732a368400b2e3ab8875a4e430ab2104ffe7c28e7a06576c519d1",
+        "src/services/cv/eyeCoverDetector.js": "6118e2fe45558023ca0aaefc1da75f81d38d232d0b1ba9f8acb813747a09bf29",
+        "src/services/eyeFeatureService.js": "eebdd97f2ee330ea5575764a1bb4e782dabfaa60a72f018822c39d6ceeba92f1",
+        "src/services/coverTestTimeline.js": "d351e7ae6bba7bedb0ce2d06ae23914e4e7c76ae068d62351fb6182ac0f66ad7",
+        "src/services/coverTest/eyeCropGeometry.js": "62e5ffb4098c3cd79e7d374602d144a4529b7b460b97fe3fa90595ca8ac168dd",
+        "scripts/replayIphoneCover.mjs": "16ff8be73981dc710842a0c710735658ee1dc6ae86f4f29d0182a5a8000bf349",
+        "scripts/extractIphoneCoverReplay.py": "91a0192816268180eb89bc3c8fbfdcf0435bb4dc9534facc8af9806dcdba3f67"
+      },
+      "decodedFrames": 2116,
+      "before": {
+        "decodedFrames": 2116,
+        "faceDetectedFrames": 2116,
+        "faceDetectionPercent": 100,
+        "actualDurationSeconds": 70.63333333333334,
+        "headPoseRejectedFrames": 0,
+        "blinkMaskedFrames": 160,
+        "bothDirectlyVisibleFrames": 574,
+        "captureEligibleEvents": 5,
+        "procedureValidLegs": 5,
+        "primaryValidLegs": 6,
+        "recoveryValidLegs": 4,
+        "visibility": {
+          "left": {
+            "VISIBLE": 1309,
+            "OCCLUDED": 737,
+            "UNKNOWN": 70
+          },
+          "right": {
+            "VISIBLE": 1281,
+            "OCCLUDED": 738,
+            "UNKNOWN": 97
+          }
+        },
+        "directVisibility": {
+          "left": {
+            "VISIBLE": 1309,
+            "OCCLUDED": 737,
+            "UNKNOWN": 70
+          },
+          "right": {
+            "VISIBLE": 1281,
+            "OCCLUDED": 738,
+            "UNKNOWN": 97
+          }
+        },
+        "visibilityReasons": {
+          "left": {
+            "NO_BASELINE": 9,
+            "VISIBLE": 1309,
+            "EYELIDS_NOT_OPEN": 54,
+            "LOW_CONTRAST": 6,
+            "OCCLUDER_APPEARANCE": 737,
+            "LOW_CORRELATION": 1
+          },
+          "right": {
+            "NO_BASELINE": 9,
+            "VISIBLE": 1281,
+            "EYELIDS_NOT_OPEN": 71,
+            "LOW_CORRELATION": 10,
+            "OCCLUDER_APPEARANCE": 738,
+            "LOW_CONTRAST": 7
+          }
+        },
+        "sourceFrameIntervalMedianMs": 33.33333333333326,
+        "sourceFrameIntervalMaxMs": 66.66666666666606,
+        "nativeInferenceMedianMs": 7.975900000019465,
+        "nativeInferenceP95Ms": 11.314899998978944,
+        "maxPatchGeometryErrorPixels": 5.684341886080802e-14
+      },
+      "after": {
+        "decodedFrames": 2116,
+        "faceDetectedFrames": 2116,
+        "faceDetectionPercent": 100,
+        "actualDurationSeconds": 70.63333333333334,
+        "headPoseRejectedFrames": 0,
+        "blinkMaskedFrames": 160,
+        "bothDirectlyVisibleFrames": 574,
+        "captureEligibleEvents": 5,
+        "procedureValidLegs": 5,
+        "primaryValidLegs": 6,
+        "recoveryValidLegs": 4,
+        "visibility": {
+          "left": {
+            "VISIBLE": 1309,
+            "OCCLUDED": 737,
+            "UNKNOWN": 70
+          },
+          "right": {
+            "VISIBLE": 1281,
+            "OCCLUDED": 738,
+            "UNKNOWN": 97
+          }
+        },
+        "directVisibility": {
+          "left": {
+            "VISIBLE": 1309,
+            "OCCLUDED": 737,
+            "UNKNOWN": 70
+          },
+          "right": {
+            "VISIBLE": 1281,
+            "OCCLUDED": 738,
+            "UNKNOWN": 97
+          }
+        },
+        "visibilityReasons": {
+          "left": {
+            "NO_BASELINE": 9,
+            "VISIBLE": 1309,
+            "EYELIDS_NOT_OPEN": 54,
+            "LOW_CONTRAST": 6,
+            "OCCLUDER_APPEARANCE": 737,
+            "LOW_CORRELATION": 1
+          },
+          "right": {
+            "NO_BASELINE": 9,
+            "VISIBLE": 1281,
+            "EYELIDS_NOT_OPEN": 71,
+            "LOW_CORRELATION": 10,
+            "OCCLUDER_APPEARANCE": 738,
+            "LOW_CONTRAST": 7
+          }
+        },
+        "sourceFrameIntervalMedianMs": 33.33333333333326,
+        "sourceFrameIntervalMaxMs": 66.66666666666606,
+        "nativeInferenceMedianMs": 7.975900000019465,
+        "nativeInferenceP95Ms": 11.314899998978944,
+        "maxPatchGeometryErrorPixels": 5.684341886080802e-14
+      },
+      "clinicalAccuracy": null,
+      "clinical95CI": null
+    }
+  ]
+}

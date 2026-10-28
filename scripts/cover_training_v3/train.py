@@ -21,6 +21,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix
+from evidence import wilson, minimum_subjects, promotion_assessment
 
 _stage = Path(__file__).resolve().parents[2] / "backend-upgrade.local"
 sys.path.insert(0, os.getenv("COVER_BACKEND_ROOT", str(_stage if _stage.exists() else Path("D:/REMICARE-STRABISMUS-AI-COVER-TEST"))))
@@ -30,16 +31,6 @@ from app.services.cover_test.paired_crop_model import (CONTRACT, FEATURE_VERSION
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def wilson(correct, total):
-    if not total:
-        return [0., 1.]
-    z = 1.959963984540054
-    p, d = correct / total, 1 + z*z/total
-    center = (p + z*z/(2*total))/d
-    radius = z*np.sqrt(p*(1-p)/total + z*z/(4*total*total))/d
-    return [float(center-radius), float(center+radius)]
 
 
 def metrics(truth, predicted):
@@ -145,6 +136,12 @@ def run(manifest, output, train=False):
     eligible, report = audit(rows, manifest.parent)
     report.update(contract=CONTRACT, featureVersion=FEATURE_VERSION, manifestSha256=digest(manifest),
                   targetAccuracy=.90, accuracy=None, status="AUDIT_ONLY")
+    report['confidencePolicy'] = {
+        'targetLower95CI': .90, 'requiredMetrics': ['accuracy', 'sensitivity', 'specificity'],
+        'evaluationUnit': 'verified_independent_subject',
+        'perfectCaseMinimumTestSubjectsPerClass': minimum_subjects(.90, 1.),
+        'planningAt95PercentCorrectPerClass': minimum_subjects(.90, .95),
+        'note': 'Planning assumptions only; no sample count guarantees performance.'}
     if train and not report["readyForTraining"]:
         report["status"] = "NEEDS_VERIFIED_PAIRED_SUBJECTS"
     if train and report["readyForTraining"]:
@@ -183,7 +180,8 @@ def run(manifest, output, train=False):
             candidates.append((val["balancedAccuracy"], c, model, val))
         _, c, model, validation = max(candidates, key=lambda item:item[0])
         test = grouped_predictions(model, X, rows, test_ids)  # holdout used ONCE after selection
-        promoted = all(test[k] > .90 for k in ("accuracy","balancedAccuracy","sensitivity","specificity")) and test["accuracy95CI"][0] > .90 and test["coverage"] == 1
+        promotion = promotion_assessment(test)
+        promoted = promotion['promoted']
         evidence = {"promoted": promoted, "heldoutAccuracy":test["accuracy"], "heldout":test,
                     "evaluationUnit":"subject", "deviceModels":sorted({rows[i]["deviceModel"] for i in test_ids}),
                     "scope":"Only the tested device/site population; no universal device claim."}
@@ -195,7 +193,7 @@ def run(manifest, output, train=False):
         joblib.dump(artifact, output/"paired_candidate.joblib")
         report.update(status="PROMOTION_ELIGIBLE" if promoted else "RESEARCH_CANDIDATE_ONLY",
                       selectedC=c, validation=validation, heldout=test, accuracy=test["accuracy"],
-                      qualityExclusions=dict(failures), promoted=promoted)
+                      qualityExclusions=dict(failures), promoted=promoted, promotionAssessment=promotion)
     (output/"training_report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     return report
 

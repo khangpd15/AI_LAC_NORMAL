@@ -4,6 +4,7 @@ Native MediaPipe and OpenCV bilinear patch sampling are explicit adapters, not
 measurements of Safari/iPhone runtime performance. No frames are subsampled.
 """
 import base64
+import argparse
 import gzip
 import hashlib
 import json
@@ -35,9 +36,16 @@ def patch(frame, cx, cy, width, height):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--all', action='store_true', help='Audit every supplied clip, retaining folder labels as unverified only')
+    args = parser.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
-    for name in NAMES:
-        source = ROOT / "video" / "VIDEO_COVER_TEST" / "NORMAL" / f"{name}.mp4"
+    sources = sorted((ROOT / 'video' / 'VIDEO_COVER_TEST').rglob('*.mp4')) if args.all else [
+        ROOT / 'video' / 'VIDEO_COVER_TEST' / 'NORMAL' / f'{name}.mp4' for name in NAMES]
+    if len({source.stem for source in sources}) != len(sources):
+        raise ValueError('DUPLICATE_CLIP_NAMES')
+    for source in sources:
+        name = source.stem
         source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
         target = OUT / f"{name}.jsonl.gz"
         complete = OUT / f"{name}.complete.json"
@@ -54,6 +62,7 @@ def main():
         scale = min(1, 960 / max(w, h))
         pw, ph = round(w * scale), round(h * scale)
         metadata = dict(file=str(source.relative_to(ROOT)), sha256=source_hash,
+                        folderLabel=source.parent.name, labelStatus='folder_unverified', subjectId=None,
                         bytes=source.stat().st_size, fps=fps, expectedFrames=count, width=w, height=h,
                         processingWidth=pw, processingHeight=ph, engine=f"Python MediaPipe {mp.__version__}",
                         cv2Version=cv2.__version__, maxEdge=960, allDecodedFrames=True,

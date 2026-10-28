@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    { "source": "/huong-dan-sang-loc", "destination": "/index.html" },
+    { "source": "/hieu-ket-qua", "destination": "/index.html" },
+    { "source": "/cau-hoi-thuong-gap", "destination": "/index.html" },
+    { "source": "/lien-he", "destination": "/index.html" },
+    { "source": "/chinh-sach-bao-mat", "destination": "/index.html" },
+    { "source": "/dieu-khoan-su-dung", "destination": "/index.html" },
+    { "source": "/thong-tin-ai", "destination": "/index.html" }
+  ]
+}

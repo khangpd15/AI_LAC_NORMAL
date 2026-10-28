@@ -6,6 +6,7 @@ import { getEyePairCropRegions } from './eyeCropGeometry.js';
 // All limits describe engineering evidence, not clinical confidence.
 export const EYE_APPEARANCE_LIMITS = Object.freeze({
   minCorrelation: 0.65, minBaselineSamples: 5, minContrastRatio: 0.65,
+  minBaselineSpanMs: 120, maxBaselineAgeMs: 1500,
   maxTextureRatio: 1.8, minOpenMs: COVER_EVENT_LIMITS.minOpenMs, minOpenFrames: COVER_EVENT_LIMITS.minOpenFrames,
 });
 
@@ -50,13 +51,16 @@ export function eyeAppearanceEvidence(patch, baseline, oppositePatch = null, opp
 }
 
 // Scalar darkness alone cannot establish that an eye is actually visible.
-export function classifyEyeVisibility(patch, frame, baseline, oppositePatch = null, _oppositeFrame = null, oppositeBaseline = null) {
-  if (!patch || !frame || !baseline || !Number.isFinite(frame.canthalWidth) || frame.canthalWidth < 6 ||
-      !Number.isFinite(frame.palpebralHeight) ||
+export function assessEyeVisibility(patch, frame, baseline, oppositePatch = null, _oppositeFrame = null, oppositeBaseline = null) {
+  const unknown = reason => ({ visibility: 'UNKNOWN', reason });
+  if (!patch || !frame || !Number.isFinite(frame.canthalWidth) || frame.canthalWidth < 6 ||
+      !Number.isFinite(frame.palpebralHeight)) return unknown('MISSING_EYE_FRAME');
+  if (!baseline) return unknown('NO_BASELINE');
+  if (
       !['mean', 'stdDev', 'pupilContrast', 'minLum', 'dynamicRange'].every(key =>
-        Number.isFinite(patch[key]) && Number.isFinite(baseline[key]))) return 'UNKNOWN';
+        Number.isFinite(patch[key]) && Number.isFinite(baseline[key]))) return unknown('INCOMPLETE_METRICS');
   const aperture = frame.palpebralHeight / frame.canthalWidth;
-  if (aperture < 0.14) return 'UNKNOWN';
+  if (aperture < 0.14) return unknown('EYELIDS_NOT_OPEN');
   const evidence = eyeAppearanceEvidence(patch, baseline, oppositePatch, oppositeBaseline);
   const contrastLost = patch.pupilContrast < evidence.contrastThreshold;
   const structureLost = evidence.correlation === null || evidence.correlation < EYE_APPEARANCE_LIMITS.minCorrelation;
@@ -64,12 +68,21 @@ export function classifyEyeVisibility(patch, frame, baseline, oppositePatch = nu
     evidence.meanShift > evidence.maxMeanShift;
   const flattened = patch.stdDev < Math.max(9, baseline.stdDev * 0.5) || patch.dynamicRange < 24;
   if (foreignSurface || (contrastLost && (structureLost || flattened || Math.abs(evidence.meanShift) > evidence.maxMeanShift))) {
-    return 'OCCLUDED';
+    return { visibility: 'OCCLUDED', reason: 'OCCLUDER_APPEARANCE' };
   }
   const hasDarkPupil = Number.isFinite(patch.minLum) && patch.minLum <= Math.min(115, baseline.minLum + 25 + evidence.exposureShift);
   if (!structureLost && !contrastLost && !foreignSurface && hasDarkPupil &&
-      patch.dynamicRange >= 24 && patch.stdDev >= 9) return 'VISIBLE';
-  return 'UNKNOWN';
+      patch.dynamicRange >= 24 && patch.stdDev >= 9) return { visibility: 'VISIBLE', reason: 'VISIBLE' };
+  if (evidence.correlation === null) return unknown('MISSING_APPEARANCE');
+  if (structureLost) return unknown('LOW_CORRELATION');
+  if (contrastLost) return unknown('LOW_CONTRAST');
+  if (!hasDarkPupil) return unknown('PUPIL_NOT_CONFIRMED');
+  if (patch.dynamicRange < 24) return unknown('LOW_DYNAMIC_RANGE');
+  return unknown('LOW_TEXTURE');
+}
+
+export function classifyEyeVisibility(...args) {
+  return assessEyeVisibility(...args).visibility;
 }
 
 /** Keeps the FIRST clear frame while confirming sustained visibility.
@@ -155,14 +168,33 @@ export class UncoverCaptureObserver {
     this.transition = new UncoverTransition(1800);
     this.baselines = {};
     this.baselineCounts = {};
+    this.baselineTimes = {};
+    this.lastVisibility = {};
   }
   reset() {
     this.baselines = {};
     this.baselineCounts = {};
+    this.baselineTimes = {};
+    this.lastVisibility = {};
     this.transition.reset();
+  }
+  getCalibrationStatus(timestampMs) {
+    const eyes = Object.fromEntries(['left', 'right'].map(side => {
+      const times = this.baselineTimes[side];
+      const samples = this.baselineCounts[side] || 0;
+      const fresh = times && Number.isFinite(timestampMs) && timestampMs >= times.last &&
+        timestampMs - times.last <= EYE_APPEARANCE_LIMITS.maxBaselineAgeMs;
+      const ready = Boolean(fresh && samples >= EYE_APPEARANCE_LIMITS.minBaselineSamples &&
+        times.last - times.first >= EYE_APPEARANCE_LIMITS.minBaselineSpanMs &&
+        this.lastVisibility[side] === 'VISIBLE');
+      return [side, { ready, samples, fresh: Boolean(fresh), visibility: this.lastVisibility[side] || 'UNKNOWN' }];
+    }));
+    return { ready: eyes.left.ready && eyes.right.ready, eyes,
+      requiredSamples: EYE_APPEARANCE_LIMITS.minBaselineSamples };
   }
   observe(source, landmarks, timestampMs, phase, makeCandidate) {
     const visibility = {};
+    const visibilityReasons = {};
     const frames = {};
     const patches = {};
 
@@ -184,13 +216,22 @@ export class UncoverCaptureObserver {
 
       if (!frame || !patch) {
         visibility[side] = 'UNKNOWN';
+        visibilityReasons[side] = 'MISSING_EYE_FRAME';
         continue;
       }
 
       // Update baseline during BASELINE or PREPARING phase when eye is open
       if ((phase === 'BASELINE' || phase === 'PREPARING') &&
-          frame.palpebralHeight / frame.canthalWidth >= 0.11 &&
-          patch.isEyeLike && patch.stdDev >= 9) {
+          frame.palpebralHeight / frame.canthalWidth >= 0.14 &&
+          patch.isEyeLike && patch.stdDev >= 9 &&
+          Array.isArray(patch.appearance) && patch.appearance.length === 48 && patch.appearance.every(Number.isFinite) &&
+          Number.isFinite(timestampMs) && (!this.baselineTimes[side] || timestampMs > this.baselineTimes[side].last)) {
+        if (this.baselineTimes[side] && timestampMs - this.baselineTimes[side].last > EYE_APPEARANCE_LIMITS.maxBaselineAgeMs) {
+          delete this.baselines[side];
+          this.baselineCounts[side] = 0;
+          delete this.baselineTimes[side];
+        }
+        this.baselineTimes[side] = { first: this.baselineTimes[side]?.first ?? timestampMs, last: timestampMs };
         const previous = this.baselines[side];
         this.baselines[side] = Object.fromEntries(['pupilContrast', 'dynamicRange', 'stdDev', 'mean', 'minLum']
           .filter(key => patch[key] !== undefined)
@@ -202,8 +243,11 @@ export class UncoverCaptureObserver {
 
       const baseline = this.baselineCounts[side] >= EYE_APPEARANCE_LIMITS.minBaselineSamples ? this.baselines[side] : null;
 
-      visibility[side] = classifyEyeVisibility(patch, frame, baseline, patches[opposite], frames[opposite], this.baselines[opposite]);
+      const assessment = assessEyeVisibility(patch, frame, baseline, patches[opposite], frames[opposite], this.baselines[opposite]);
+      visibility[side] = assessment.visibility;
+      visibilityReasons[side] = assessment.reason;
     }
+    this.lastVisibility = { ...visibility };
 
     // Measurements require sampled image evidence, independent of fallback hints
     // used for capture feedback. Missing landmarks and closed lids stay unknown.
@@ -225,6 +269,9 @@ export class UncoverCaptureObserver {
         skinRatio: Number(patches.left.skinRatio?.toFixed(3)),
         isLuminanceShift: this.baselines?.left ? Boolean(patches.left.mean > this.baselines.left.mean + 20 || patches.left.mean < this.baselines.left.mean - 25) : false,
         visibility: visibility.left,
+        visibilityReason: visibilityReasons.left,
+        baselineSamples: this.baselineCounts.left || 0,
+        requiredBaselineSamples: EYE_APPEARANCE_LIMITS.minBaselineSamples,
         appearance: eyeAppearanceEvidence(patches.left, this.baselines.left, patches.right, this.baselines.right),
       } : { visibility: visibility.left },
       right: patches.right ? {
@@ -237,6 +284,9 @@ export class UncoverCaptureObserver {
         skinRatio: Number(patches.right.skinRatio?.toFixed(3)),
         isLuminanceShift: this.baselines?.right ? Boolean(patches.right.mean > this.baselines.right.mean + 20 || patches.right.mean < this.baselines.right.mean - 25) : false,
         visibility: visibility.right,
+        visibilityReason: visibilityReasons.right,
+        baselineSamples: this.baselineCounts.right || 0,
+        requiredBaselineSamples: EYE_APPEARANCE_LIMITS.minBaselineSamples,
         appearance: eyeAppearanceEvidence(patches.right, this.baselines.right, patches.left, this.baselines.left),
       } : { visibility: visibility.right },
     };

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { appearanceCorrelation, classifyEyeVisibility, UncoverTransition, isUncoverCaptureEligible } from '../src/services/coverTest/uncoverCaptureService.js';
+import { appearanceCorrelation, assessEyeVisibility, classifyEyeVisibility, UncoverCaptureObserver, UncoverTransition, isUncoverCaptureEligible } from '../src/services/coverTest/uncoverCaptureService.js';
+import { LANDMARKS } from '../src/constants/screeningConfig.js';
 import { isObservedCoverPhaseComplete } from '../src/services/coverTestTimeline.js';
 
 const eyeShape = Array.from({ length: 48 }, (_, i) => {
@@ -11,6 +12,61 @@ const fingerShape = Array.from({ length: 48 }, (_, i) => i % 8 === 3 ? 25 : 130)
 const frame = { canthalWidth: 60, palpebralHeight: 18 };
 const baseline = { mean: 100, stdDev: 22, pupilContrast: 35, minLum: 25, dynamicRange: 120, appearance: eyeShape };
 const patch = extra => ({ ...baseline, ...extra });
+
+function calibratedObserver(times = [0, 40, 80, 120, 160], rightPatch = {}) {
+  const observer = new UncoverCaptureObserver();
+  const landmarks = Array.from({ length: 478 }, () => ({ x: .5, y: .5, z: 0 }));
+  for (const [side, center] of [['LEFT', .35], ['RIGHT', .65]]) {
+    landmarks[LANDMARKS[`${side}_INNER_CANTHUS`]] = { x: center - .1, y: .5 };
+    landmarks[LANDMARKS[`${side}_OUTER_CANTHUS`]] = { x: center + .1, y: .5 };
+    landmarks[LANDMARKS[`${side}_TOP_LID`]] = { x: center, y: .47 };
+    landmarks[LANDMARKS[`${side}_BOTTOM_LID`]] = { x: center, y: .53 };
+    landmarks[LANDMARKS[`${side}_IRIS_CENTER`]] = { x: center, y: .5 };
+  }
+  observer.sampler.sampleEyePatch = (_source, _x, _y, _w, _h, offset) =>
+    patch({ isEyeLike: true, ...(offset === 32 ? rightPatch : {}) });
+  const observe = (time, phase = 'BASELINE') => observer.observe({ width: 200, height: 200 }, landmarks, time, phase, () => null);
+  times.forEach(time => observe(time));
+  return { observer, observe };
+}
+
+test('appearance calibration needs both eyes, unique source samples and a real time span', () => {
+  const { observer, observe } = calibratedObserver();
+  assert.equal(observer.getCalibrationStatus(160).ready, true);
+  observe(160);
+  assert.equal(observer.baselineCounts.left, 5);
+  assert.equal(calibratedObserver([0, 1, 2, 3, 4]).observer.getCalibrationStatus(4).ready, false);
+  assert.equal(calibratedObserver(undefined, { isEyeLike: false }).observer.getCalibrationStatus(160).ready, false);
+});
+
+test('stale or interrupted calibration cannot start a timed cover procedure', () => {
+  const { observer, observe } = calibratedObserver();
+  assert.equal(observer.getCalibrationStatus(2000).ready, false);
+  observe(2000);
+  assert.equal(observer.baselineCounts.left, 1);
+  assert.equal(observer.getCalibrationStatus(2000).ready, false);
+  observer.reset();
+  assert.equal(observer.getCalibrationStatus(2000).ready, false);
+});
+
+test('covered-eye phases never train the open-eye appearance baseline', () => {
+  const { observer, observe } = calibratedObserver();
+  const previous = structuredClone(observer.baselines);
+  observe(200, 'COVER');
+  assert.deepEqual(observer.baselines, previous);
+  assert.equal(observer.baselineCounts.right, 5);
+});
+
+test('diagnostics distinguish missing calibration from poor image similarity', () => {
+  assert.deepEqual(assessEyeVisibility(patch({}), frame, null), { visibility: 'UNKNOWN', reason: 'NO_BASELINE' });
+  assert.deepEqual(assessEyeVisibility(patch({ appearance: null }), frame, baseline), { visibility: 'UNKNOWN', reason: 'MISSING_APPEARANCE' });
+  assert.deepEqual(assessEyeVisibility(patch({ appearance: fingerShape }), frame, baseline), { visibility: 'UNKNOWN', reason: 'LOW_CORRELATION' });
+});
+
+test('open-looking aperture and dark pixels alone do not establish visibility', () => {
+  const result = assessEyeVisibility(patch({ pupilContrast: 8 }), frame, baseline);
+  assert.deepEqual(result, { visibility: 'UNKNOWN', reason: 'LOW_CONTRAST' });
+});
 
 test('spatial evidence distinguishes a dark finger crease from an open eye with similar scalar contrast', () => {
   assert.equal(appearanceCorrelation(eyeShape, eyeShape), 1);

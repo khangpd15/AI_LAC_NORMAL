@@ -14,6 +14,7 @@
 .remicare-footer-intro > p { font-size: 15px; line-height: 1.8; margin: 0; max-width: 105ch; }
 .remicare-footer-columns { display: grid; grid-template-columns: .95fr 1fr 1.2fr; gap: 48px; border-top: 1px solid var(--border-subtle, #cfdfdc); margin-top: 32px; padding: 32px 0; }
 .remicare-footer-columns > nav { min-width: 0; }
+.remicare-footer-columns li, .remicare-footer-connect { min-width: 0; overflow-wrap: anywhere; }
 .remicare-footer-columns h3 { text-transform: uppercase; font-size: 17px; line-height: 1.5; font-weight: 800; margin: 0 0 16px; color: inherit; }
 .remicare-footer-columns ul { display: grid; gap: 2px; list-style: none; padding: 0; margin: 0; }
 .remicare-footer-columns li > button, .remicare-footer-columns li > a { display: block; width: fit-content; max-width: 100%; min-height: 44px; background: transparent; border: 0; padding: 8px 0; color: inherit; text-align: left; font-family: inherit; font-size: 15px; line-height: 1.6; cursor: pointer; text-decoration: none; }
@@ -56,4 +57,12 @@
   .remicare-footer-notice h3 { font-size: 17px; }
   .remicare-footer-notice p { font-size: 13px; }
   .remicare-footer-dialog-content { padding: 20px; }
+}
+@media (min-width: 681px) and (max-width: 960px) {
+  .remicare-footer-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+  .remicare-footer-columns > nav:first-child { grid-column: 1 / -1; }
+  .remicare-footer-columns > nav:first-child ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 24px; }
+}
+@media (max-width: 768px) {
+  .remicare-master-footer.remicare-footer .remicare-footer-inner { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
 }

@@ -11,6 +11,9 @@ import OfflinePage from './components/common/OfflinePage';
 import PwaManager from './components/common/PwaManager';
 import AppNavbar from './components/common/AppNavbar';
 import AppFooter from './components/common/AppFooter';
+import SupportPage from './features/support/SupportPage';
+import ContactPage from './features/support/ContactPage';
+import { supportNavigation } from './content/supportPages';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ListeningProvider } from './components/audio/ListeningExperience';
 import './redesign.css';
@@ -172,6 +175,12 @@ function AppRoutes() {
             </ScreeningLayout>
           }
         />
+
+        {supportNavigation.map(page => <Route key={page.key} path={page.path} element={
+          <ScreeningLayout activeTab="">
+            {page.key === 'contact' ? <ContactPage /> : <SupportPage key={page.key} pageKey={page.key} />}
+          </ScreeningLayout>
+        } />)}
 
         {/* 9. Redirects tương thích các đường dẫn alias / cũ */}
         <Route path="/experience" element={<Navigate to="/trai-nghiem" replace />} />

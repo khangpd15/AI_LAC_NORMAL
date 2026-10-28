@@ -11,7 +11,9 @@ import { extractEyeFeatures, validateEyeTrackingQuality, buildFrameQualityGate }
 const root = path.resolve(import.meta.dirname, '..');
 const inputDir = path.join(root, 'tracking-benchmark.local', 'iphone-cover');
 const correctedWindows = !process.argv.includes('--fixed-windows');
-const resultVersion = process.argv.includes('--v3') ? 'v3' : 'v2';
+const tag = process.argv.find(arg => arg.startsWith('--tag='))?.slice(6);
+if (tag && !/^[a-zA-Z0-9_-]+$/.test(tag)) throw new Error('INVALID_REPLAY_TAG');
+const resultVersion = tag || (process.argv.includes('--v3') ? 'v3' : 'v2');
 const suffix = correctedWindows ? `.${resultVersion}` : `.${resultVersion}-fixed`;
 // Coarse phase windows were manually inspected on one-second video contact sheets.
 // They indicate expected side/phase only; event timestamps come from the detector.
@@ -61,6 +63,7 @@ for (const [name, rawPlan] of Object.entries(plans)) {
   let decoded = 0, detected = 0, headInvalid = 0, blinkFrames = 0, bothVisibleFrames = 0;
   const visibility = { left: counts(), right: counts() };
   const directVisibility = { left: counts(), right: counts() };
+  const visibilityReasons = { left: {}, right: {} };
   const contexts = plan.map(p => ({ plan: p, recorder: createCoverEventMeasurementRecorder(),
     transition: new UncoverTransition(1800), started: false, finished: false,
     lastObservedMs: null, diagnostic: { frames: 0, validEyeSamples: { left: 0, right: 0 },
@@ -105,6 +108,8 @@ for (const [name, rawPlan] of Object.entries(plans)) {
     for (const side of ['left', 'right']) {
       countVisibility(visibility[side], observation.visibility[side]);
       countVisibility(directVisibility[side], observation.measurementVisibility[side]);
+      const reason = observation.debugMetrics?.[side]?.visibilityReason || 'MISSING_EYE_FRAME';
+      visibilityReasons[side][reason] = (visibilityReasons[side][reason] || 0) + 1;
       if (observation.measurementVisibility[side] === 'VISIBLE' && observation.measurementCoordinates[side]) {
         const measured = createCoverFrame({ ...features, observedVisibility: observation.measurementVisibility },
           { ...quality, coveredEye: null, eyeVisibility: observation.measurementVisibility }, side, row.ptsMs,
@@ -186,7 +191,7 @@ for (const [name, rawPlan] of Object.entries(plans)) {
       captureEligibleEvents: photoEvents.length, procedureValidLegs: legs.filter(l => l.result.evidence.procedureValid).length,
       primaryValidLegs: legs.filter(l => l.result.coverOn.dataQuality.isValid).length,
       recoveryValidLegs: legs.filter(l => l.result.uncoverRecovery.dataQuality.isValid).length,
-      visibility, directVisibility,
+      visibility, directVisibility, visibilityReasons,
       sourceFrameIntervalMedianMs: percentile(intervals, 0.5), sourceFrameIntervalMaxMs: Math.max(...intervals),
       nativeInferenceMedianMs: percentile(latencies, 0.5), nativeInferenceP95Ms: percentile(latencies, 0.95),
       maxPatchGeometryErrorPixels: maxPatchGeometryError,
