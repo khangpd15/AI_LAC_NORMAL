@@ -47,7 +47,7 @@ export default function HomeCampaign({ onStartExperience }) {
         </div>
       </div>)}
     </div>
-    <div className="campaign-topline"><span>GÓC NHÌN NHỎ, THẤU HIỂU LỚN</span><span aria-hidden="true">✳</span></div>
+    <div className="campaign-topline"><span>GÓC NHÌN NHỎ, THẤU HIỂU LỚN</span></div>
     <div className="campaign-bottom">
       <button type="button" className="campaign-cta" onClick={onStartExperience}>Thử nhìn qua đôi mắt con <span aria-hidden="true">↗</span></button>
       <div className="campaign-pagination" role="group" aria-label="Chọn hình ảnh">

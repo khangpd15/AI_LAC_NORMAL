@@ -490,7 +490,6 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
             {/* Top Bar: Left Filter Tag + Right Tool Chips */}
             <div className="sim-overlay-header">
               <div className="sim-overlay-filter-badge">
-                <span className="filter-badge-sparkle">✨</span>
                 <span className="filter-badge-title">
                   {type === STRABISMUS_TYPES.ORTHOTROPIA
                     ? 'Ảnh gốc · Không hiệu ứng'

@@ -89,7 +89,6 @@ export default function AboutPage({
         {/* Hero Section */}
         <section className="about-hero-section">
           <div className="about-pill-badge">
-            <span>✨</span>
             <span>DỰ ÁN AI & SỨC KHỎE THỊ GIÁC CỘNG ĐỒNG</span>
           </div>
 
@@ -307,7 +306,7 @@ export default function AboutPage({
                 Giao diện màu sắc thân thiện, nhẹ nhàng, không có dụng cụ kim loại hay đèn chói mắt gây lo sợ.
               </p>
               <ul className="audience-highlights">
-                <li>✨ Hoạt ảnh chuyển động nhẹ nhàng</li>
+                <li>Hoạt ảnh chuyển động nhẹ nhàng</li>
                 <li>🗣️ Cô Lumi hướng dẫn từng lời nói</li>
                 <li>🎮 Trải nghiệm như một trò chơi vui</li>
               </ul>

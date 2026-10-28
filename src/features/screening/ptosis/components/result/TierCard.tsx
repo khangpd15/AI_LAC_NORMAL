@@ -13,7 +13,6 @@ import {
   AlertOctagon,
   ArrowRight,
   Info,
-  Sparkles,
   Eye,
 } from 'lucide-react';
 import type { TriageResult } from '../../types/api-contracts';
@@ -138,7 +137,6 @@ export const TierCard: React.FC<TierCardProps> = ({ triage }) => {
             )}
             {flags?.is_brow_compensation_detected && (
               <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-900 dark:text-amber-300 text-xs font-medium">
-                <Sparkles className="w-3.5 h-3.5" />
                 <span>Ghi nhận phản xạ nâng cung mày bù trừ</span>
               </span>
             )}

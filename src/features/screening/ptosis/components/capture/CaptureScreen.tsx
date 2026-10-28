@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Camera, ArrowRight, Sparkles, Check, AlertCircle, Video, User, ScanEye } from 'lucide-react';
+import { Camera, ArrowRight, Check, AlertCircle, Video, User, ScanEye } from 'lucide-react';
 import { FileUploadZone } from './FileUploadZone';
 import { CameraView } from './PtosisCameraView';
 import { validateImageFile } from '../../hooks/useImagePreValidation';
@@ -80,7 +80,6 @@ export const CaptureScreen: React.FC<CaptureScreenProps> = ({
       {/* Thẻ hướng dẫn chụp ảnh đạt chuẩn theo từng chế độ */}
       <div className="bg-[#E1F4F0]/60 dark:bg-[#0D2327]/80 border border-[#B8E8DF] dark:border-[#1A3F45] rounded-2xl p-5 sm:p-6 shadow-xs transition-colors duration-250">
         <div className="flex items-center space-x-2.5 mb-3 text-[#00AB9B]">
-          <Sparkles className="w-5 h-5 text-[#00AB9B]" />
           <h3 className="font-semibold text-sm sm:text-base text-[#00545D] dark:text-[#F9F8F2]">
             {imageType === 'eye_crop'
               ? 'Quy chuẩn Ảnh Cắt Cận cảnh Hai Mắt'

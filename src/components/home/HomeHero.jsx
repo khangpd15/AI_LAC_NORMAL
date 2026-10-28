@@ -16,7 +16,7 @@ export default function HomeHero({ onStartExperience, onStartScreening }) {
       <div className="care-hero-art care-hero-photograph">
         <SitePhoto name="hero" hero />
         <div className="care-art-topline"><span>GÓC NHÌN NHỎ</span><span>THẤU HIỂU LỚN ↗</span></div>
-        <div className="care-art-caption"><span className="care-art-spark">✳</span><div><strong>Mỗi đôi mắt, một thế giới.</strong><span>Cùng khám phá thế giới của nhau.</span></div></div>
+        <div className="care-art-caption"><div><strong>Mỗi đôi mắt, một thế giới.</strong><span>Cùng khám phá thế giới của nhau.</span></div></div>
       </div>
     </section>
   </>;

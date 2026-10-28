@@ -576,7 +576,7 @@ export default function AppNavbar({
           </ul>
 
           <div className="drawer-card-box">
-            <div className="drawer-card-badge">✨ TRỢ LÝ GIỌNG NÓI</div>
+            <div className="drawer-card-badge">TRỢ LÝ GIỌNG NÓI</div>
             <h4>Bé Lumi đồng hành</h4>
             <p>Bật loa trên mọi trang để nghe Lumi hướng dẫn từng bước kiểm tra và chăm sóc mắt thật nhẹ nhàng.</p>
           </div>

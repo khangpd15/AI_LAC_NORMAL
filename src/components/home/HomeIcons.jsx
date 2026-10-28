@@ -409,10 +409,3 @@ export const IconHospital = ({ size = 32, className = '' }) => (
     <rect x="11" y="15" width="14" height="6" rx="2" fill="url(#rc-grad-coral)" />
   </svg>
 );
-
-// 22. Sparkles Flare
-export const IconSparkle = ({ size = 18, className = '' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="url(#rc-grad-mint)" className={className}>
-    <path d="M12 0L14.6 9.4L24 12L14.6 14.6L12 24L9.4 14.6L0 12L9.4 9.4L12 0Z" />
-  </svg>
-);

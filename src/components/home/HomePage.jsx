@@ -11,7 +11,6 @@ import {
   IconParentTrack,
   IconParentAccompany,
   IconHospital,
-  IconSparkle,
 } from './HomeIcons';
 import AppNavbar from '../common/AppNavbar';
 import AppFooter from '../common/AppFooter';
@@ -233,7 +232,6 @@ export default function HomePage({
         <section className="home-parents-visual-section" aria-label="Dành cho phụ huynh">
           <div className="section-title-visual-strip">
             <div className="visual-pointer-pill">
-              <IconSparkle size={18} />
               <span>DÀNH CHO BA MẸ</span>
             </div>
             <h2 className="doors-section-heading">CÙNG CON CHĂM SÓC ĐÔI MẮT TỪ SỚM</h2>
