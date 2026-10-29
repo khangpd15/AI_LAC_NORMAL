@@ -3,9 +3,9 @@ import { sitePhotos } from '../../content/sitePhotos';
 import './homeCampaign.css';
 
 const scenes = [
-  { photo: 'screening', label: 'SÀNG LỌC THỊ GIÁC HAI MẮT', title: 'Cùng con kiểm tra mắt.\nBắt đầu từ sự quan tâm.', text: 'Khám phá trải nghiệm sàng lọc qua camera, với lời hướng dẫn từng bước dành cho ba mẹ và bé.', position: '50% 45%' },
-  { photo: 'campaignClinic', label: 'THẤU HIỂU LÁC LÉ & NHƯỢC THỊ', title: 'Hiểu cách con nhìn.\nQuan tâm đôi mắt con.', text: 'Trải nghiệm góc nhìn và các hướng lệch của mắt qua mô phỏng trực quan cùng RemiCare.', position: '50% 43%' },
-  { photo: 'campaignFamily', label: 'BA MẸ ĐỒNG HÀNH CÙNG CON', title: 'Chăm sóc đôi mắt.\nCùng con từng bước nhỏ.', text: 'Cùng tìm hiểu về lác lé, nhược thị và cách chăm sóc mắt để ba mẹ thêm thấu hiểu con mỗi ngày.', position: '50% 43%' },
+  { photo: 'screening', label: 'SÀNG LỌC THỊ GIÁC HAI MẮT', title: 'Cùng con kiểm tra mắt\nBắt đầu từ sự quan tâm', text: 'Khám phá trải nghiệm sàng lọc qua camera, với lời hướng dẫn từng bước dành cho ba mẹ và bé.', position: '50% 45%' },
+  { photo: 'campaignClinic', label: 'THẤU HIỂU LÁC LÉ & NHƯỢC THỊ', title: 'Hiểu cách con nhìn\nQuan tâm đôi mắt con', text: 'Trải nghiệm góc nhìn và các hướng lệch của mắt qua mô phỏng trực quan cùng RemiCare.', position: '50% 43%' },
+  { photo: 'campaignFamily', label: 'BA MẸ ĐỒNG HÀNH CÙNG CON', title: 'Chăm sóc đôi mắt\nCùng con từng bước nhỏ', text: 'Cùng tìm hiểu về lác lé, nhược thị và cách chăm sóc mắt để ba mẹ thêm thấu hiểu con mỗi ngày.', position: '50% 43%' },
 ];
 
 export default function HomeCampaign({ onStartExperience }) {

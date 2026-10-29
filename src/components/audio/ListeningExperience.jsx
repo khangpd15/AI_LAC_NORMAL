@@ -156,7 +156,7 @@ export function HomeListeningSection() {
   const [filter, setFilter] = useState('Tất cả');
   const guides = ['home', 'care', 'family'];
   return <section className="home-listening-section" aria-labelledby="home-listening-title">
-    <div className="listening-section-heading"><div><span className="section-eyebrow">MỘT CHÚT LẮNG NGHE, THÊM NHIỀU THẤU HIỂU</span><h2 id="home-listening-title">Chăm sóc mắt, theo cách nhẹ nhàng.</h2></div><p>Không cần đọc nhiều.<br />Để Lumi đồng hành cùng bạn.</p></div>
+    <div className="listening-section-heading"><div><span className="section-eyebrow">MỘT CHÚT LẮNG NGHE, THÊM NHIỀU THẤU HIỂU</span><h2 id="home-listening-title">Chăm sóc mắt, theo cách nhẹ nhàng</h2></div><p>Không cần đọc nhiều.<br />Để Lumi đồng hành cùng bạn.</p></div>
     <div className="listening-filters" aria-label="Lọc chủ đề bài nghe">{['Tất cả', 'Bắt đầu', 'Chăm sóc mắt', 'Gia đình'].map((topic) => <button key={topic} aria-pressed={filter === topic} onClick={() => setFilter(topic)}>{topic}</button>)}</div>
     <div className="home-listening-grid">{guides.filter((id) => filter === 'Tất cả' || listeningGuides[id].topic === filter).map((id) => <AudioGuide key={id} guideId={id} />)}</div>
   </section>;
