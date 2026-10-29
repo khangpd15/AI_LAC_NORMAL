@@ -143,6 +143,8 @@ export default function PositionCheck({
       </div>
       <AudioButton text={`Dạ, cô chú ${config.instruction.toLowerCase()} nghen. Mình giữ đầu thẳng, nhìn thẳng vào camera và chờ hệ thống báo sẵn sàng nha.`} label="Nghe hướng dẫn" />
 
+      <PositionGuideVideo />
+
       <div className="position-check-layout">
         {/* Left Column: Camera Preview with Live Landmarking & Face Bounding Box */}
         <div className="cam-column" style={{ position: 'relative' }}>
@@ -383,7 +385,6 @@ export default function PositionCheck({
                 </div>
               </li>
             </ul>
-            <PositionGuideVideo />
             <div className="checklist-actions" style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
               {onRetry && (
                 <button

@@ -1,4 +1,9 @@
 .position-guide-video { min-width: 0; }
+.position-check-card > .position-guide-video {
+  width: 100%;
+  max-width: 720px;
+  margin: 16px auto 0;
+}
 .position-guide-video h3 {
   margin: 0 0 10px;
   font-size: .95rem;
