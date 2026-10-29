@@ -32,7 +32,6 @@ function InteractiveCheckQuestion({
         <div className="hud-question-header-actions">
           {isVoiceActive && (
             <span className="speaking-indicator">
-              <span className="live-dot-pulse" />
               AI đang đọc giải thích…
             </span>
           )}
@@ -368,7 +367,6 @@ export default function ExperienceVisionPage({
               {sessionPhase === 'CAMERA_READY' && (
                 <div className="camera-ready-box fade-in">
                   <div className="camera-live-indicator">
-                    <span className="live-dot" />
                     <span>Camera sẵn sàng</span>
                   </div>
                   <button
@@ -426,8 +424,7 @@ export default function ExperienceVisionPage({
                       Tưởng tượng một bên là mắt khỏe, còn bên kia là mắt bị nhược thị nặng. Khi che mắt khỏe đi, bạn sẽ cảm nhận góc nhìn của mắt bị ảnh hưởng khó khăn như thế nào.
                     </p>
                     <div className="stage7-status-pill status-waiting">
-                      <span className="live-dot-pulse" />
-                      <span>● Đang chờ bạn đưa tay che mắt...</span>
+                      <span>Đang chờ bạn đưa tay che mắt...</span>
                     </div>
                   </div>
                 ) : (

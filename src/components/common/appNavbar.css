@@ -1020,14 +1020,6 @@ body:has(.remicare-sidebar-drawer.is-open) :is(.fixed-audio-guide-dock, .listeni
   margin-top: 1px;
 }
 
-.dropdown-item-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #00AB9B;
-  flex-shrink: 0;
-}
-
 /* Mobile Drawer Accordion Styles */
 .drawer-nav-accordion-item {
   display: flex;

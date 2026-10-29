@@ -399,15 +399,6 @@
   z-index: 5;
 }
 
-.live-sparkle-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #38ef7d;
-  box-shadow: 0 0 10px #38ef7d;
-  display: inline-block;
-}
-
 /* Eye View Switcher */
 .eye-view-switcher {
   display: inline-flex;

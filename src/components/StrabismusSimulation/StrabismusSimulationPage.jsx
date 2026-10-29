@@ -405,7 +405,6 @@ export default function StrabismusSimulationPage({ onExit, onStartScreening }) {
           {cameraState === 'RUNNING' && (
             <>
               <div className={`telemetry-badge ${hasFace ? 'badge-ok' : 'badge-warn'}`}>
-                <span className="dot-pulse" />
                 <span>{hasFace ? 'Đã nhận diện khuôn mặt' : 'Đang quét tìm khuôn mặt...'}</span>
               </div>
               <div className="telemetry-badge badge-fps">

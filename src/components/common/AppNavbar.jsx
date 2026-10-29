@@ -374,7 +374,6 @@ export default function AppNavbar({
                                     <span className="dropdown-item-label">{subItem.label}</span>
                                     <span className="dropdown-item-desc">{subItem.desc}</span>
                                   </div>
-                                  {isSubActive && <span className="dropdown-item-dot" />}
                                 </Link>
                               );
                             })}

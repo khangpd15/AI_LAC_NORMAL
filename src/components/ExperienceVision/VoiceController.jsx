@@ -69,14 +69,12 @@ export default function VoiceController({
   return (
     <div className={`voice-hud-indicator ${isSpeaking ? 'speaking' : 'idle'} ${className}`}>
       <div className="voice-status-badge">
-        {isSpeaking ? (
+        {isSpeaking && (
           <div className="voice-wave-bars" aria-label="Đang kể...">
             <span className="wave-bar b1" />
             <span className="wave-bar b2" />
             <span className="wave-bar b3" />
           </div>
-        ) : (
-          <span className="voice-idle-dot" />
         )}
         <span className="voice-status-text">
           {!isVoiceEnabled ? 'Đã tắt lời dẫn' : isSpeaking ? 'AI đang đọc lời dẫn…' : 'Lời dẫn hoàn tất'}

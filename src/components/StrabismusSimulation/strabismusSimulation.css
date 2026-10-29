@@ -134,20 +134,6 @@
   font-family: monospace;
 }
 
-.dot-pulse {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background-color: currentColor;
-  box-shadow: 0 0 6px currentColor;
-  animation: pulseDot 1.6s infinite ease-in-out;
-}
-
-@keyframes pulseDot {
-  0%, 100% { opacity: 0.4; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.2); }
-}
-
 /* Right Header Action Buttons */
 .nav-right-actions {
   display: flex;

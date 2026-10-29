@@ -203,14 +203,6 @@
   border: 1px solid rgba(0, 171, 155, 0.4);
 }
 
-.live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #00e676;
-  box-shadow: 0 0 8px #00e676;
-}
-
 /* --------------------------------------------------------------------------
    2. FULLSCREEN HUD LAYER (TRONG QUÁ TRÌNH TRẢI NGHIỆM)
    Anchored absolute layers to prevent any viewport clipping or push-down bugs
@@ -295,13 +287,6 @@
 @keyframes waveMotion {
   0%, 100% { transform: scaleY(0.4); }
   50% { transform: scaleY(1); }
-}
-
-.voice-idle-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-soft-mint);
 }
 
 .voice-status-text {
@@ -729,14 +714,6 @@
   background: rgba(16, 185, 129, 0.15);
   padding: 3px 10px;
   border-radius: var(--radius-full);
-}
-
-.live-dot-pulse {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #10b981;
-  animation: pulse 1s infinite alternate;
 }
 
 .hud-question-text {
