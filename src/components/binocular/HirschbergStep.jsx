@@ -51,7 +51,7 @@ export default function HirschbergStep({
   // Voice intro
   useEffect(() => {
     if (isVoiceEnabled && speak) {
-      speak('Chào mừng bạn đến với RemiCare. Chụp hoặc tải ảnh theo hướng dẫn để AI kiểm tra chất lượng nghen.');
+      speak('Chào mừng bạn đến với RemiCare. Chụp hoặc tải ảnh thấy rõ hai mắt hoặc gương mặt để AI kiểm tra chất lượng nghen.');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -150,7 +150,7 @@ export default function HirschbergStep({
           roiBox: null,
           landmarks: researchLandmarks,
           researchLandmarks,
-          qualityScore: result.validation.isAcceptable ? 0.95 : 0.4,
+          qualityScore: result.validation.requiresBackendEyeValidation ? null : (result.validation.isAcceptable ? 0.95 : 0.4),
           distanceCm: null,
           gazeOffsets: { meanDx: 0, meanDy: 0 },
           researchQuality: result.validation.qualityReport,
@@ -301,7 +301,7 @@ export default function HirschbergStep({
               📂 Tải ảnh lên để AI phân tích
             </button>
             <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-              Hỗ trợ định dạng JPEG, PNG, WebP. Tự động kiểm tra chất lượng trước khi gửi.
+              Chấp nhận ảnh cận hai mắt hoặc ảnh gương mặt, miễn thấy rõ cả hai mắt. Không cần thấy toàn bộ mặt. Hỗ trợ JPEG, PNG, WebP.
             </p>
           </div>
         </div>

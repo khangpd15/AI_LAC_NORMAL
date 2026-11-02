@@ -60,7 +60,7 @@ export default function HirschbergQualityReviewModal({
               </span>
             ) : isAcceptable ? (
               <span className="badge badge-success">
-                ✓ Ảnh đạt chuẩn sàng lọc AI
+                ✓ Có thể gửi AI kiểm tra
               </span>
             ) : (
               <span className="badge badge-danger">
@@ -75,7 +75,7 @@ export default function HirschbergQualityReviewModal({
           </h2>
           <p id="hirschberg-review-summary" className="hirschberg-review-subtitle" role="status">
             {isInspecting
-              ? 'AI đang quét khuôn mặt, độ nét, ánh sáng và phản xạ giác mạc...'
+              ? 'Đang kiểm tra vùng hai mắt, độ nét, ánh sáng và phản xạ giác mạc...'
               : validation?.summary || 'Kết quả kiểm tra trước khi gửi về AI'}
           </p>
         </div>
@@ -106,7 +106,7 @@ export default function HirschbergQualityReviewModal({
                 {isInspecting
                   ? 'Đang quét...'
                   : isAcceptable
-                  ? '✓ Đạt yêu cầu'
+                  ? '✓ Có thể gửi phân tích'
                   : '✕ Cần đổi ảnh'}
               </div>
             </div>
@@ -136,7 +136,7 @@ export default function HirschbergQualityReviewModal({
             {isInspecting ? (
               <div className="inspecting-loading-box">
                 <div className="analyzing-spinner" />
-                <p>AI đang đánh giá khuôn mặt, góc mắt và độ nét ảnh...</p>
+                <p>Đang đánh giá vùng hai mắt và độ nét ảnh...</p>
               </div>
             ) : (
               <>

@@ -2,7 +2,7 @@
  * Hirschberg Photo Quality Pre-screening Service
  *
  * Sàng lọc trước chất lượng ảnh chụp hoặc ảnh tải lên trước khi gửi về AI phân tích:
- * 1. Nhận diện khuôn mặt (Face presence & landmarks >= 468)
+ * 1. Chấp nhận ảnh toàn mặt hoặc cận hai mắt; thiếu FaceMesh sẽ chuyển AI xác minh
  * 2. Hai mắt mở rõ, không nhắm/chớp/che khuất (Both eyes visible, eye openness)
  * 3. Góc nhìn trực diện (Head pose: Yaw <= 12°, Pitch <= 10°, Roll <= 8°)
  * 4. Độ sắc nét không mờ (Image sharpness / Laplacian focus score)
@@ -34,7 +34,7 @@ export const QUALITY_PRESCREEN_STATUS = {
  * Left eye: 386 (upper) and 374 (lower)
  */
 function checkEyeOpenness(landmarks) {
-  if (!landmarks || landmarks.length < 468) {
+  if (!landmarks) {
     return { isOpen: false, rightOpening: 0, leftOpening: 0 };
   }
   const rTop = landmarks[159];
@@ -77,27 +77,29 @@ export function validateHirschbergQuality({
   const warnings = [];
   const passedChecks = [];
 
-  // 1. Face detection
-  const hasFace = Array.isArray(landmarks) && landmarks.length >= 468;
-  if (!hasFace) {
-    errors.push({
-      code: 'FACE_NOT_FOUND',
-      label: 'Không phát hiện khuôn mặt trong ảnh',
-      tip: 'Vui lòng đưa toàn bộ khuôn mặt vào khung ảnh, nhìn thẳng vào camera.',
-    });
-  } else {
-    passedChecks.push({
-      code: 'FACE_DETECTED',
-      label: 'Khuôn mặt rõ ràng trong ảnh',
+  // FaceMesh may fail on a valid eye-pair crop. Defer that case to the
+  // backend instead of treating missing full-face landmarks as invalid input.
+  const isVisiblePoint = (point) => Number.isFinite(point?.x) && Number.isFinite(point?.y)
+    && point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1;
+  const hasEyeLandmarks = [33, 133, 159, 145, 362, 263, 386, 374]
+    .every((index) => isVisiblePoint(landmarks?.[index]));
+  const hasFullFace = hasEyeLandmarks && [10, 152, 234, 454, 1, 168]
+    .every((index) => isVisiblePoint(landmarks?.[index]));
+  const requiresBackendEyeValidation = !hasEyeLandmarks;
+  if (requiresBackendEyeValidation) {
+    warnings.push({
+      code: 'EYE_DETECTION_DEFERRED',
+      label: 'Chưa xác nhận được vùng hai mắt ở bước kiểm tra nhanh',
+      tip: 'Có thể gửi ảnh cận hai mắt hoặc ảnh gương mặt để AI kiểm tra tiếp. Cần thấy rõ cả hai mắt, không bắt buộc thấy toàn bộ mặt.',
     });
   }
 
   // 2. Both eyes & irises visible + eye openness
-  const hasLeftIris = Boolean(landmarks?.[468]);
-  const hasRightIris = Boolean(landmarks?.[473]);
+  const hasLeftIris = isVisiblePoint(landmarks?.[468]);
+  const hasRightIris = isVisiblePoint(landmarks?.[473]);
   const eyeOpen = checkEyeOpenness(landmarks);
 
-  if (hasFace) {
+  if (hasEyeLandmarks) {
     if (!hasLeftIris || !hasRightIris) {
       errors.push({
         code: 'EYES_NOT_VISIBLE',
@@ -119,12 +121,13 @@ export function validateHirschbergQuality({
   }
 
   // 3. Head pose (Yaw, Pitch, Roll)
-  const headPose = estimateHeadPose(landmarks);
+  const headPose = hasFullFace ? estimateHeadPose(landmarks)
+    : { yawDeg: null, pitchDeg: null, rollDeg: null, isValid: false };
   const yawAbs = Math.abs(headPose.yawDeg || 0);
   const pitchAbs = Math.abs(headPose.pitchDeg || 0);
   const rollAbs = Math.abs(headPose.rollDeg || 0);
 
-  if (hasFace) {
+  if (hasFullFace) {
     if (yawAbs > 14) {
       errors.push({
         code: 'HEAD_YAW_EXCEEDED',
@@ -239,7 +242,7 @@ export function validateHirschbergQuality({
   const reflexCountRight = cornealReflex?.right?.count ?? 0;
   const totalReflex = reflexCountLeft + reflexCountRight;
 
-  if (hasFace && hasLeftIris && hasRightIris) {
+  if (hasEyeLandmarks && hasLeftIris && hasRightIris) {
     if (totalReflex === 0) {
       warnings.push({
         code: 'REFLEX_NOT_DETECTED',
@@ -268,19 +271,22 @@ export function validateHirschbergQuality({
       ? QUALITY_PRESCREEN_STATUS.WARNING
       : QUALITY_PRESCREEN_STATUS.PASS;
 
-  let title = 'Ảnh đạt chuẩn sàng lọc AI';
-  let summary = 'Ảnh có đầy đủ khuôn mặt, hai mắt rõ ràng và độ nét đạt yêu cầu để phân tích Hirschberg.';
+  let title = 'Ảnh có thể gửi phân tích AI';
+  let summary = 'Ảnh thấy rõ hai mắt và đủ điều kiện gửi phân tích Hirschberg. Không bắt buộc thấy toàn bộ gương mặt.';
 
   if (!isAcceptable) {
     title = 'Ảnh chưa đạt chuẩn - Cần chụp hoặc tải ảnh khác';
     summary = errors.map((e) => e.label).join('. ') + '.';
   } else if (warnings.length > 0) {
-    title = 'Ảnh đạt chuẩn (kèm lưu ý nhẹ)';
-    summary = 'Ảnh đủ điều kiện phân tích hình học, nhưng có thể cải thiện thêm ánh sáng để chuẩn xác hơn.';
+    title = 'Ảnh có thể gửi phân tích (kèm lưu ý)';
+    summary = requiresBackendEyeValidation
+      ? 'Ảnh có thể gửi AI kiểm tra vùng hai mắt. Chấp nhận ảnh cận hai mắt hoặc ảnh gương mặt; chưa xác nhận chất lượng vùng mắt.'
+      : 'Ảnh đủ điều kiện gửi phân tích. Xem các lưu ý để cải thiện chất lượng ảnh.';
   }
 
   return {
     isAcceptable,
+    requiresBackendEyeValidation,
     status,
     title,
     summary,

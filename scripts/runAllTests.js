@@ -187,13 +187,14 @@ function createSyntheticLandmarks({ eyeOpening = 0.025, yawOffset = 0 } = {}) {
   return landmarks;
 }
 
-// Test 6: Rejection when face landmarks are missing
+// Test 6: Missing full-face detection is deferred to backend eye validation
 {
   const res = validateHirschbergQuality({ landmarks: null });
-  assert.equal(res.isAcceptable, false);
-  assert.equal(res.status, QUALITY_PRESCREEN_STATUS.FAIL);
-  assert.ok(res.errors.some((e) => e.code === 'FACE_NOT_FOUND'));
-  console.log('✓ Test 6 Passed: Missing face landmarks is rejected with FACE_NOT_FOUND');
+  assert.equal(res.isAcceptable, true);
+  assert.equal(res.status, QUALITY_PRESCREEN_STATUS.WARNING);
+  assert.equal(res.requiresBackendEyeValidation, true);
+  assert.ok(res.warnings.some((e) => e.code === 'EYE_DETECTION_DEFERRED'));
+  console.log('✓ Test 6 Passed: Missing face landmarks defers eye validation to AI');
 }
 
 // Test 7: Rejection when eyes are closed or blinking
@@ -221,7 +222,7 @@ function createSyntheticLandmarks({ eyeOpening = 0.025, yawOffset = 0 } = {}) {
   const landmarks = createSyntheticLandmarks({ eyeOpening: 0.025, yawOffset: 0.0 });
   const res = validateHirschbergQuality({ landmarks, distanceCm: 22 });
   assert.equal(res.isAcceptable, true);
-  assert.ok(res.passedChecks.some((c) => c.code === 'FACE_DETECTED'));
+  assert.equal(res.requiresBackendEyeValidation, false);
   assert.ok(res.passedChecks.some((c) => c.code === 'EYES_OPEN_AND_CLEAR'));
   assert.ok(res.passedChecks.some((c) => c.code === 'HEAD_POSE_CENTERED'));
   console.log('✓ Test 9 Passed: Frontal clear photo with open eyes passes pre-screening');
