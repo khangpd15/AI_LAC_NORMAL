@@ -193,6 +193,20 @@ function TechnicalDetails({ coverTest, quality, gazeTracking, strabismusResult }
   const metricOrNull = (v, digits = 4) =>
     typeof v === 'number' && Number.isFinite(v) ? v.toFixed(digits) : 'null';
 
+  const capture = gazeTracking?.captures?.hirschberg || gazeTracking?.captures?.straight;
+  const captureFields = [
+    { label: 'Phương pháp', value: 'Hirschberg' },
+    { label: 'Thời gian', value: capture?.timestamp ? new Date(capture.timestamp).toLocaleTimeString('vi-VN') : null },
+    { label: 'Khoảng cách ước tính', value: Number.isFinite(capture?.distanceCm) ? `${capture.distanceCm} cm` : null },
+    { label: 'Số điểm mốc', value: capture?.landmarks?.length ? capture.landmarks.length : null },
+  ].filter(field => field.value !== null);
+  const model = strabismusResult?.hirschbergResult?.aiPrediction || strabismusResult?.hirschbergResult;
+  const latency = strabismusResult?.inference_latency_ms ?? model?.latencyMs;
+  const modelFields = [
+    { label: 'Phiên bản mô hình', value: strabismusResult?.model_version || model?.modelId || null },
+    { label: 'Thời gian xử lý', value: Number.isFinite(latency) ? `${latency} ms` : null },
+  ].filter(field => field.value !== null);
+
   return (
     <div className="final-screening-technical-details">
       <p className="final-screening-technical-notice">
@@ -249,76 +263,40 @@ function TechnicalDetails({ coverTest, quality, gazeTracking, strabismusResult }
         Độ lăng kính (Prism Diopters): null — Hệ thống chưa có dữ liệu hiệu chuẩn lâm sàng phù hợp.
       </p>
 
-      {/* Gaze 4 Directions technical */}
-      {gazeTracking && (
+      {capture && (
         <>
-          <h4>Hirschberg — Dữ liệu kỹ thuật (20–25 cm)</h4>
+          <h4>Hirschberg — Thông tin phân tích</h4>
           <div className="table-responsive">
             <table className="metrics-table">
               <thead>
-                <tr>
-                  <th>Phương pháp</th>
-                  <th>Thời gian</th>
-                  <th>Khoảng cách</th>
-                  <th>Điểm chất lượng</th>
-                  <th>Landmarks</th>
-                  <th>Ảnh</th>
-                </tr>
+                <tr>{captureFields.map(field => <th key={field.label}>{field.label}</th>)}</tr>
               </thead>
               <tbody>
-                {[
-                  { key: 'hirschberg', label: 'Hirschberg' },
-                ].map(({ key, label }) => {
-                  const cap = gazeTracking?.captures?.[key] || gazeTracking?.captures?.straight;
-                  return (
-                    <tr key={key}>
-                      <td>{label}</td>
-                      <td>{cap?.timestamp ? new Date(cap.timestamp).toLocaleTimeString() : '--'}</td>
-                      <td>{cap?.distanceCm ? `${cap.distanceCm} cm` : '--'}</td>
-                      <td>{cap?.qualityScore ? cap.qualityScore.toFixed(2) : '--'}</td>
-                      <td>{cap?.landmarks ? `${cap.landmarks.length} pts` : '--'}</td>
-                      <td>{cap?.image ? 'Đã lưu' : 'Không có'}</td>
-                    </tr>
-                  );
-                })}
+                <tr>{captureFields.map(field => <td key={field.label}>{field.value}</td>)}</tr>
               </tbody>
             </table>
           </div>
-          <p className="technical-calibration-note">
-            Khoảng cách 20–25 cm và ngưỡng Hirschberg hiện là TODO_PILOT, chưa phải tiêu chuẩn lâm sàng đã hiệu chuẩn.
-          </p>
         </>
       )}
+      {gazeTracking && (
+        <p className="technical-calibration-note">
+          Hệ thống không lưu trữ ảnh người dùng. Ảnh chỉ được sử dụng để xử lý trong phiên sàng lọc.
+        </p>
+      )}
 
-      {/* Strabismus Deep Learning technical */}
-      {strabismusResult && (
+      {modelFields.length > 0 && (
         <>
-          <h4>Mô hình Hirschberg — Chỉ số kỹ thuật</h4>
+          <h4>Mô hình Hirschberg — Thông tin xử lý</h4>
           <div className="table-responsive">
             <table className="metrics-table">
               <thead>
-                <tr>
-                  <th>Phiên bản mô hình</th>
-                  <th>Ngưỡng quyết định (Threshold)</th>
-                  <th>Thời gian xử lý (Latency)</th>
-                  <th>Điểm chất lượng (Quality Gate)</th>
-                  <th>Độ tự tin Softmax (Confidence)</th>
-                </tr>
+                <tr>{modelFields.map(field => <th key={field.label}>{field.label}</th>)}</tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>{strabismusResult.model_version || strabismusResult.hirschbergResult?.modelId || '--'}</td>
-                  <td>{strabismusResult.threshold ?? '--'}</td>
-                  <td>{strabismusResult.inference_latency_ms ? `${strabismusResult.inference_latency_ms} ms` : '--'}</td>
-                  <td>{strabismusResult.quality_score != null ? strabismusResult.quality_score : '--'}</td>
-                  <td>{normalizeHirschbergResult(strabismusResult).confidence !== null ? `${(normalizeHirschbergResult(strabismusResult).confidence * 100).toFixed(1)}%` : '--'}</td>
-                </tr>
+                <tr>{modelFields.map(field => <td key={field.label}>{field.value}</td>)}</tr>
               </tbody>
             </table>
           </div>
-          <p className="technical-calibration-note">
-            Độ tự tin Softmax phản ánh mức độ kích hoạt phân lớp nơ-ron đối với đặc trưng ảnh đầu vào, không đại diện cho nguy cơ mắc bệnh lâm sàng.
-          </p>
         </>
       )}
 

@@ -29,7 +29,7 @@ export function normalizeHirschbergResult(input = {}) {
     raw: data, status, statusLabel: isError ? 'Chưa hoàn tất phân tích' : proposal ? 'Cần chuyên gia xem xét' : 'Chưa đủ điều kiện', proposal, scores: hasScores ? scores : [], confidence: hasScores ? confidence : null,
     hasScores, title, reason,
     message: !proposal
-      ? (isError ? 'Phân tích chưa hoàn tất. Bạn hãy thử lại sau.' : 'Bạn hãy chụp lại, nhìn thẳng vào nguồn sáng gần camera và để rõ cả hai mắt.')
+      ? (isError ? 'Phân tích chưa hoàn tất. Bạn hãy thử lại sau.' : 'Ảnh có thể bị mờ hoặc có nhiều nguồn sáng ảnh hưởng đến việc phân tích. Bạn hãy chụp lại, nhìn thẳng vào một nguồn sáng gần camera và để rõ cả hai mắt.')
       : proposal === 'NORMAL'
         ? 'Chưa ghi nhận dấu hiệu lác rõ trong ảnh này.'
         : 'Có dấu hiệu cần kiểm tra thêm. Bạn nên khám chuyên khoa mắt để được đánh giá.',
