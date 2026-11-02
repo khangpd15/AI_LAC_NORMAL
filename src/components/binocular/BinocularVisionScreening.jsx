@@ -497,7 +497,7 @@ export default function BinocularVisionScreening() {
       {/* Top Protocol Title Bar */}
       <div className="screening-page-header">
         <div className="screening-header-text">
-          <h1 className="screening-page-title">RemiCare Strabismus Screening</h1>
+          <h1 className="screening-page-title">RemiCare Sàng lọc lác/lé</h1>
           <p className="screening-page-subtitle">
             Sàng lọc Esotropia / Exotropia bằng phương pháp Hirschberg &amp; Cover Test
           </p>
@@ -615,6 +615,15 @@ export default function BinocularVisionScreening() {
           />
         )}
       </div>
+
+      <footer className="w-full mt-10 pt-5 border-t border-[var(--border-subtle)] text-center text-xs text-[var(--text-muted)] space-y-1">
+        <p className="font-semibold text-[var(--text-heading)]">
+          ⚠️ Lưu ý y khoa: RemiCare Sàng lọc lác/lé là công cụ hỗ trợ sàng lọc lác/lé ban đầu bằng AI, không thay thế cho chẩn đoán chuyên sâu từ bác sĩ chuyên khoa mắt.
+        </p>
+        <p className="text-[11px] opacity-80">
+          Hình ảnh chỉ được sử dụng để phân tích sàng lọc và được xử lý theo chính sách bảo mật của RemiCare.
+        </p>
+      </footer>
     </div>
   );
 }
